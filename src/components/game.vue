@@ -1,0 +1,648 @@
+<template>
+  <div class="row px-5">
+    <div class="col-6">
+      <Graveyard :objects="opponent.graveyard" @expand="expand" />
+    </div>
+    <div class="col-6">
+      <Exile :objects="opponent.exile" @expand="expand" />
+    </div>
+  </div>
+
+  <div class="row px-5">
+    <div class="col-15 mb-3">
+      <div class="card bg-dark text-light">
+        <img
+          src="/images/card-back.jpg"
+          class="card-img"
+        />
+        <div class="card-img-overlay text-center">
+          <h5>Cards: {{opponent.library_total}}</h5>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="reverse-columns">
+    <Field
+      :objects="opponent.field"
+      :actions="factory.actions({stats: true})"
+      @expand="expand"
+    />
+  </div>
+
+  <div v-if="functions.isNotEmpty(users)" class="row px-3">
+    <div class="col-1">
+      <div class="input-group">
+        <span class="input-group-text bg-dark text-light">Life</span>
+        <input
+          type="text"
+          class="form-control bg-dark text-light"
+          :value="opponent.life"
+          disabled
+        />
+      </div>
+    </div>
+    <div v-for="{name} in userCounters" class="col-1">
+      <div class="input-group">
+        <span class="input-group-text bg-dark text-light">{{formatters.toUpperCaseWords(name)}}</span>
+        <input
+          type="text"
+          class="form-control bg-dark text-light"
+          :value="opponent.counters[name]"
+          disabled
+        />
+      </div>
+    </div>
+    <h2 class="col text-center">
+      <i v-if="opponent.is_winner" class="bi bi-trophy-fill text-warning"></i>
+      <i v-if="opponent.is_active_turn && !isGameOver" class="bi bi-caret-right-fill text-danger"></i>
+        {{opponent.handle}} vs {{user.handle}}
+      <i v-if="user.is_active_turn && !isGameOver" class="bi bi-caret-left-fill text-success"></i>
+      <i v-if="user.is_winner" class="bi bi-trophy-fill text-warning"></i>
+    </h2>
+    <div class="col-3 d-flex justify-content-between">
+      <button
+        type="button"
+        class="btn btn-danger align-self-baseline"
+        :class="{'invisible': isGameOver}"
+        @click="endGame"
+        :disabled="isGameOver"
+      >Concede</button>
+      <div class="dropdown-center">
+        <button
+          type="button"
+          class="btn btn-info dropdown-toggle"
+          :class="{'invisible': isGameOver}"
+          data-bs-toggle="dropdown"
+          :disabled="isGameOver"
+        >Tokens</button>
+        <ul class="dropdown-menu bg-dark">
+          <li class="py-1">
+            <div class="input-group">
+              <input
+                type="text"
+                class="form-control"
+                v-model="token"
+                placeholder="Search for Token by Name"
+                @keyup.enter="tokenSearch"
+              />
+              <button
+                type="button"
+                class="btn btn-success"
+                @click="tokenSearch"
+              >
+                <i class="bi bi-search"></i>
+              </button>
+            </div>
+          </li>
+        </ul>
+      </div>
+      <div class="dropdown-center">
+        <button type="button" class="btn btn-info dropdown-toggle" data-bs-toggle="dropdown">Counters</button>
+        <ul class="dropdown-menu bg-dark">
+          <li v-for="{name} in userCounters" class="py-1">
+            <div class="input-group">
+              <span class="input-group-text bg-dark text-light">{{formatters.toUpperCaseWords(name)}}</span>
+              <input
+                :type="!isGameOver ? 'number' : 'text'"
+                class="form-control"
+                :class="!isGameOver ? [] : ['bg-dark', 'text-light']"
+                :value="user.counters[name]"
+                :disabled="isGameOver"
+                @change="(e) => counterOnUser(name, e.target.value)"
+              />
+            </div>
+          </li>
+        </ul>
+      </div>
+    </div>
+    <div class="col-1">
+      <div class="input-group">
+        <span class="input-group-text bg-dark text-light">Life</span>
+        <input
+          :type="!isGameOver ? 'number' : 'text'"
+          class="form-control"
+          :class="!isGameOver ? [] : ['bg-dark', 'text-light']"
+          :disabled="isGameOver"
+          v-model="life"
+        />
+      </div>
+    </div>
+  </div>
+
+  <div class="row justify-content-center px-5 mb-3" :class="{'invisible': isGameOver}">
+    <button
+      v-if="!user.is_ready && functions.isNotEmpty(user.hand)"
+      type="button"
+      class="btn btn-success col-1 me-1"
+      @click="start"
+    >Start Game</button>
+    <button
+      v-if="!user.is_ready && functions.isEmpty(user.hand)"
+      type="button"
+      class="btn btn-info col-1 me-1"
+      @click="draw"
+    >Draw Hand</button>
+    <button
+      v-if="!user.is_ready && functions.isNotEmpty(user.hand)"
+      type="button"
+      class="btn btn-warning col-1 me-1"
+      @click="mulligan"
+    >Mulligan</button>
+    <button
+      type="button"
+      class="btn btn-danger col-1 me-1"
+      :class="{'invisible': !user.is_active_turn}"
+      @click="endTurn"
+    >End Turn</button>
+  </div>
+
+  <Field
+    :objects="user.field"
+    :actions="factory.actions({
+      counters: cardCounters,
+      move: functions.removeByValue(zones, 'field'),
+      stats: true,
+      tap: true,
+    })"
+    @counter="counterOnCard"
+    @expand="expand"
+    @move="move"
+    @power="power"
+    @tap="tap"
+    @toughness="toughness"
+    @transform="transform"
+  />
+
+  <div class="row px-5">
+    <div class="col-105">
+      <Hand
+        :objects="user.hand"
+        :actions="factory.actions({move: functions.removeByValue(zones, 'hand')})"
+        @expand="expand"
+        @move="move"
+        @transform="transform"
+      />
+    </div>
+    <div class="col-15 mb-3">
+      <div class="card bg-dark text-light">
+        <img
+          src="/images/card-back.jpg"
+          class="card-img"
+        />
+        <div class="card-img-overlay text-center">
+          <h5>Cards: {{user.library_total}}</h5>
+          <div v-if="user.is_ready && !isGameOver" class="d-grid gap-2">
+            <div class="input-group">
+              <button
+                type="button"
+                class="btn btn-success"
+                :disabled="functions.isNull(drawAmount)"
+                @click="draw"
+              >Draw</button>
+              <input
+                type="number"
+                v-model="drawAmount"
+                class="form-control"
+                min="1"
+                :max="user.library_total"
+              />
+            </div>
+            <button
+              type="button"
+              class="btn btn-warning"
+              @click="shuffle"
+            >Shuffle</button>
+            <div class="input-group">
+              <button
+                type="button"
+                class="btn btn-danger"
+                :disabled="functions.isNull(millAmount)"
+                @click="mill"
+              >Mill</button>
+              <input
+                type="number"
+                v-model="millAmount"
+                class="form-control"
+                min="1"
+                :max="user.library_total"
+              />
+            </div>
+            <button
+              type="button"
+              class="btn btn-info"
+              data-bs-toggle="modal"
+              data-bs-target="#search"
+            >Search</button>
+            <div class="input-group">
+              <button
+                type="button"
+                class="btn btn-info"
+                :disabled="functions.isNull(scryAmount)"
+                @click="scry"
+              >Scry</button>
+              <input
+                type="number"
+                v-model="scryAmount"
+                class="form-control"
+                min="1"
+                :max="user.library_total"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row px-5">
+    <div class="col-6">
+      <Exile
+        :objects="user.exile"
+        :actions="factory.actions({
+          counters: cardCounters,
+          move: functions.removeByValue(zones, 'graveyard'),
+        })"
+        @counter="counterOnCard"
+        @expand="expand"
+        @move="move"
+        @transform="transform"
+      />
+    </div>
+    <div class="col-6">
+      <Graveyard
+        :objects="user.graveyard"
+        :actions="factory.actions({move: functions.removeByValue(zones, 'graveyard')})"
+        @expand="expand"
+        @move="move"
+      />
+    </div>
+  </div>
+
+  <div id="card" ref="cardModal" class="modal fade" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content bg-transparent">
+        <div class="modal-body">
+          <div class="row">
+            <Card
+              :object="object"
+              :actions="factory.actions({expand: false})"
+              bg="transparent"
+              class="col"
+              data-bs-dismiss="modal"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="search" ref="searchModal" class="modal fade" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+      <div class="modal-content bg-dark">
+        <div class="modal-body">
+          <div class="row">
+            <Card
+              v-for="object in user.library"
+              :object="object"
+              :actions="factory.actions({
+                expand: false,
+                move: functions.removeByValue(zones, 'library'),
+              })"
+              class="col-4"
+              @move="move"
+              @transform="transform"
+            >
+            </Card>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="scry" ref="scryModal" class="modal fade" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+      <div class="modal-content bg-dark">
+        <div class="modal-body">
+          <div class="row">
+            <Card
+              v-for="object in scryObjects"
+              :object="object"
+              :actions="factory.actions({expand: false})"
+              class="col-4"
+            >
+              <button type="button" class="btn btn-success" @click="scryTop(object.id)">Top</button>
+              <button type="button" class="btn btn-danger" @click="scryBottom(object.id)">Bottom</button>
+            </Card>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="tokenSearch" ref="tokenModal" class="modal fade" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+      <div class="modal-content bg-dark">
+        <div class="modal-body">
+          <div class="row">
+            <Card
+              v-for="object in tokenObjects"
+              :object="object"
+              :actions="factory.actions({
+                expand: false,
+                create: true,
+              })"
+              class="col-4"
+              @create="tokenCreate"
+            >
+            </Card>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="gameOver" ref="gameOverModal" class="modal fade" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content bg-dark">
+        <div class="modal-header text-center d-block">
+          <h2>Defeat</h2>
+        </div>
+        <div class="modal-body">
+          <h4 class="text-center">You have been banished from this realm</h4>
+          <img class="img-fluid mx-auto d-block" src="/images/banished.png" />
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script>
+  import {computed} from 'vue'
+
+  import Card from './card.vue'
+  import Exile from './exile.vue'
+  import Field from './field.vue'
+  import Graveyard from './graveyard.vue'
+  import Hand from './hand.vue'
+
+  export default {
+    components: {
+      Card,
+      Exile,
+      Field,
+      Graveyard,
+      Hand,
+    },
+    props: {
+      id: {
+        type: String,
+        required: true,
+      },
+    },
+    data: () => ({
+      cardModal: null,
+      searchModal: null,
+      scryModal: null,
+      gameOverModal: null,
+      tokenModal: null,
+      object: {},
+      drawAmount: 7,
+      millAmount: null,
+      scryAmount: null,
+      scryObjects: [],
+      token: null,
+      tokenObjects: [],
+      counters: [],
+      zones: [],
+      cardZones: {
+        library: [],
+        hand: [],
+        field: [],
+        exile: [],
+        graveyard: [],
+      },
+    }),
+    provide() {
+      return {
+        isGameOver: computed(() => this.isGameOver)
+      }
+    },
+    computed: {
+      game() {
+        return this.store.games.filter((game) => game.id === this.id).pop()
+      },
+      users() {
+        return this.game ? this.game.users.map((user) => this.functions.deepExtend({
+          counters: this.userCounters.reduce((agg, {name}) => this.functions.copy(agg, {[name]: 0}), {})
+        }, user)) : []
+      },
+      objects() {
+        return this.game ? this.game.objects.map((object) => this.functions.extend(
+          object,
+          {
+            counters: this.functions.mergeObjectArrays(
+              this.cardCounters.map(({name}) => ({name, amount: 0})),
+              object.counters,
+              'name'
+            )
+          }
+        )) : []
+      },
+      counts() {
+        return this.game ? this.game.counts : []
+      },
+      user() {
+        return this.functions.deepExtend(
+          this.zones.reduce((agg, name) =>
+            this.functions.copy(
+              agg,
+              {
+                [name]: agg[name].concat(
+                  this.objects
+                    .filter((object) => object.user_id === this.authUser.id)
+                    .filter((object) => object.zone === name)
+                    .sort(({position: a}, {position: b}) => this.functions.sortNumber(a, b))
+                ),
+              }
+            ),
+            this.cardZones
+          ),
+          this.users.find((user) => user.user_id === this.authUser.id),
+          this.counts.find((count) => count.user_id === this.authUser.id)
+        )
+      },
+      opponent() {
+        return this.functions.deepExtend(
+          this.zones.reduce((agg, name) =>
+            agg = this.functions.copy(
+              agg,
+              {
+                [name]: agg[name].concat(
+                  this.objects
+                    .filter((object) => object.user_id !== this.authUser.id)
+                    .filter((object) => object.zone === name)
+                    .sort(({position: a}, {position: b}) => this.functions.sortNumber(a, b))
+                  ),
+              }
+            ),
+            this.cardZones
+          ),
+          this.users.find((user) => user.user_id !== this.authUser.id),
+          this.counts.find((count) => count.user_id !== this.authUser.id)
+        )
+      },
+      cardCounters() {
+        return this.counters.filter((counter) => counter.kind === 'card')
+      },
+      userCounters() {
+        return this.counters.filter((counter) => counter.kind === 'user')
+      },
+      isGameOver() {
+        return this.user.is_winner || this.opponent.is_winner
+      },
+      life: {
+        get() {
+          return this.user.life
+        },
+        set(x) {
+          this.fetch.put('/life', {game_id: this.id, amount: x})
+        },
+      },
+    },
+    created() {
+      this.fetch.get('/counters', {}, (data) => this.counters = data)
+      this.fetch.get('/zones', {}, (data) => {
+        this.zones = data.map(({name}) => name)
+        //this.cardZones = this.zones.reduce((agg, name) => agg = this.functions.copy(agg, {[name]: []}), {})
+      })
+      this.fetch.get('/game', [this.id])
+      this.object = this.factory.object()
+    },
+    mounted() {
+      this.cardModal = new bootstrap.Modal(this.$refs.cardModal)
+      this.searchModal = new bootstrap.Modal(this.$refs.searchModal)
+      this.scryModal = new bootstrap.Modal(this.$refs.scryModal)
+      this.tokenModal = new bootstrap.Modal(this.$refs.tokenModal)
+      this.gameOverModal = new bootstrap.Modal(this.$refs.gameOverModal, {backdrop: 'static', keyboard: false})
+    },
+    watch: {
+      drawAmount(amount) {
+        this.drawAmount = this.determineAmount(amount)
+      },
+      millAmount(amount) {
+        this.millAmount = this.determineAmount(amount)
+      },
+      scryAmount(amount) {
+        this.scryAmount = this.determineAmount(amount)
+      },
+      'user.life'(amount) {
+        if (amount <= 0 && !this.isGameOver) {
+          this.endGame()
+        }
+      },
+      'user.library_total'(amount) {
+        if (amount <= 0 && !this.isGameOver) {
+          this.endGame()
+        }
+      },
+      game() {
+        if (this.user.is_active_turn || this.opponent.is_active_turn) {
+          this.drawAmount = 1
+        }
+      },
+    },
+    methods: {
+      determineAmount(amount) {
+        return amount > this.user.library_total
+          ? this.user.library_total
+          : amount <= 0 && this.functions.isNotEmpty(amount)
+            ? 1
+            : this.functions.isEmpty(amount) ? null : amount
+      },
+      start() {
+        this.fetch.put('/start', {game_id: this.id})
+        this.drawAmount = 1
+      },
+      endTurn() {
+        this.fetch.put('/end-turn', {game_id: this.id})
+      },
+      endGame() {
+        this.fetch.put('/end-game', {game_id: this.id})
+        this.gameOverModal.show()
+        window.setTimeout(() => this.gameOverModal.hide(), 5 * 1000)
+      },
+      counterOnCard(object_id, name, amount) {
+        this.fetch.put('/counter', {game_id: this.id, object_id, name, kind: 'card', amount})
+      },
+      counterOnUser(name, amount) {
+        this.fetch.put('/counter', {game_id: this.id, name, kind: 'user', amount})
+      },
+      draw() {
+        this.fetch.put('/draw', {game_id: this.id, amount: this.drawAmount})
+      },
+      expand(object) {
+        this.object = this.functions.copy(object, {is_tapped: false})
+        this.cardModal.show()
+      },
+      mill() {
+        this.fetch.put('/mill', {game_id: this.id, amount: this.millAmount})
+      },
+      move(object_id, zone, location = 'top') {
+        this.fetch.put('/move', {game_id: this.id, object_id, zone, location})
+      },
+      mulligan() {
+        this.fetch.put('/mulligan', {game_id: this.id})
+      },
+      power(object_id, value) {
+        this.fetch.put('/power', {game_id: this.id, object_id, value})
+      },
+      scry() {
+        this.fetch.get('/scry', [this.id, this.scryAmount], (data) => {
+          this.scryObjects = data
+          this.scryModal.show()
+        })
+      },
+      scryBottom(object_id) {
+        this.scryObjects = this.scryObjects.filter((object) => object.id !== object_id)
+        this.move(object_id, 'library', 'bottom')
+        if (this.functions.isEmpty(this.scryObjects)) {
+          this.scryModal.hide()
+          this.scryAmount = null
+        }
+      },
+      scryTop(object_id) {
+        this.scryObjects = this.scryObjects.filter((object) => object.id !== object_id)
+        this.move(object_id, 'library', 'top')
+        if (this.functions.isEmpty(this.scryObjects)) {
+          this.scryModal.hide()
+          this.scryAmount = null
+        }
+      },
+      shuffle() {
+        this.fetch.put('/shuffle', {game_id: this.id})
+      },
+      tap(object_id, state) {
+        this.fetch.put('/tap', {game_id: this.id, object_id, state})
+      },
+      tokenCreate(card_id, amount) {
+        this.fetch.put('/token', {game_id: this.id, card_id, amount})
+        this.tokenObjects = []
+        this.token = null
+        this.tokenModal.hide()
+      },
+      tokenSearch() {
+        this.fetch.get('/token', [this.token], (data) => {
+          this.tokenObjects = data
+          this.tokenModal.show()
+        })
+      },
+      toughness(object_id, value) {
+        this.fetch.put('/toughness', {game_id: this.id, object_id, value})
+      },
+      transform(object_id, card_face_id) {
+        this.fetch.put('/transform', {game_id: this.id, object_id, card_face_id})
+      },
+    },
+  }
+</script>

@@ -1,0 +1,39 @@
+version: "1"
+
+services:
+  postgres:
+    image: postgres:alpine
+    env_file: ./.env
+    restart: unless-stopped
+    volumes:
+      - ./migrations:/docker-entrypoint-initdb.d
+    ports:
+      - 5432:5432
+    expose:
+      - "5432"
+
+  node:
+    image: node:18-alpine
+    env_file: ./.env
+    volumes:
+      - ./:/home
+      - ./util:/home/util:ro
+      - ./migrations:/home/migrations:ro
+      - ./public:/home/public:ro
+      - ./dist:/home/dist:ro
+      - ./files:/home/files:ro
+    ports:
+      - 8080:8080
+    expose:
+      - "8080"
+    working_dir: /home
+    command: [sh, -c, "node ./server.js"]
+    depends_on:
+      - npm
+
+  npm:
+    image: node:18-alpine
+    volumes:
+      - ./:/home
+    working_dir: /home
+    command: [sh, -c, "npm install && npm run build"]

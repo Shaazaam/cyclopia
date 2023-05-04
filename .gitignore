@@ -1,0 +1,6 @@
+.env
+node_modules
+*.sublime-project
+*.sublime-workspace
+dist
+files
