@@ -518,6 +518,17 @@ export const getGame = async (id) => {
   `, [id])
   return factory.game({id, users, objects, counts})
 }
+export const getGameUsers = async (game_id) => {
+  const {rows, rowCount} = await query(`
+    SELECT game_user.user_id
+    FROM game_user
+    WHERE game_user.game_id = $1
+  `, [game_id])
+  if (rowCount !== 2) {
+    //throw
+  }
+  return rows
+}
 export const getCounters = async () => {
   const {rows} = await query(`SELECT counters.* FROM counters ORDER BY name`)
   return rows.map(factory.counter)
