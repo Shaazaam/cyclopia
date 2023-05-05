@@ -237,6 +237,19 @@ const routes = {
       res200,
     ],
   },
+  'events': {
+    middleware: [authenticate],
+    params: ['entity_id'],
+    get: [
+      async (req, res, next) => {
+        const {user: {id: user_id}} = req.session
+        const {entity_id} = req.params
+        next({entity_id, users: [user_id]})
+      },
+      sendEvents,
+      res200,
+    ],
+  },
   'game': {
     middleware: [authenticate],
     params: ['id'],

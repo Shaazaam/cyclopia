@@ -120,6 +120,7 @@ const onMessage = (event) => {
     '__pong__': () => window.clearTimeout(timeout.event),
     'game': () => store.set('games', store.get('games').concat(data)),
     'challenge': () => store.set('challenges', copy(store.get('challenges'), data)),
+    'event': () => store.set('events', data),
   }))()[kind]
   func()
 }

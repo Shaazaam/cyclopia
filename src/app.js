@@ -119,6 +119,7 @@ const vstore = reactive({
   user: undefined,
   games: [],
   challenges: {},
+  events: [],
 
   set(key, value) {this[key] = value},
   get(key) {return this[key]},
@@ -137,6 +138,7 @@ store.set('inputErrors', [], (key, value) => vstore[key] = value)
 store.set('user', factory.user(user()), (key, value) => vstore[key] = value)
 store.set('games', [], (key, value) => vstore[key] = value)
 store.set('challenges', {}, (key, value) => vstore[key] = value)
+store.set('events', [], (key, value) => vstore[key] = value)
 
 app.config.unwrapInjectedRef = true
 

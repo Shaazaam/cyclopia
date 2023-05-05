@@ -536,6 +536,26 @@ export const getZones = async () => {
   const {rows} = await query(`SELECT zones.name FROM zones ORDER BY name`)
   return rows.map(factory.zone)
 }
+export const getEvents = async (entity_id) => {
+  const {rows} = await query(`
+    SELECT
+      events.*,
+      u1.handle,
+      CASE
+        WHEN events.name <> 'draw' THEN cards.name
+      END AS card_name,
+      CASE
+        WHEN events.name = 'end-game' THEN u2.handle
+      END AS winner
+    FROM events
+    JOIN users u1 ON events.created_by = u1.id
+    LEFT JOIN cards ON (events.data->>'card_id')::uuid = cards.id
+    LEFT JOIN users u2 ON (events.data->>'winner')::uuid = u2.id
+    WHERE events.entity_id = $1
+    ORDER BY events.created_on ASC
+  `, [entity_id])
+  return rows
+}
 
 export const insertEvents = async (entity_id, name, data, user_id) => {
   const placeholders = data.reduce((agg, cur, index) =>
