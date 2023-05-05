@@ -389,6 +389,20 @@
       </div>
     </div>
   </div>
+
+  <div id="eventLog" class="offcanvas offcanvas-start text-bg-dark" data-bs-scroll="true" data-bs-backdrop="false" tabindex="-1">
+    <div class="offcanvas-header">
+      <h5 class="offcanvas-title">Game Log</h5>
+      <button
+        type="button"
+        class="btn-close btn-close-white"
+        data-bs-dismiss="offcanvas"
+      ></button>
+    </div>
+    <div class="offcanvas-body">
+      <p v-for="event in events">{{getEventText(event)}}</p>
+    </div>
+  </div>
 </template>
 
 <script>
@@ -563,6 +577,26 @@
       },
     },
     methods: {
+      getEventText(event) {
+        const text = (() => ({
+          'counter-card': (event) => `Placed ${event.data.amount} ${this.formatters.toUpperCaseWords(event.data.counter)} Counters on ${event.data.object_id}`,
+          'counter-user': (event) => `Received ${event.data.amount} ${this.formatters.toUpperCaseWords(event.data.counter)} Counters`,
+          'draw': (event) => `Drew a Card`,
+          'end-game': (event) => `Lost the Game, ${event.winner} is the Winner`,
+          'end-turn': (event) => `Ended Their Turn`,
+          'life': (event) => `Changed Their Life to ${event.data.life}`,
+          'move': (event) => `Moved ${event.card_name} to the ${this.formatters.toUpperCaseWords(event.data.zone)}`,
+          'mulligan': (event) => `Performed a Mulligan`,
+          'power': (event) => `Changed the Power of ${event.card_name} to ${event.data.power}`,
+          'scry': (event) => `Scried for ${event.data.amount}`,
+          'shuffle': (event) => `Shuffled Their Deck`,
+          'tap': (event) => `Tapped ${event.card_name}`,
+          'token': (event) => `Created a ${event.card_name} Token`,
+          'toughness': (event) => `Changed the Toughness of ${event.card_name} to ${event.data.toughness}`,
+          'transform': () => `Transformed a Card`,
+        }))()[event.name]
+        return `${event.created_on}: ${event.handle} ${text(event)}`
+      },
       determineAmount(amount) {
         return amount > this.user.library_total
           ? this.user.library_total
