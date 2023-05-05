@@ -562,11 +562,12 @@ export const insertEvents = async (entity_id, name, data, user_id) => {
     agg.concat(`($${numericRange(1 + (4 * index), 4 + (4 * index)).join(', $')})`), []
   ).join(', ')
   const values = data.reduce((agg, cur) => agg.concat([entity_id, name, cur, user_id]), [])
-  const {rows: [event]} = await query(`
+  const {rows} = await query(`
     INSERT INTO events (entity_id, name, data, created_by)
     VALUES ${placeholders}
+    RETURNING *
   `, values)
-  return true
+  return rows
 }
 
 export const life = async (game_id, user_id, amount) => {
