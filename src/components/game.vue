@@ -526,6 +526,7 @@
         //this.cardZones = this.zones.reduce((agg, name) => agg = this.functions.copy(agg, {[name]: []}), {})
       })
       this.fetch.get('/game', [this.id])
+      this.fetch.get('/events', [this.id])
       this.object = this.factory.object()
     },
     mounted() {

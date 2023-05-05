@@ -550,6 +550,7 @@ export const getEvents = async (entity_id) => {
     FROM events
     JOIN users u1 ON events.created_by = u1.id
     LEFT JOIN cards ON (events.data->>'card_id')::uuid = cards.id
+    LEFT JOIN objects ON (events.data->>'object_id')::uuid = objects.id
     LEFT JOIN users u2 ON (events.data->>'winner')::uuid = u2.id
     WHERE events.entity_id = $1
     ORDER BY events.created_on ASC
