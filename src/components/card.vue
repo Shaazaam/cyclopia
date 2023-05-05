@@ -122,8 +122,7 @@
                   class="form-control"
                   :value="selectedCounterAmount"
                   min="0"
-                  @focusout="(e) => counter(e.target.value)"
-                  @keyup.enter="(e) => counter(e.target.value)"
+                  @change="(e) => counter(e.target.value)"
                 />
               </div>
             </li>
@@ -186,7 +185,7 @@
         }
         return image
       },
-      selectedCountAmount() {
+      selectedCounterAmount() {
         return this.functions.isNotNull(this.selectedCounter) ? this.object.counters.find(({name}) => name === this.selectedCounter).amount : 0
       },
     },
