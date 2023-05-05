@@ -124,7 +124,9 @@
           class="form-control"
           :class="!isGameOver ? [] : ['bg-dark', 'text-light']"
           :disabled="isGameOver"
-          v-model="life"
+          :value="user.life"
+          @focusout="(e) => life(e.target.value)"
+          @keyup.enter="(e) => life(e.target.value)"
         />
       </div>
     </div>
@@ -501,13 +503,8 @@
       isGameOver() {
         return this.user.is_winner || this.opponent.is_winner
       },
-      life: {
-        get() {
-          return this.user.life
-        },
-        set(x) {
-          this.fetch.put('/life', {game_id: this.id, amount: x})
-        },
+      events() {
+        return this.store.events
       },
     },
     created() {
@@ -584,6 +581,9 @@
       expand(object) {
         this.object = this.functions.copy(object, {is_tapped: false})
         this.cardModal.show()
+      },
+      life(amount) {
+        this.fetch.put('/life', {game_id: this.id, amount})
       },
       mill() {
         this.fetch.put('/mill', {game_id: this.id, amount: this.millAmount})

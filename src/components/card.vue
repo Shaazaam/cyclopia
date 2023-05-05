@@ -79,7 +79,8 @@
             class="form-control"
             :class="!isMine || isGameOver ? ['bg-dark', 'text-light'] : []"
             :disabled="!isMine || isGameOver"
-            @change="(e) => power(e.target.value)"
+            @focusout="(e) => power(e.target.value)"
+            @keyup.enter="(e) => power(e.target.value)"
           />
           <span class="input-group-text bg-dark text-light">/</span>
           <input
@@ -88,7 +89,8 @@
             class="form-control"
             :class="!isMine || isGameOver ? ['bg-dark', 'text-light'] : []"
             :disabled="!isMine || isGameOver"
-            @change="(e) => toughness(e.target.value)"
+            @focusout="(e) => toughness(e.target.value)"
+            @keyup.enter="(e) => toughness(e.target.value)"
           />
         </div>
       </div>
@@ -118,8 +120,10 @@
                 <input
                   type="number"
                   class="form-control"
-                  v-model="selectedCounterAmount"
+                  :value="selectedCounterAmount"
                   min="0"
+                  @focusout="(e) => counter(e.target.value)"
+                  @keyup.enter="(e) => counter(e.target.value)"
                 />
               </div>
             </li>
@@ -182,13 +186,8 @@
         }
         return image
       },
-      selectedCounterAmount: {
-        get() {
-          return this.functions.isNotNull(this.selectedCounter) ? this.object.counters.find(({name}) => name === this.selectedCounter).amount : 0
-        },
-        set(x) {
-          this.counter(x)
-        },
+      selectedCountAmount() {
+        return this.functions.isNotNull(this.selectedCounter) ? this.object.counters.find(({name}) => name === this.selectedCounter).amount : 0
       },
     },
     created() {
