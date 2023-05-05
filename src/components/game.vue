@@ -31,7 +31,10 @@
   </div>
 
   <div v-if="functions.isNotEmpty(users)" class="row px-3">
-    <div class="col-1">
+    <div
+      class="col-4 hstack gap-3"
+      :class="{'invisible': !opponent.is_ready}"
+    >
       <div class="input-group">
         <span class="input-group-text bg-dark text-light">Life</span>
         <input
@@ -41,9 +44,7 @@
           disabled
         />
       </div>
-    </div>
-    <div v-for="{name} in userCounters" class="col-1">
-      <div class="input-group">
+      <div v-for="{name} in userCounters" class="input-group">
         <span class="input-group-text bg-dark text-light">{{formatters.toUpperCaseWords(name)}}</span>
         <input
           type="text"
@@ -53,17 +54,20 @@
         />
       </div>
     </div>
-    <h2 class="col text-center">
+    <h4 class="col text-center">
       <i v-if="opponent.is_winner" class="bi bi-trophy-fill text-warning"></i>
       <i v-if="opponent.is_active_turn && !isGameOver" class="bi bi-caret-right-fill text-danger"></i>
         {{opponent.handle}} vs {{user.handle}}
       <i v-if="user.is_active_turn && !isGameOver" class="bi bi-caret-left-fill text-success"></i>
       <i v-if="user.is_winner" class="bi bi-trophy-fill text-warning"></i>
-    </h2>
-    <div class="col-3 d-flex justify-content-between">
+    </h4>
+    <div
+      class="col-4 hstack gap-3"
+      :class="{'invisible': !user.is_ready}"
+    >
       <button
         type="button"
-        class="btn btn-danger align-self-baseline"
+        class="btn btn-danger"
         :class="{'invisible': isGameOver}"
         @click="endGame"
         :disabled="isGameOver"
@@ -115,8 +119,12 @@
           </li>
         </ul>
       </div>
-    </div>
-    <div class="col-1">
+      <button
+        type="button"
+        class="btn btn-primary"
+        data-bs-toggle="offcanvas"
+        data-bs-target="#eventLog"
+      >Log</button>
       <div class="input-group">
         <span class="input-group-text bg-dark text-light">Life</span>
         <input
@@ -132,31 +140,35 @@
     </div>
   </div>
 
-  <div class="row justify-content-center px-5 mb-3" :class="{'invisible': isGameOver}">
-    <button
-      v-if="!user.is_ready && functions.isNotEmpty(user.hand)"
-      type="button"
-      class="btn btn-success col-1 me-1"
-      @click="start"
-    >Start Game</button>
-    <button
-      v-if="!user.is_ready && functions.isEmpty(user.hand)"
-      type="button"
-      class="btn btn-info col-1 me-1"
-      @click="draw"
-    >Draw Hand</button>
-    <button
-      v-if="!user.is_ready && functions.isNotEmpty(user.hand)"
-      type="button"
-      class="btn btn-warning col-1 me-1"
-      @click="mulligan"
-    >Mulligan</button>
-    <button
-      type="button"
-      class="btn btn-danger col-1 me-1"
-      :class="{'invisible': !user.is_active_turn}"
-      @click="endTurn"
-    >End Turn</button>
+  <div class="row px-5 mb-3" :class="{'invisible': isGameOver}">
+    <div v-if="!user.is_ready" class="col d-flex justify-content-center hstack gap-3">
+      <button
+        v-if="!user.is_ready && functions.isNotEmpty(user.hand)"
+        type="button"
+        class="btn btn-success"
+        @click="start"
+      >Start Game</button>
+      <button
+        v-if="!user.is_ready && functions.isEmpty(user.hand)"
+        type="button"
+        class="btn btn-info"
+        @click="draw"
+      >Draw Hand</button>
+      <button
+        v-if="!user.is_ready && functions.isNotEmpty(user.hand)"
+        type="button"
+        class="btn btn-warning"
+        @click="mulligan"
+      >Mulligan</button>
+    </div>
+    <div v-else class="col d-flex justify-content-center">
+      <button
+        type="button"
+        class="btn btn-danger"
+        :class="{'invisible': !user.is_active_turn}"
+        @click="endTurn"
+      >End Turn</button>
+    </div>
   </div>
 
   <Field
