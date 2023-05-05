@@ -375,8 +375,8 @@ const routes = {
       async (req, res, next) => {
         const {user: {id: user_id}} = req.session
         const {game_id} = req.body
-        const data = await dal.mulligan(game_id, user_id)
-        next(event(game_id, 'mulligan', data, user_id))
+        await dal.mulligan(game_id, user_id)
+        next(event(game_id, 'mulligan', [{}], user_id))
       },
       log,
       sendGame,
