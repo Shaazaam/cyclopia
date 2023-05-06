@@ -41,16 +41,25 @@ const event = (entity_id, name, data, user_id) => ({entity_id, name, data, user_
 
 const _log = async (event) => {
   const {entity_id, name, data, user_id} = event
-  await dal.insertEvents(entity_id, name, data, user_id)
+  return dal.insertEvents(entity_id, name, data, user_id)
 }
-const log = async (event, req, res, next) => {
-  const {entity_id} = event
-  await _log(event)
+
+const log = async (data, req, res, next) => {
+  const {entity_id} = data
+  const events = await _log(data)
   next(entity_id)
 }
 const sendGame = async (id, req, res, next) => {
   const game = await dal.getGame(id)
-  send(game.users.map((user) => user.user_id), {kind: 'game', data: game})
+  const users = game.users.map((user) => user.user_id)
+  req.cyclopia = {event: {entity_id: id, users}}
+  send(users, {kind: 'game', data: game})
+  next()
+}
+const sendEvents = async (req, res, next) => {
+  const {entity_id, users} = req.cyclopia.event
+  const events = await dal.getEvents(entity_id)
+  send(users, {kind: 'event', data: events})
   next()
 }
 
@@ -166,6 +175,7 @@ const routes = {
       },
       log,
       sendGame,
+      sendEvents,
       res200,
     ],
   },
@@ -206,6 +216,7 @@ const routes = {
       },
       log,
       sendGame,
+      sendEvents,
       res200,
     ],
   },
@@ -220,6 +231,7 @@ const routes = {
       },
       log,
       sendGame,
+      sendEvents,
       res200,
     ],
   },
@@ -234,6 +246,21 @@ const routes = {
       },
       log,
       sendGame,
+      sendEvents,
+      res200,
+    ],
+  },
+  'events': {
+    middleware: [authenticate],
+    params: ['entity_id'],
+    get: [
+      async (req, res, next) => {
+        const {user: {id: user_id}} = req.session
+        const {entity_id} = req.params
+        req.cyclopia = {event: {entity_id, users: [user_id]}}
+        next()
+      },
+      sendEvents,
       res200,
     ],
   },
@@ -296,6 +323,7 @@ const routes = {
       },
       log,
       sendGame,
+      sendEvents,
       res200,
     ],
   },
@@ -339,6 +367,7 @@ const routes = {
       },
       log,
       sendGame,
+      sendEvents,
       res200,
     ],
   },
@@ -353,6 +382,7 @@ const routes = {
       },
       log,
       sendGame,
+      sendEvents,
       res200,
     ],
   },
@@ -362,11 +392,12 @@ const routes = {
       async (req, res, next) => {
         const {user: {id: user_id}} = req.session
         const {game_id} = req.body
-        const data = await dal.mulligan(game_id, user_id)
-        next(event(game_id, 'mulligan', data, user_id))
+        await dal.mulligan(game_id, user_id)
+        next(event(game_id, 'mulligan', [{}], user_id))
       },
       log,
       sendGame,
+      sendEvents,
       res200,
     ],
   },
@@ -395,6 +426,7 @@ const routes = {
       },
       log,
       sendGame,
+      sendEvents,
       res200,
     ],
   },
@@ -437,6 +469,7 @@ const routes = {
       },
       log,
       sendGame,
+      sendEvents,
       res200,
     ],
   },
@@ -464,6 +497,7 @@ const routes = {
       },
       log,
       sendGame,
+      sendEvents,
       res200,
     ],
   },
@@ -487,6 +521,7 @@ const routes = {
       },
       log,
       sendGame,
+      sendEvents,
       res200,
     ],
   },
@@ -501,6 +536,7 @@ const routes = {
       },
       log,
       sendGame,
+      sendEvents,
       res200,
     ],
   },
@@ -515,6 +551,7 @@ const routes = {
       },
       log,
       sendGame,
+      sendEvents,
       res200,
     ],
   },

@@ -518,6 +518,17 @@ export const getGame = async (id) => {
   `, [id])
   return factory.game({id, users, objects, counts})
 }
+export const getGameUsers = async (game_id) => {
+  const {rows, rowCount} = await query(`
+    SELECT game_user.user_id
+    FROM game_user
+    WHERE game_user.game_id = $1
+  `, [game_id])
+  if (rowCount !== 2) {
+    //throw
+  }
+  return rows
+}
 export const getCounters = async () => {
   const {rows} = await query(`SELECT counters.* FROM counters ORDER BY name`)
   return rows.map(factory.counter)
@@ -536,17 +547,41 @@ export const getZones = async () => {
   const {rows} = await query(`SELECT zones.name FROM zones ORDER BY name`)
   return rows.map(factory.zone)
 }
+export const getEvents = async (entity_id) => {
+  const {rows} = await query(`
+    SELECT
+      events.*,
+      creator.handle,
+      CASE
+        WHEN events.name = 'counter-card' THEN indirect.name
+        WHEN events.name <> 'draw' AND events.name <> 'counter-card' THEN direct.name
+      END AS card_name,
+      CASE
+        WHEN events.name = 'end-game' THEN winner.handle
+      END AS winner
+    FROM events
+    JOIN users creator ON events.created_by = creator.id
+    LEFT JOIN cards direct ON (events.data->>'card_id')::uuid = direct.id
+    LEFT JOIN objects ON (events.data->>'object_id')::uuid = objects.id
+    LEFT JOIN cards indirect ON objects.card_id = indirect.id
+    LEFT JOIN users winner ON (events.data->>'winner')::uuid = winner.id
+    WHERE events.entity_id = $1
+    ORDER BY events.created_on ASC
+  `, [entity_id])
+  return rows
+}
 
 export const insertEvents = async (entity_id, name, data, user_id) => {
   const placeholders = data.reduce((agg, cur, index) =>
     agg.concat(`($${numericRange(1 + (4 * index), 4 + (4 * index)).join(', $')})`), []
   ).join(', ')
   const values = data.reduce((agg, cur) => agg.concat([entity_id, name, cur, user_id]), [])
-  const {rows: [event]} = await query(`
+  const {rows} = await query(`
     INSERT INTO events (entity_id, name, data, created_by)
     VALUES ${placeholders}
+    RETURNING *
   `, values)
-  return true
+  return rows
 }
 
 export const life = async (game_id, user_id, amount) => {
