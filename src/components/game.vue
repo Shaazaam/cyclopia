@@ -87,7 +87,7 @@
                 type="text"
                 class="form-control"
                 v-model="token"
-                placeholder="Search for Token by Name"
+                placeholder="Search"
                 @keyup.enter="tokenSearch"
               />
               <button
@@ -133,8 +133,7 @@
           :class="!isGameOver ? [] : ['bg-dark', 'text-light']"
           :disabled="isGameOver"
           :value="user.life"
-          @focusout="(e) => life(e.target.value)"
-          @keyup.enter="(e) => life(e.target.value)"
+          @change="(e) => life(e.target.value)"
         />
       </div>
     </div>
