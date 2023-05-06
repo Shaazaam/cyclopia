@@ -55,6 +55,7 @@ const authenticate = async (req, res, next) => {
 }
 
 const event = (entity_id, name, data, user_id) => ({entity_id, name, data, user_id})
+const challenge = (user_id, games, invitations) => ({user_id, games, invitations})
 
 const _log = async (event) => {
   const {entity_id, name, data, user_id} = event
@@ -79,102 +80,84 @@ const sendEvents = async (req, res, next) => {
   send(users, {kind: 'event', data: events})
   next()
 }
+const sendChallenges = async (req, res, next) => {
+  const {challenges} = req.cyclopia
+  challenges.forEach(({user_id, games, invitations}) =>
+    send([user_id], {
+      kind: 'challenge',
+      data: {
+        active: games.filter(({pending_invite, winner}) => !pending_invite && isNull(winner)),
+        pending: games.filter(({pending_invite}) => pending_invite),
+        completed: games.filter(({pending_invite, winner}) => !pending_invite && isNotNull(winner)),
+        invitations
+      }
+    })
+  )
+  next()
+}
 
 const routes = {
   'challenges': {
     middleware: [authenticate],
     get: [
-      async (req, res) => {
+      async (req, res, next) => {
         const {user: {id: user_id}} = req.session
-        const games = await dal.getGames(user_id)
-        const invitations = await dal.getInvitations(user_id)
-        send([user_id], {
-          kind: 'challenge',
-          data: {
-            active: games.filter(({pending_invite, winner}) => !pending_invite && isNull(winner)),
-            pending: games.filter(({pending_invite}) => pending_invite),
-            completed: games.filter(({pending_invite, winner}) => !pending_invite && isNotNull(winner)),
-            invitations
-          }
-        })
-        return res.send(jsonRes(200))
+        const {games, invitations} = await dal.getChallenges(user_id)
+        req.cyclopia.challenges = [challenge(user_id, games, invitations)]
+        next()
       },
+      sendChallenges,
+      res200,
     ],
     post: [
-      async (req, res) => {
+      async (req, res, next) => {
         const {user: {id: user_id}} = req.session
         const {deck_id, user_id: invited_user_id} = req.body
         const {game_id} = await dal.insertGame(invited_user_id)
         await dal.joinGame(deck_id, game_id, user_id)
-        const games = await dal.getGames(user_id)
-        const invitations = await dal.getInvitations(invited_user_id)
-        send([user_id], {
-          kind: 'challenge',
-          data: {
-            active: games.filter(({pending_invite, winner}) => !pending_invite && isNull(winner)),
-            pending: games.filter(({pending_invite}) => pending_invite),
-            completed: games.filter(({pending_invite, winner}) => !pending_invite && isNotNull(winner)),
-          },
-        })
-        send([invited_user_id], {kind: 'challenge', data: {invitations}})
-        return res.send(jsonRes(200, 'Challenge Sent'))
+        const userChallanges = await dal.getChallenges(user_id)
+        const invitedUserChallenges = await dal.getChallenges(invited_user_id)
+        req.cyclopia.challenges = [
+          challenge(user_id, userChallanges.games, userChallanges.invitations),
+          challenge(invited_user_id, invitedUserChallenges.games, invitedUserChallenges.invitations),
+        ]
+        req.cyclopia.message = 'Challenge Sent'
+        next()
       },
+      sendChallenges,
+      res200,
     ],
     put: [
-      async (req, res) => {
+      async (req, res, next) => {
         const {user: {id: user_id}} = req.session
         const {deck_id, game_id, opponent_id} = req.body
         await dal.joinGame(deck_id, game_id, user_id)
-        const games = await dal.getGames(user_id)
-        const acceptedOpponentGames = await dal.getGames(opponent_id)
-        const invitations = await dal.getInvitations(user_id)
-        send([user_id], {
-          kind: 'challenge',
-          data: {
-            active: games.filter(({pending_invite, winner}) => !pending_invite && isNull(winner)),
-            pending: games.filter(({pending_invite}) => pending_invite),
-            completed: games.filter(({pending_invite, winner}) => !pending_invite && isNotNull(winner)),
-            invitations,
-          },
-        })
-        send([opponent_id], {
-          kind: 'challenge',
-          data: {
-            active: acceptedOpponentGames.filter(({pending_invite, winner}) => !pending_invite && isNull(winner)),
-            pending: acceptedOpponentGames.filter(({pending_invite}) => pending_invite),
-            completed: acceptedOpponentGames.filter(({pending_invite, winner}) => !pending_invite && isNotNull(winner)),
-          },
-        })
-        return res.send(jsonRes(200, 'Challenge Accepted'))
+        const userChallanges = await dal.getChallenges(user_id)
+        const opponentChallenges = await dal.getChallenges(opponent_id)
+        req.cyclopia.challenges = [
+          challenge(user_id, userChallanges.games, userChallanges.invitations),
+          challenge(invited_user_id, opponentChallenges.games, opponentChallenges.invitations),
+        ]
+        req.cyclopia.message = 'Challenge Accepted'
       },
+      sendChallenges,
+      res200,
     ],
     del: [
-      async (req, res) => {
+      async (req, res, next) => {
         const {user: {id: user_id}} = req.session
         const {game_id, opponent_id} = req.body
         await dal.declineGame(game_id, user_id, opponent_id)
-        const games = await dal.getGames(user_id)
-        const acceptedOpponentGames = await dal.getGames(opponent_id)
-        const invitations = await dal.getInvitations(user_id)
-        send([user_id], {
-          kind: 'challenge',
-          data: {
-            active: games.filter(({pending_invite, winner}) => !pending_invite && isNull(winner)),
-            pending: games.filter(({pending_invite}) => pending_invite),
-            completed: games.filter(({pending_invite, winner}) => !pending_invite && isNotNull(winner)),
-            invitations,
-          },
-        })
-        send([opponent_id], {
-          kind: 'challenge',
-          data: {
-            active: acceptedOpponentGames.filter(({pending_invite, winner}) => !pending_invite && isNull(winner)),
-            pending: acceptedOpponentGames.filter(({pending_invite}) => pending_invite),
-            completed: acceptedOpponentGames.filter(({pending_invite, winner}) => !pending_invite && isNotNull(winner)),
-          },
-        })
-        return res.send(jsonRes(200, 'Challenge Declined'))
+        const userChallanges = await dal.getChallenges(user_id)
+        const opponentChallenges = await dal.getChallenges(opponent_id)
+        req.cyclopia.challenges = [
+          challenge(user_id, userChallanges.games, userChallanges.invitations),
+          challenge(invited_user_id, opponentChallenges.games, opponentChallenges.invitations),
+        ]
+        req.cyclopia.message = 'Challenge Declined'
       },
+      sendChallenges,
+      res200,
     ],
   },
   'counter': {

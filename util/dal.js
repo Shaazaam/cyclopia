@@ -386,7 +386,7 @@ export const declineGame = async (game_id, user_id, opponent_id) => {
   await query('DELETE FROM games WHERE id = $1', [game_id])
   return true
 }
-export const getGames = async (user_id) => {
+const getGames = async (user_id) => {
   const {rows} = await query(`
     SELECT
       game_user.game_id,
@@ -406,7 +406,7 @@ export const getGames = async (user_id) => {
   `, [user_id])
   return rows
 }
-export const getInvitations = async (user_id) => {
+const getInvitations = async (user_id) => {
   const {rows} = await query(`
     SELECT
       game_invites.game_id,
@@ -420,6 +420,11 @@ export const getInvitations = async (user_id) => {
     WHERE game_invites.user_id = $1
   `, [user_id])
   return rows
+}
+export const getChallenges = async (user_id) => {
+  const games = await getGames(user_id)
+  const invitations = await getInvitations(user_id)
+  return {games, invitations}
 }
 
 export const getGame = async (id) => {
