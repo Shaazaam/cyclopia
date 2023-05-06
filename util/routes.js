@@ -14,15 +14,23 @@ import {
 } from './functions.js'
 import {wss, send, close} from './wss.js'
 
-const jsonRes = (status, message = null, data = []) => ({status, message, data: isArray(data) ? data : [data]})
+const codeMessages = {
+  200: null,
+  401: 'Not Authorized',
+  404: 'Not Found',
+  500: 'Server Error',
+}
 
-const res200 = async (req, res) => res.status(200).send(jsonRes(200))
-const res401 = async (req, res) => req.is('json')
-  ? res.status(401).send(jsonRes(401, 'Not authorized'))
-  : res.sendFile('401.html', {root: './public'})
-const res404 = async (req, res) => req.is('json')
-  ? res.status(404).send(jsonRes(404, 'Page not found'))
-  : res.sendFile('404.html', {root: './public'})
+const jsonRes = (status, message = null, data = []) => ({status, message, data: isArray(data) ? data : [data]})
+const response = (req, res, code) => {
+  const {message} = req.cyclopia
+  req.cyclopia.message = null
+  return res.status(code).send(jsonRes(code, message || codeMessages[code]))
+}
+
+const res200 = async (req, res) => response(req, res, 200)
+const res401 = async (req, res) => response(req, res, 401)
+const res404 = async (req, res) => response(req, res, 404)
 const res500 = async (error, req, res, next) => req.is('json')
   ? res.status(500).send(jsonRes(500, 'Server error'))
   : res.sendFile('500.html', {root: './public'})
