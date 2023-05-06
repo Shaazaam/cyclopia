@@ -3,6 +3,7 @@ import {readFile} from 'fs/promises'
 
 import * as dal from './dal.js'
 import {
+  copy,
   isArray,
   isArrayOfObjects,
   isNotEmpty,
@@ -10,19 +11,26 @@ import {
   isNotNull,
   isUndefined,
   isNotUndefined,
-  extend,
 } from './functions.js'
 import {wss, send, close} from './wss.js'
 
-const jsonRes = (status, message = null, data = []) => ({status, message, data: isArray(data) ? data : [data]})
+const codeMessages = {
+  200: null,
+  401: 'Not Authorized',
+  404: 'Not Found',
+  500: 'Server Error',
+}
 
-const res200 = async (req, res) => res.status(200).send(jsonRes(200))
-const res401 = async (req, res) => req.is('json')
-  ? res.status(401).send(jsonRes(401, 'Not authorized'))
-  : res.sendFile('401.html', {root: './public'})
-const res404 = async (req, res) => req.is('json')
-  ? res.status(404).send(jsonRes(404, 'Page not found'))
-  : res.sendFile('404.html', {root: './public'})
+const jsonRes = (status, message = null, data = []) => ({status, message, data: isArray(data) ? data : [data]})
+const response = (req, res, code) => {
+  const {message} = req.cyclopia
+  req.cyclopia.message = null
+  return res.status(code).send(jsonRes(code, message || codeMessages[code]))
+}
+
+const res200 = async (req, res) => response(req, res, 200)
+const res401 = async (req, res) => response(req, res, 401)
+const res404 = async (req, res) => response(req, res, 404)
 const res500 = async (error, req, res, next) => req.is('json')
   ? res.status(500).send(jsonRes(500, 'Server error'))
   : res.sendFile('500.html', {root: './public'})
@@ -30,6 +38,15 @@ const res500 = async (error, req, res, next) => req.is('json')
 const isAuthenticated = async ({user}) => isNotUndefined(user)
   && isNotNull(user)
   && isNotNull((await dal.getUser(user.id)).id)
+
+const mutateReq = async (req, res, next) => {
+  req.cyclopia = {
+    event: {},
+    challenges: [],
+    message: null,
+  }
+  next()
+}
 const authenticate = async (req, res, next) => {
   if (! await isAuthenticated(req.session)) {
     return await res401(req, res)
@@ -38,6 +55,7 @@ const authenticate = async (req, res, next) => {
 }
 
 const event = (entity_id, name, data, user_id) => ({entity_id, name, data, user_id})
+const challenge = (user_id, games, invitations) => ({user_id, games, invitations})
 
 const _log = async (event) => {
   const {entity_id, name, data, user_id} = event
@@ -52,7 +70,7 @@ const log = async (data, req, res, next) => {
 const sendGame = async (id, req, res, next) => {
   const game = await dal.getGame(id)
   const users = game.users.map((user) => user.user_id)
-  req.cyclopia = {event: {entity_id: id, users}}
+  req.cyclopia.event = {entity_id: id, users}
   send(users, {kind: 'game', data: game})
   next()
 }
@@ -62,102 +80,84 @@ const sendEvents = async (req, res, next) => {
   send(users, {kind: 'event', data: events})
   next()
 }
+const sendChallenges = async (req, res, next) => {
+  const {challenges} = req.cyclopia
+  challenges.forEach(({user_id, games, invitations}) =>
+    send([user_id], {
+      kind: 'challenge',
+      data: {
+        active: games.filter(({pending_invite, winner}) => !pending_invite && isNull(winner)),
+        pending: games.filter(({pending_invite}) => pending_invite),
+        completed: games.filter(({pending_invite, winner}) => !pending_invite && isNotNull(winner)),
+        invitations
+      }
+    })
+  )
+  next()
+}
 
 const routes = {
   'challenges': {
     middleware: [authenticate],
     get: [
-      async (req, res) => {
+      async (req, res, next) => {
         const {user: {id: user_id}} = req.session
-        const games = await dal.getGames(user_id)
-        const invitations = await dal.getInvitations(user_id)
-        send([user_id], {
-          kind: 'challenge',
-          data: {
-            active: games.filter(({pending_invite, winner}) => !pending_invite && isNull(winner)),
-            pending: games.filter(({pending_invite}) => pending_invite),
-            completed: games.filter(({pending_invite, winner}) => !pending_invite && isNotNull(winner)),
-            invitations
-          }
-        })
-        return res.send(jsonRes(200))
+        const {games, invitations} = await dal.getChallenges(user_id)
+        req.cyclopia.challenges = [challenge(user_id, games, invitations)]
+        next()
       },
+      sendChallenges,
+      res200,
     ],
     post: [
-      async (req, res) => {
+      async (req, res, next) => {
         const {user: {id: user_id}} = req.session
         const {deck_id, user_id: invited_user_id} = req.body
         const {game_id} = await dal.insertGame(invited_user_id)
         await dal.joinGame(deck_id, game_id, user_id)
-        const games = await dal.getGames(user_id)
-        const invitations = await dal.getInvitations(invited_user_id)
-        send([user_id], {
-          kind: 'challenge',
-          data: {
-            active: games.filter(({pending_invite, winner}) => !pending_invite && isNull(winner)),
-            pending: games.filter(({pending_invite}) => pending_invite),
-            completed: games.filter(({pending_invite, winner}) => !pending_invite && isNotNull(winner)),
-          },
-        })
-        send([invited_user_id], {kind: 'challenge', data: {invitations}})
-        return res.send(jsonRes(200, 'Challenge Sent'))
+        const userChallanges = await dal.getChallenges(user_id)
+        const invitedUserChallenges = await dal.getChallenges(invited_user_id)
+        req.cyclopia.challenges = [
+          challenge(user_id, userChallanges.games, userChallanges.invitations),
+          challenge(invited_user_id, invitedUserChallenges.games, invitedUserChallenges.invitations),
+        ]
+        req.cyclopia.message = 'Challenge Sent'
+        next()
       },
+      sendChallenges,
+      res200,
     ],
     put: [
-      async (req, res) => {
+      async (req, res, next) => {
         const {user: {id: user_id}} = req.session
         const {deck_id, game_id, opponent_id} = req.body
         await dal.joinGame(deck_id, game_id, user_id)
-        const games = await dal.getGames(user_id)
-        const acceptedOpponentGames = await dal.getGames(opponent_id)
-        const invitations = await dal.getInvitations(user_id)
-        send([user_id], {
-          kind: 'challenge',
-          data: {
-            active: games.filter(({pending_invite, winner}) => !pending_invite && isNull(winner)),
-            pending: games.filter(({pending_invite}) => pending_invite),
-            completed: games.filter(({pending_invite, winner}) => !pending_invite && isNotNull(winner)),
-            invitations,
-          },
-        })
-        send([opponent_id], {
-          kind: 'challenge',
-          data: {
-            active: acceptedOpponentGames.filter(({pending_invite, winner}) => !pending_invite && isNull(winner)),
-            pending: acceptedOpponentGames.filter(({pending_invite}) => pending_invite),
-            completed: acceptedOpponentGames.filter(({pending_invite, winner}) => !pending_invite && isNotNull(winner)),
-          },
-        })
-        return res.send(jsonRes(200, 'Challenge Accepted'))
+        const userChallanges = await dal.getChallenges(user_id)
+        const opponentChallenges = await dal.getChallenges(opponent_id)
+        req.cyclopia.challenges = [
+          challenge(user_id, userChallanges.games, userChallanges.invitations),
+          challenge(invited_user_id, opponentChallenges.games, opponentChallenges.invitations),
+        ]
+        req.cyclopia.message = 'Challenge Accepted'
       },
+      sendChallenges,
+      res200,
     ],
     del: [
-      async (req, res) => {
+      async (req, res, next) => {
         const {user: {id: user_id}} = req.session
         const {game_id, opponent_id} = req.body
         await dal.declineGame(game_id, user_id, opponent_id)
-        const games = await dal.getGames(user_id)
-        const acceptedOpponentGames = await dal.getGames(opponent_id)
-        const invitations = await dal.getInvitations(user_id)
-        send([user_id], {
-          kind: 'challenge',
-          data: {
-            active: games.filter(({pending_invite, winner}) => !pending_invite && isNull(winner)),
-            pending: games.filter(({pending_invite}) => pending_invite),
-            completed: games.filter(({pending_invite, winner}) => !pending_invite && isNotNull(winner)),
-            invitations,
-          },
-        })
-        send([opponent_id], {
-          kind: 'challenge',
-          data: {
-            active: acceptedOpponentGames.filter(({pending_invite, winner}) => !pending_invite && isNull(winner)),
-            pending: acceptedOpponentGames.filter(({pending_invite}) => pending_invite),
-            completed: acceptedOpponentGames.filter(({pending_invite, winner}) => !pending_invite && isNotNull(winner)),
-          },
-        })
-        return res.send(jsonRes(200, 'Challenge Declined'))
+        const userChallanges = await dal.getChallenges(user_id)
+        const opponentChallenges = await dal.getChallenges(opponent_id)
+        req.cyclopia.challenges = [
+          challenge(user_id, userChallanges.games, userChallanges.invitations),
+          challenge(invited_user_id, opponentChallenges.games, opponentChallenges.invitations),
+        ]
+        req.cyclopia.message = 'Challenge Declined'
       },
+      sendChallenges,
+      res200,
     ],
   },
   'counter': {
@@ -257,7 +257,7 @@ const routes = {
       async (req, res, next) => {
         const {user: {id: user_id}} = req.session
         const {entity_id} = req.params
-        req.cyclopia = {event: {entity_id, users: [user_id]}}
+        req.cyclopia.event = {entity_id, users: [user_id]}
         next()
       },
       sendEvents,
@@ -618,7 +618,7 @@ const routes = {
 export default (app) => {
   app.get('/', async (req, res) => res.sendFile('index.html', {root: './dist'}))
   Object.entries(routes).forEach(([route, {middleware, params, get, post, put, del}]) => {
-    ({get, post, del, put} = extend(
+    ({get, post, del, put} = copy(
       routes[route],
       isUndefined(get)
         ? {get: res404}
@@ -634,7 +634,7 @@ export default (app) => {
         : {},
     ))
 
-    middleware = isUndefined(middleware) ? [] : middleware
+    middleware = [mutateReq].concat(isUndefined(middleware) ? [] : middleware)
 
     app.get(isUndefined(params) ? `/${route}` : `/${route}/:${params.join('/:')}`, middleware, get)
 
