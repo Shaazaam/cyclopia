@@ -551,18 +551,20 @@ export const getEvents = async (entity_id) => {
   const {rows} = await query(`
     SELECT
       events.*,
-      u1.handle,
+      creator.handle,
       CASE
-        WHEN events.name <> 'draw' THEN cards.name
+        WHEN events.name = 'counter-card' THEN indirect.name
+        WHEN events.name <> 'draw' AND events.name <> 'counter-card' THEN direct.name
       END AS card_name,
       CASE
-        WHEN events.name = 'end-game' THEN u2.handle
+        WHEN events.name = 'end-game' THEN winner.handle
       END AS winner
     FROM events
-    JOIN users u1 ON events.created_by = u1.id
-    LEFT JOIN cards ON (events.data->>'card_id')::uuid = cards.id
+    JOIN users creator ON events.created_by = creator.id
+    LEFT JOIN cards direct ON (events.data->>'card_id')::uuid = direct.id
     LEFT JOIN objects ON (events.data->>'object_id')::uuid = objects.id
-    LEFT JOIN users u2 ON (events.data->>'winner')::uuid = u2.id
+    LEFT JOIN cards indirect ON objects.card_id = indirect.id
+    LEFT JOIN users winner ON (events.data->>'winner')::uuid = winner.id
     WHERE events.entity_id = $1
     ORDER BY events.created_on ASC
   `, [entity_id])

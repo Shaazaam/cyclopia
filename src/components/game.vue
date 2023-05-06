@@ -579,7 +579,7 @@
     methods: {
       getEventText(event) {
         const text = (() => ({
-          'counter-card': (event) => `Placed ${event.data.amount} ${this.formatters.toUpperCaseWords(event.data.counter)} Counters on ${event.data.object_id}`,
+          'counter-card': (event) => `Placed ${event.data.amount} ${this.formatters.toUpperCaseWords(event.data.counter)} Counters on ${event.card_name}`,
           'counter-user': (event) => `Received ${event.data.amount} ${this.formatters.toUpperCaseWords(event.data.counter)} Counters`,
           'draw': (event) => `Drew a Card`,
           'end-game': (event) => `Lost the Game, ${event.winner} is the Winner`,
