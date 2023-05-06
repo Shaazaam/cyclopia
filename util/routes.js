@@ -3,6 +3,7 @@ import {readFile} from 'fs/promises'
 
 import * as dal from './dal.js'
 import {
+  copy,
   isArray,
   isArrayOfObjects,
   isNotEmpty,
@@ -10,7 +11,6 @@ import {
   isNotNull,
   isUndefined,
   isNotUndefined,
-  extend,
 } from './functions.js'
 import {wss, send, close} from './wss.js'
 
@@ -30,6 +30,15 @@ const res500 = async (error, req, res, next) => req.is('json')
 const isAuthenticated = async ({user}) => isNotUndefined(user)
   && isNotNull(user)
   && isNotNull((await dal.getUser(user.id)).id)
+
+const mutateReq = async (req, res, next) => {
+  req.cyclopia = {
+    event: {},
+    challenges: [],
+    message: null,
+  }
+  next()
+}
 const authenticate = async (req, res, next) => {
   if (! await isAuthenticated(req.session)) {
     return await res401(req, res)
@@ -52,7 +61,7 @@ const log = async (data, req, res, next) => {
 const sendGame = async (id, req, res, next) => {
   const game = await dal.getGame(id)
   const users = game.users.map((user) => user.user_id)
-  req.cyclopia = {event: {entity_id: id, users}}
+  req.cyclopia.event = {entity_id: id, users}
   send(users, {kind: 'game', data: game})
   next()
 }
@@ -257,7 +266,7 @@ const routes = {
       async (req, res, next) => {
         const {user: {id: user_id}} = req.session
         const {entity_id} = req.params
-        req.cyclopia = {event: {entity_id, users: [user_id]}}
+        req.cyclopia.event = {entity_id, users: [user_id]}
         next()
       },
       sendEvents,
@@ -618,7 +627,7 @@ const routes = {
 export default (app) => {
   app.get('/', async (req, res) => res.sendFile('index.html', {root: './dist'}))
   Object.entries(routes).forEach(([route, {middleware, params, get, post, put, del}]) => {
-    ({get, post, del, put} = extend(
+    ({get, post, del, put} = copy(
       routes[route],
       isUndefined(get)
         ? {get: res404}
@@ -634,7 +643,7 @@ export default (app) => {
         : {},
     ))
 
-    middleware = isUndefined(middleware) ? [] : middleware
+    middleware = [mutateReq].concat(isUndefined(middleware) ? [] : middleware)
 
     app.get(isUndefined(params) ? `/${route}` : `/${route}/:${params.join('/:')}`, middleware, get)
 
