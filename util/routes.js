@@ -49,7 +49,16 @@ const mutateReq = async (req, res, next) => {
 }
 const authenticate = async (req, res, next) => {
   if (! await isAuthenticated(req.session)) {
-    return await res401(req, res)
+    return res401(req, res)
+  }
+  next()
+}
+const authorize = async (req, res, next) => {
+  const {user: {id}} = req.session
+  const {game_id} = req.body
+  const users = await dal.getGameUsers(game_id)
+  if (!users.map(({user_id}) => user_id).includes(id)) {
+    return res401(req, res)
   }
   next()
 }
@@ -161,7 +170,7 @@ const routes = {
     ],
   },
   'counter': {
-    middleware: [authenticate],
+    middleware: [authenticate, authorize],
     put: [
       async (req, res, next) => {
         const {user: {id: user_id}} = req.session
@@ -206,7 +215,7 @@ const routes = {
     ],
   },
   'draw': {
-    middleware: [authenticate],
+    middleware: [authenticate, authorize],
     put: [
       async (req, res, next) => {
         const {user: {id: user_id}} = req.session
@@ -221,7 +230,7 @@ const routes = {
     ],
   },
   'end-game': {
-    middleware: [authenticate],
+    middleware: [authenticate, authorize],
     put: [
       async (req, res, next) => {
         const {user: {id: user_id}} = req.session
@@ -236,7 +245,7 @@ const routes = {
     ],
   },
   'end-turn': {
-    middleware: [authenticate],
+    middleware: [authenticate, authorize],
     put: [
       async (req, res, next) => {
         const {user: {id: user_id}} = req.session
@@ -313,7 +322,7 @@ const routes = {
     ],
   },
   'life': {
-    middleware: [authenticate],
+    middleware: [authenticate, authorize],
     put: [
       async (req, res, next) => {
         const {user: {id: user_id}} = req.session
@@ -357,7 +366,7 @@ const routes = {
     ],
   },
   'mill': {
-    middleware: [authenticate],
+    middleware: [authenticate, authorize],
     put: [
       async (req, res, next) => {
         const {user: {id: user_id}} = req.session
@@ -372,7 +381,7 @@ const routes = {
     ],
   },
   'move': {
-    middleware: [authenticate],
+    middleware: [authenticate, authorize],
     put: [
       async (req, res, next) => {
         const {user: {id: user_id}} = req.session
@@ -387,7 +396,7 @@ const routes = {
     ],
   },
   'mulligan': {
-    middleware: [authenticate],
+    middleware: [authenticate, authorize],
     put: [
       async (req, res, next) => {
         const {user: {id: user_id}} = req.session
@@ -416,7 +425,7 @@ const routes = {
     ],
   },
   'power': {
-    middleware: [authenticate],
+    middleware: [authenticate, authorize],
     put: [
       async (req, res, next) => {
         const {user: {id: user_id}} = req.session
@@ -446,7 +455,7 @@ const routes = {
     },
   },
   'scry': {
-    middleware: [authenticate],
+    middleware: [authenticate, authorize],
     params: ['game_id', 'amount'],
     get: [
       async (req, res) => {
@@ -459,7 +468,7 @@ const routes = {
     ],
   },
   'shuffle': {
-    middleware: [authenticate],
+    middleware: [authenticate, authorize],
     put: [
       async (req, res, next) => {
         const {user: {id: user_id}} = req.session
@@ -474,7 +483,7 @@ const routes = {
     ],
   },
   'start': {
-    middleware: [authenticate],
+    middleware: [authenticate, authorize],
     put: [
       async (req, res, next) => {
         const {user: {id: user_id}} = req.session
@@ -487,7 +496,7 @@ const routes = {
     ],
   },
   'tap': {
-    middleware: [authenticate],
+    middleware: [authenticate, authorize],
     put: [
       async (req, res, next) => {
         const {user: {id: user_id}} = req.session
@@ -513,6 +522,7 @@ const routes = {
       },
     ],
     put: [
+      authorize,
       async (req, res, next) => {
         const {user: {id: user_id}} = req.session
         const {game_id, card_id, amount} = req.body
@@ -526,7 +536,7 @@ const routes = {
     ],
   },
   'toughness': {
-    middleware: [authenticate],
+    middleware: [authenticate, authorize],
     put: [
       async (req, res, next) => {
         const {user: {id: user_id}} = req.session
@@ -541,7 +551,7 @@ const routes = {
     ],
   },
   'transform': {
-    middleware: [authenticate],
+    middleware: [authenticate, authorize],
     put: [
       async (req, res, next) => {
         const {user: {id: user_id}} = req.session
