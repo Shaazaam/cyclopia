@@ -99,11 +99,12 @@ CREATE TABLE IF NOT EXISTS zones (
 );
 
 INSERT INTO zones (name) VALUES
-  ('library'),
-  ('hand'),
-  ('graveyard'),
+  ('exile'),
   ('field'),
-  ('exile')
+  ('graveyard'),
+  ('hand'),
+  ('library'),
+  ('remove')
 ON CONFLICT zones_pkey DO NOTHING;
 
 CREATE TABLE IF NOT EXISTS objects (

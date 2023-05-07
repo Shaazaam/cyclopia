@@ -443,11 +443,12 @@
       counters: [],
       zones: [],
       cardZones: {
-        library: [],
-        hand: [],
-        field: [],
         exile: [],
+        field: [],
         graveyard: [],
+        hand: [],
+        library: [],
+        remove: [],
       },
     }),
     provide() {
