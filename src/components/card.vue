@@ -190,7 +190,14 @@
       },
     },
     created() {
-      this._actions = this.functions.isNull(this.actions) ? this.factory.actions() : this.actions
+      this._actions = this.functions.isNull(this.actions)
+        ? this.factory.actions()
+        : this.actions
+      if (['exile', 'field', 'graveyard'].includes(this.object.zone) && this.object.card.type_line.includes('Token')) {
+        this._actions = this.functions.copy(this._actions, {
+          move: this.functions.removeByValue(this._actions.move, 'graveyard')
+        })
+      }
     },
     methods: {
       create() {
