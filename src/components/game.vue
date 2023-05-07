@@ -585,7 +585,13 @@
           'end-game': (event) => `Lost the Game, ${event.winner} is the Winner`,
           'end-turn': (event) => `Ended Their Turn`,
           'life': (event) => `Changed Their Life to ${event.data.life}`,
-          'move': (event) => `Moved ${event.card_name} to the ${this.formatters.toUpperCaseWords(event.data.zone)}`,
+          'move': (event) => {
+            let message = `Moved ${event.card_name} to the ${this.formatters.toUpperCaseWords(event.data.zone)}`
+            if (event.data.zone === 'remove') {
+              message = `Removed ${event.card_name} from the Game`
+            }
+            return message
+          },
           'mulligan': (event) => `Performed a Mulligan`,
           'power': (event) => `Changed the Power of ${event.card_name} to ${event.data.power}`,
           'scry': (event) => `Scried for ${event.data.amount}`,
