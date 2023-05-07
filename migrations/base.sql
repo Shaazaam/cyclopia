@@ -104,7 +104,7 @@ INSERT INTO zones (name) VALUES
   ('graveyard'),
   ('hand'),
   ('library'),
-  ('removed')
+  ('remove')
 ON CONFLICT zones_pkey DO NOTHING;
 
 CREATE TABLE IF NOT EXISTS objects (
