@@ -61,11 +61,11 @@ const handle = (response, callback) => {
       fail(response.message)
       break;
     case 422:
-      fail('Validation error')
+      fail(response.message)
       store.set('inputErrors', response.data)
       break;
     case 500:
-      fail(`Server error: ${response.message}`)
+      fail(`Server Error: ${response.message}`)
       break;
     default:
       throw new Error('Unknown response code')
