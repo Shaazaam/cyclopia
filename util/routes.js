@@ -12,6 +12,7 @@ import {
   isUndefined,
   isNotUndefined,
 } from './functions.js'
+import * as val from './validate.js'
 import {wss, send, close} from './wss.js'
 
 const codeMessages = {
