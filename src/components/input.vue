@@ -2,6 +2,7 @@
   <input
     :value="modelValue"
     :type="type"
+    :id="id"
     :name="name"
     class="form-control"
     :class="{'is-invalid': functions.isNotEmpty(errors)}"
@@ -22,6 +23,9 @@
       type: {
         type: String,
         required: true,
+      },
+      id: {
+        type: String,
       },
       name: {
         type: String,
