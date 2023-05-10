@@ -8,7 +8,7 @@
     :class="{'is-invalid': functions.isNotEmpty(errors)}"
     :placeholder="placeholder"
     :autocomplete="autocomplete"
-    @input="$emit('update:modelEvent', $event.target.value)"
+    @input="$emit('update:modelValue', $event.target.value)"
   />
   <div class="invalid-feedback">{{functions.isNotEmpty(errors) ? errors[name] : ''}}</div>
 </template>
