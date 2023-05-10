@@ -15,6 +15,7 @@ const setPutRequests = (x) => requests.put = x
 const setDeleteRequests = (x) => requests.del = x
 
 const __fetch = (url, settings, params, callback) => {
+  store.set('inputErrors', [])
   return fetch(route(url, params), copy({
     headers: {'Content-Type': 'application/json'},
   }, settings))
