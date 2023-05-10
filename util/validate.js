@@ -1,6 +1,7 @@
 import * as dal from './dal.js'
 import {
   copy,
+  isEmail,
   isNotNull,
   isNotEmpty,
   isNumber,
@@ -9,6 +10,7 @@ import {
 } from './functions.js'
 
 const BELONGS_TO = 'bt'
+const EMAIL = 'em'
 const EQUAL_TO = 'et'
 const EXISTS = 'ex'
 const GREATER_THAN = 'gt'
@@ -26,6 +28,7 @@ const REQUIRED = 'req'
 
 const test = ({
   bt: (value, [user_id]) => true,
+  em: (value) => isEmail(value),
   et: (value, [param]) => isNumber(value) && value === param,
   ex: (value, [table, column]) => true,
   gt: (value, [param]) => isNumber(value) && value > param,
@@ -55,6 +58,7 @@ export const validate = (input, fieldRules) =>
 export const isValid = (results) => isObjectEmpty(results)
 
 export const belongsTo = (user) => setRules(BELONGS_TO, [user])
+export const email = () => setRules(EMAIL)
 export const equalTo = (value) => setRules(EQUAL_TO, [value])
 export const exists = (table, column) => setRules(EXISTS, [table, column])
 export const greaterThan = (value) => setRules(GREATER_THAN, [value])
