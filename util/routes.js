@@ -472,6 +472,22 @@ const routes = {
     post: [
       async (req, res, next) => {
         const {email, handle, password} = req.body
+        next([
+          {
+            email,
+            handle,
+            password
+          },
+          {
+            email: [val.required(), val.email()],
+            handle: [val.required()],
+            password: [val.required()],
+          }
+        ])
+      },
+      validate,
+      async (req, res, next) => {
+        const {email, handle, password} = req.body
         bcrypt.hash(password, 10).then((hash) =>
           dal.insertUser({email, handle, password: hash}).then(({id}) => {
             req.session.regenerate(() => {
