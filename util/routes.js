@@ -69,6 +69,14 @@ const authorize = async (req, res, next) => {
 const event = (entity_id, name, data, user_id) => ({entity_id, name, data, user_id})
 const challenge = (user_id, games, invitations) => ({user_id, games, invitations})
 
+const validate = async ([input, rules], req, res, next) => {
+  const results = val.validate(input, rules)
+  if (!val.isValid(results)) {
+    req.cyclopia.data = [results]
+    return res422(req, res)
+  }
+  next()
+}
 const log = async (event, req, res, next) => {
   const {entity_id, name, data, user_id} = event
   const events = await dal.insertEvents(entity_id, name, data, user_id)
