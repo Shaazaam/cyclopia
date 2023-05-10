@@ -160,6 +160,13 @@ app.use(router)
       isLoggedIn() {
         return this.functions.isNotNull(this.store.get('user').id)
       },
+      isSaving() {
+        return this.store.get('isSaving')
+      },
+      errors() {
+        const [errors] = this.store.get('inputErrors')
+        return errors
+      },
     },
   })
   .mount('#app')

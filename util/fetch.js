@@ -32,16 +32,19 @@ const __fetch = (url, settings, params, callback) => {
 }
 
 const get = (url, params, callback = () => false) => {
+  store.set('isLoading', true)
   setGetRequests(requests.get.concat([{url, params, callback}]))
   return __fetch(url, {method: 'GET'}, params, callback)
 }
 
 const post = (url, data, callback = () => false) => {
+  store.set('isSaving', true)
   setPostRequests(requests.post.concat([{data, url, callback}]))
   return __fetch(url, {body: JSON.stringify(data), method: 'POST'}, null, callback)
 }
 
 const put = (url, data, callback = () => false) => {
+  store.set('isSaving', true)
   setPutRequests(requests.put.concat([{data, url, callback}]))
   return __fetch(url, {body: JSON.stringify(data), method: 'PUT'}, null, callback)
 }
