@@ -360,6 +360,20 @@ const routes = {
     post: [
       async (req, res, next) => {
         const {email, password} = req.body
+        next([
+          {
+            email,
+            password,
+          },
+          {
+            email: [val.required(), val.email()],
+            password: [val.required()],
+          }
+        ])
+      },
+      validate,
+      async (req, res, next) => {
+        const {email, password} = req.body
         const {id, handle, password: hash} = await dal.authorizeUser(email)
         if (isNull(id)) {
           req.cyclopia.message = 'User Not Found'
@@ -476,7 +490,7 @@ const routes = {
           {
             email,
             handle,
-            password
+            password,
           },
           {
             email: [val.required(), val.email()],
