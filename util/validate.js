@@ -1,4 +1,5 @@
 import * as dal from './dal.js'
+import {toUpperCaseWords} from './formatters.js'
 import {
   copy,
   isEmail,
@@ -25,8 +26,26 @@ const NUMERIC_WHOLE = 'wnum'
 const REGEX = 'reg'
 const REQUIRED = 'req'
 
+const messages = ({
+  bt: (field, [user_id]) => `${field} must belong to you`,
+  em: (field) => `${field} must be a valid email`,
+  et: (field, [param]) => `${field} must be equal to ${param}`,
+  ex: (field, [table, column]) => `${field} must be an existing record`,
+  gt: (field, [param]) => `${field} must be greater than ${param}`,
+  gte: (field, [param]) => `${field} must be greater than or equal to ${param}`,
+  lt: (field, [param]) => `${field} must be less than ${param}`,
+  lte: (field, [param]) => `${field} must be less than or equal to ${param}`,
+  max: (field, [param]) => messages.lte(field, [param]),
+  min: (field, [param]) => messages.gte(field, [param]),
+  mo: (field, params) => `${field} must be one of the following values: ${params.join(', ')}`,
+  num: (field) => `${field} must be a number`,
+  wnum: (field) => `${field} must be a whole number`,
+  reg: (field, [expression]) => `${field} must match an expression?`,
+  req: (field) => `${field} is required`,
+})
+
 const test = ({
-  bt: (value, [user_id]) => true,
+  bt: (value, [table, column, user_id]) => true,
   em: (value) => isEmail(value),
   et: (value, [param]) => (isNumber(value) && value === param) || (isString(value) && value.lenth === param),
   ex: (value, [table, column]) => true,
@@ -47,7 +66,9 @@ const setRules = (kind, params = []) => ({kind, params})
 
 export const validate = (input, fieldRules) =>
   Object.entries(fieldRules).reduce((agg, [field, rules]) => {
-    const results = rules.reduce((agg, {kind, params}) => agg = agg.concat((test[kind])(input[field], params) ? [] : [{kind, params}]), [])
+    const results = rules.reduce((agg, {kind, params}) =>
+      agg = agg.concat((test[kind])(input[field], params) ? [] : [(messages[kind])(toUpperCaseWords(field), params)]), []
+    )
     if (isNotEmpty(results)) {
       agg = copy(agg, {[field]: results})
     }
