@@ -5,12 +5,12 @@
     :id="id"
     :name="name"
     class="form-control"
-    :class="{'is-invalid': functions.isNotEmpty(errors)}"
+    :class="{'is-invalid': hasErrors}"
     :placeholder="placeholder"
     :autocomplete="autocomplete"
     @input="$emit('update:modelValue', $event.target.value)"
   />
-  <div class="invalid-feedback">{{functions.isNotEmpty(errors) ? errors[name] : ''}}</div>
+  <div class="invalid-feedback">{{hasErrors ? errors[name].join(', ') : ''}}</div>
 </template>
 
 <script>
@@ -40,5 +40,10 @@
       },
     },
     emits: ['update:modelValue'],
+    computed: {
+      hasErrors() {
+        return this.functions.isNotEmpty(this.errors) && this.functions.isNotEmpty(this.errors[this.name])
+      },
+    },
   }
 </script>

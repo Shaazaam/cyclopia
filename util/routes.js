@@ -361,10 +361,7 @@ const routes = {
       async (req, res, next) => {
         const {email, password} = req.body
         next([
-          {
-            email,
-            password,
-          },
+          {email, password},
           {
             email: [val.required(), val.email()],
             password: [val.required()],
@@ -487,14 +484,10 @@ const routes = {
       async (req, res, next) => {
         const {email, handle, password} = req.body
         next([
-          {
-            email,
-            handle,
-            password,
-          },
+          {email, handle, password},
           {
             email: [val.required(), val.email()],
-            handle: [val.required()],
+            handle: [val.required(), val.max(50)],
             password: [val.required()],
           }
         ])
