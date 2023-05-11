@@ -15,7 +15,6 @@ const EQUAL_TO = 'et'
 const EXISTS = 'ex'
 const GREATER_THAN = 'gt'
 const GREATER_THAN_EQUAL_TO = 'gte'
-const LENGTH = 'len'
 const LESS_THAN = 'lt'
 const LESS_THAN_EQUAL_TO = 'lte'
 const MAX = 'max'
@@ -33,7 +32,6 @@ const test = ({
   ex: (value, [table, column]) => true,
   gt: (value, [param]) => isNumber(value) && value > param,
   gte: (value, [param]) => isNumber(value) && value >= param,
-  len: (value, [param]) => value.length === param,
   lt: (value, [param]) => isNumber(value) && value < param,
   lte: (value, [param]) => isNumber(value) && value <= param,
   max: (value, [param]) => (isNumber(value) && lte(value, [param])) || (isString(value) && lte(value.length, [param])),
@@ -63,7 +61,6 @@ export const equalTo = (value) => setRules(EQUAL_TO, [value])
 export const exists = (table, column) => setRules(EXISTS, [table, column])
 export const greaterThan = (value) => setRules(GREATER_THAN, [value])
 export const greaterThanEqualTo = (value) => setRules(GREATER_THAN_EQUAL_TO, [value])
-export const length = (value) => setRules(LENGTH, [value])
 export const lessThan = (value) => setRules(LESS_THAN, [value])
 export const lessThanEqualTo = (value) => setRules(LESS_THAN_EQUAL_TO, [value])
 export const max = (value) => setRules(MAX, [value])
