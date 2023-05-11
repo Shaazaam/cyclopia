@@ -103,6 +103,7 @@ const router = createRouter({
   routes,
 })
 router.beforeEach(({meta}, from) => {
+  store.set('inputErrors', [])
   if (meta.requiresAuth && !isLoggedIn()) {
     return {
       name: 'login',
