@@ -108,7 +108,8 @@
         return this.objects.filter(({card}) => card.type_line.includes('Creature'))
       },
       instantsAndSorceries() {
-        return this.objects.filter(({card}) => (card.type_line.includes('Instant') || card.type_line.includes('Sorcery')) && !card.type_line.includes('Creature'))
+        return this.objects.filter(({card}) => (card.type_line.includes('Instant')
+          || card.type_line.includes('Sorcery')) && !card.type_line.includes('Creature'))
       },
       lands() {
         return this.objects.filter(({card}) => card.type_line.includes('Land'))

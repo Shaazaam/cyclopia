@@ -12,28 +12,30 @@ import {
   isUndefined,
   isNotUndefined,
 } from './functions.js'
+import * as val from './validate.js'
 import {wss, send, close} from './wss.js'
 
 const codeMessages = {
   200: null,
   401: 'Not Authorized',
   404: 'Not Found',
+  422: 'Validation Error',
   500: 'Server Error',
 }
-
-const jsonRes = (status, message = null, data = []) => ({status, message, data: isArray(data) ? data : [data]})
-const response = (req, res, code) => {
-  const {message} = req.cyclopia
-  req.cyclopia.message = null
-  return res.status(code).send(jsonRes(code, message || codeMessages[code]))
+const response = (req, res, status) => {
+  const {data, message} = req.cyclopia
+  req.cyclopia = copy(req.cyclopia, {message: null, data: []})
+  return res.status(status).send({
+    status,
+    message: message || codeMessages[status],
+    data: isArray(data) ? data : [data]
+  })
 }
-
 const res200 = async (req, res) => response(req, res, 200)
 const res401 = async (req, res) => response(req, res, 401)
 const res404 = async (req, res) => response(req, res, 404)
-const res500 = async (error, req, res, next) => req.is('json')
-  ? res.status(500).send(jsonRes(500, 'Server error'))
-  : res.sendFile('500.html', {root: './public'})
+const res422 = async (req, res) => response(req, res, 422)
+const res500 = async (req, res) => response(req, res, 500)
 
 const isAuthenticated = async ({user}) => isNotUndefined(user)
   && isNotNull(user)
@@ -43,13 +45,23 @@ const mutateReq = async (req, res, next) => {
   req.cyclopia = {
     event: {},
     challenges: [],
+    data: [],
     message: null,
   }
   next()
 }
 const authenticate = async (req, res, next) => {
   if (! await isAuthenticated(req.session)) {
-    return await res401(req, res)
+    return res401(req, res)
+  }
+  next()
+}
+const authorize = async (req, res, next) => {
+  const {user: {id}} = req.session
+  const {game_id} = req.body
+  const users = await dal.getGameUsers(game_id)
+  if (!users.map(({user_id}) => user_id).includes(id)) {
+    return res401(req, res)
   }
   next()
 }
@@ -57,14 +69,17 @@ const authenticate = async (req, res, next) => {
 const event = (entity_id, name, data, user_id) => ({entity_id, name, data, user_id})
 const challenge = (user_id, games, invitations) => ({user_id, games, invitations})
 
-const _log = async (event) => {
-  const {entity_id, name, data, user_id} = event
-  return dal.insertEvents(entity_id, name, data, user_id)
+const validate = async ([input, rules], req, res, next) => {
+  const results = val.validate(input, rules)
+  if (!val.isValid(results)) {
+    req.cyclopia.data = [results]
+    return res422(req, res)
+  }
+  next()
 }
-
-const log = async (data, req, res, next) => {
-  const {entity_id} = data
-  const events = await _log(data)
+const log = async (event, req, res, next) => {
+  const {entity_id, name, data, user_id} = event
+  const events = await dal.insertEvents(entity_id, name, data, user_id)
   next(entity_id)
 }
 const sendGame = async (id, req, res, next) => {
@@ -161,7 +176,7 @@ const routes = {
     ],
   },
   'counter': {
-    middleware: [authenticate],
+    middleware: [authenticate, authorize],
     put: [
       async (req, res, next) => {
         const {user: {id: user_id}} = req.session
@@ -182,31 +197,37 @@ const routes = {
   'counters': {
     middleware: [authenticate],
     get: [
-      async (req, res) => {
+      async (req, res, next) => {
         const counters = await dal.getCounters()
-        return res.send(jsonRes(200, null, counters))
+        req.cyclopia.data = counters
+        next()
       },
+      res200,
     ],
   },
   'decks': {
     middleware: [authenticate],
     get: [
-      async (req, res) => {
+      async (req, res, next) => {
         const {user: {id: user_id}} = req.session
         const decks = await dal.getDecks(user_id)
-        return res.send(jsonRes(200, null, decks))
+        req.cyclopia.data = decks
+        next()
       },
+      res200,
     ],
-    del: [
-      async (req, res) => {
+    /*del: [
+      async (req, res, next) => {
         const {id} = req.body
         await dal.deleteDeck(id)
-        return res.send(jsonRes(200, 'Deck deleted'))
+        req.cyclopia.message = 'Deck Deleted'
+        next()
       },
-    ],
+      res200,
+    ],*/
   },
   'draw': {
-    middleware: [authenticate],
+    middleware: [authenticate, authorize],
     put: [
       async (req, res, next) => {
         const {user: {id: user_id}} = req.session
@@ -221,7 +242,7 @@ const routes = {
     ],
   },
   'end-game': {
-    middleware: [authenticate],
+    middleware: [authenticate, authorize],
     put: [
       async (req, res, next) => {
         const {user: {id: user_id}} = req.session
@@ -236,7 +257,7 @@ const routes = {
     ],
   },
   'end-turn': {
-    middleware: [authenticate],
+    middleware: [authenticate, authorize],
     put: [
       async (req, res, next) => {
         const {user: {id: user_id}} = req.session
@@ -278,15 +299,17 @@ const routes = {
   'import': {
     middleware: [authenticate],
     post: [
-      async (req, res) => {
+      async (req, res, next) => {
         const {user: {id: user_id}} = req.session
         const {name, type, base64, size} = req.body
 
         if (type !== 'text/plain') {
-          return res.status(422).send(jsonRes(422, 'Must be text file'))
+          req.cyclopia.message = 'Must be text file'
+          return res422(req, res)
         }
         if (size > 2048) {
-          return res.status(422).send(jsonRes(422, 'Must be smaller than 2kb'))
+          req.cyclopia.message = 'Must be smaller than 2kb'
+          return res422(req, res)
         }
 
         const content = Buffer.from(base64, 'base64').toString()
@@ -306,14 +329,20 @@ const routes = {
             const inserted = await dal.insertIntoDeck({card_id, deck_id, count})
           }
           const deck = await dal.getDeck(deck_id)
-          res.send(jsonRes(200, 'Deck imported', deck))
+          req.cyclopia.message = 'Deck Imported'
+          req.cyclopia.data = deck
+          next()
         })
-        .catch((error) => res.status(500).send(jsonRes(500, error)))
+        .catch((error) => {
+          req.cyclopia.message = error
+          return res500(req, res)
+        })
       },
+      res200,
     ],
   },
   'life': {
-    middleware: [authenticate],
+    middleware: [authenticate, authorize],
     put: [
       async (req, res, next) => {
         const {user: {id: user_id}} = req.session
@@ -328,36 +357,54 @@ const routes = {
     ],
   },
   'login': {
-    post: async (req, res) => {
-      const {email, password} = req.body
-      const {id, handle, password: hash} = await dal.authorizeUser(email)
-      if (isNull(id)) {
-        return res.status(422).send(jsonRes(422, 'User not found'))
-      }
-      bcrypt.compare(password, hash).then((result) => {
-        if (!result) {
-          return res.status(422).send(jsonRes(422, 'Password invalid'))
+    post: [
+      async (req, res, next) => {
+        const {email, password} = req.body
+        next([
+          {email, password},
+          {
+            email: [val.required(), val.email()],
+            password: [val.required()],
+          }
+        ])
+      },
+      validate,
+      async (req, res, next) => {
+        const {email, password} = req.body
+        const {id, handle, password: hash} = await dal.authorizeUser(email)
+        if (isNull(id)) {
+          req.cyclopia.message = 'User Not Found'
+          return res422(req, res)
         }
-        req.session.regenerate(() => {
-          req.session.user = {id, handle, email}
-          req.session.save(() => {
-            res.send(jsonRes(200, null, {id, handle, email}))
+        bcrypt.compare(password, hash).then((result) => {
+          if (!result) {
+            req.cyclopia.message = 'Password Invalid'
+            return res422(req, res)
+          }
+          req.session.regenerate(() => {
+            req.session.user = {id, handle, email}
+            req.session.save(() => {
+              req.cyclopia.data = {id, handle, email}
+              next()
+            })
           })
         })
-      })
-    },
+      },
+      res200
+    ],
   },
   'logout': {
     middleware: [authenticate],
     del: [
-      async (req, res) => {
+      async (req, res, next) => {
         close(req.session.user)
-        req.session.destroy(() => res.send(jsonRes(200)))
+        req.session.destroy(() => next())
       },
+      res200,
     ],
   },
   'mill': {
-    middleware: [authenticate],
+    middleware: [authenticate, authorize],
     put: [
       async (req, res, next) => {
         const {user: {id: user_id}} = req.session
@@ -372,7 +419,7 @@ const routes = {
     ],
   },
   'move': {
-    middleware: [authenticate],
+    middleware: [authenticate, authorize],
     put: [
       async (req, res, next) => {
         const {user: {id: user_id}} = req.session
@@ -387,7 +434,7 @@ const routes = {
     ],
   },
   'mulligan': {
-    middleware: [authenticate],
+    middleware: [authenticate, authorize],
     put: [
       async (req, res, next) => {
         const {user: {id: user_id}} = req.session
@@ -404,19 +451,21 @@ const routes = {
   'password': {
     middleware: [authenticate],
     put: [
-      async (req, res) => {
+      async (req, res, next) => {
         const {user: {id}} = req.session
         const {password} = req.body
         bcrypt.hash(password, 10).then((hash) =>
           dal.changePassword(id, hash).then(() => {
-            res.send(jsonRes(200, 'Password Changed'))
+            req.cyclopia.message = 'Password Changed'
+            next()
           })
         )
       },
+      res200,
     ],
   },
   'power': {
-    middleware: [authenticate],
+    middleware: [authenticate, authorize],
     put: [
       async (req, res, next) => {
         const {user: {id: user_id}} = req.session
@@ -431,35 +480,53 @@ const routes = {
     ],
   },
   'register': {
-    post: async (req, res) => {
-      const {email, handle, password} = req.body
-      bcrypt.hash(password, 10).then((hash) =>
-        dal.insertUser({email, handle, password: hash}).then(({id}) => {
-          req.session.regenerate(() => {
-            req.session.user = {id, handle, email}
-            req.session.save(() => {
-              res.send(jsonRes(200, null, {id, handle, email}))
+    post: [
+      async (req, res, next) => {
+        const {email, handle, password} = req.body
+        next([
+          {email, handle, password},
+          {
+            email: [val.required(), val.email()],
+            handle: [val.required(), val.max(50)],
+            password: [val.required()],
+          }
+        ])
+      },
+      validate,
+      async (req, res, next) => {
+        const {email, handle, password} = req.body
+        bcrypt.hash(password, 10).then((hash) =>
+          dal.insertUser({email, handle, password: hash}).then(({id}) => {
+            req.session.regenerate(() => {
+              req.session.user = {id, handle, email}
+              req.session.save(() => {
+                req.cyclopia.data = {id, handle, email}
+                next()
+              })
             })
           })
-        })
-      )
-    },
+        )
+      },
+      res200,
+    ],
   },
   'scry': {
-    middleware: [authenticate],
+    middleware: [authenticate, authorize],
     params: ['game_id', 'amount'],
     get: [
-      async (req, res) => {
+      async (req, res, next) => {
         const {user: {id: user_id}} = req.session
         const {game_id, amount} = req.params
         const objects = await dal.scry(game_id, user_id, amount)
-        _log(event(game_id, 'scry', [{amount}], user_id))
-        return res.send(jsonRes(200, null, objects))
+        req.cyclopia.data = objects
+        next(event(game_id, 'scry', [{amount}], user_id))
       },
+      log,
+      res200,
     ],
   },
   'shuffle': {
-    middleware: [authenticate],
+    middleware: [authenticate, authorize],
     put: [
       async (req, res, next) => {
         const {user: {id: user_id}} = req.session
@@ -474,7 +541,7 @@ const routes = {
     ],
   },
   'start': {
-    middleware: [authenticate],
+    middleware: [authenticate, authorize],
     put: [
       async (req, res, next) => {
         const {user: {id: user_id}} = req.session
@@ -487,7 +554,7 @@ const routes = {
     ],
   },
   'tap': {
-    middleware: [authenticate],
+    middleware: [authenticate, authorize],
     put: [
       async (req, res, next) => {
         const {user: {id: user_id}} = req.session
@@ -505,14 +572,17 @@ const routes = {
     middleware: [authenticate],
     params: ['name'],
     get: [
-      async (req, res) => {
+      async (req, res, next) => {
         const {user: {id: user_id}} = req.session
         const {name} = req.params
         const tokens = await dal.getTokens(name)
-        return res.send(jsonRes(200, null, tokens))
+        req.cyclopia.data = tokens
+        next()
       },
+      res200,
     ],
     put: [
+      authorize,
       async (req, res, next) => {
         const {user: {id: user_id}} = req.session
         const {game_id, card_id, amount} = req.body
@@ -526,7 +596,7 @@ const routes = {
     ],
   },
   'toughness': {
-    middleware: [authenticate],
+    middleware: [authenticate, authorize],
     put: [
       async (req, res, next) => {
         const {user: {id: user_id}} = req.session
@@ -541,7 +611,7 @@ const routes = {
     ],
   },
   'transform': {
-    middleware: [authenticate],
+    middleware: [authenticate, authorize],
     put: [
       async (req, res, next) => {
         const {user: {id: user_id}} = req.session
@@ -558,45 +628,54 @@ const routes = {
   'user': {
     middleware: [authenticate],
     put: [
-      async (req, res) => {
+      async (req, res, next) => {
         const {user: {id}} = req.session
         const {email, handle} = req.body
         await dal.updateUser(id, email, handle)
         req.session.regenerate(() => {
           req.session.user = {id, handle, email}
           req.session.save(() => {
-            res.send(jsonRes(200, 'Profile Updated', {id, handle, email}))
+            req.cyclopia.data = {id, handle, email}
+            req.cyclopia.message = 'Profile Updated'
+            next()
           })
         })
       },
+      res200,
     ],
   },
   'users': {
     middleware: [authenticate],
     get: [
-      async (req, res) => {
+      async (req, res, next) => {
         const users = await dal.getUsers()
-        return res.send(jsonRes(200, null, users))
+        req.cyclopia.data = users
+        next()
       },
+      res200,
     ],
   },
   'user-cards': {
     middleware: [authenticate],
     get: [
-      async (req, res) => {
+      async (req, res, next) => {
         const {user: {id: user_id}} = req.session
         const cards = await dal.getCardsByUser(user_id)
-        return res.send(jsonRes(200, null, cards))
+        req.cyclopia.data = cards
+        next()
       },
+      res200,
     ],
   },
   'zones': {
     middleware: [authenticate],
     get: [
-      async (req, res) => {
+      async (req, res, next) => {
         const zones = await dal.getZones()
-        return res.send(jsonRes(200, null, zones))
+        req.cyclopia.data = zones
+        next()
       },
+      res200,
     ],
   },
   /*seed: {
