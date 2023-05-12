@@ -312,7 +312,7 @@
 
   <div id="search" ref="searchModal" class="modal fade" tabindex="-1">
     <div class="modal-dialog modal-xl modal-dialog-centered">
-      <div class="modal-content bg-dark">
+      <div class="modal-content bg-transparent">
         <div class="modal-body">
           <div class="row">
             <Card
@@ -322,6 +322,7 @@
                 expand: false,
                 move: functions.removeByValue(zones, 'library'),
               })"
+              bg="transparent"
               class="col-4"
               @move="move"
               @transform="transform"
@@ -335,17 +336,20 @@
 
   <div id="scry" ref="scryModal" class="modal fade" tabindex="-1">
     <div class="modal-dialog modal-xl modal-dialog-centered">
-      <div class="modal-content bg-dark">
+      <div class="modal-content bg-transparent">
         <div class="modal-body">
           <div class="row">
             <Card
               v-for="object in scryObjects"
               :object="object"
               :actions="factory.actions({expand: false})"
+              bg="transparent"
               class="col-4"
             >
-              <button type="button" class="btn btn-success" @click="scryTop(object.id)">Top</button>
-              <button type="button" class="btn btn-danger" @click="scryBottom(object.id)">Bottom</button>
+              <div class="d-flex justify-content-center hstack gap-3">
+                <button type="button" class="btn btn-success" @click="scryTop(object.id)">Top</button>
+                <button type="button" class="btn btn-danger" @click="scryBottom(object.id)">Bottom</button>
+              </div>
             </Card>
           </div>
         </div>
@@ -355,7 +359,7 @@
 
   <div id="tokenSearch" ref="tokenModal" class="modal fade" tabindex="-1">
     <div class="modal-dialog modal-xl modal-dialog-centered">
-      <div class="modal-content bg-dark">
+      <div class="modal-content bg-transparent">
         <div class="modal-body">
           <div class="row">
             <Card
@@ -365,6 +369,7 @@
                 expand: false,
                 create: true,
               })"
+              bg="transparent"
               class="col-4"
               @create="tokenCreate"
             >
