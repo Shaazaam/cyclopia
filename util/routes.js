@@ -175,7 +175,7 @@ const routes = {
         const opponentChallenges = await dal.getChallenges(opponent_id)
         req.cyclopia.challenges = [
           challenge(user_id, userChallanges.games, userChallanges.invitations),
-          challenge(invited_user_id, opponentChallenges.games, opponentChallenges.invitations),
+          challenge(opponent_id, opponentChallenges.games, opponentChallenges.invitations),
         ]
         req.cyclopia.message = 'Challenge Accepted'
         next()
@@ -552,7 +552,8 @@ const routes = {
         const {user: {id: user_id}} = req.session
         const {game_id} = req.body
         await dal.start(game_id, user_id)
-        next(game_id)
+        req.cyclopia.game_id = game_id
+        next()
       },
       sendGame,
     ],
