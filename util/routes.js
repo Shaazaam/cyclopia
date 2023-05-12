@@ -165,6 +165,7 @@ const routes = {
           challenge(invited_user_id, opponentChallenges.games, opponentChallenges.invitations),
         ]
         req.cyclopia.message = 'Challenge Accepted'
+        next()
       },
       sendChallenges,
       res200,
@@ -178,9 +179,10 @@ const routes = {
         const opponentChallenges = await dal.getChallenges(opponent_id)
         req.cyclopia.challenges = [
           challenge(user_id, userChallanges.games, userChallanges.invitations),
-          challenge(invited_user_id, opponentChallenges.games, opponentChallenges.invitations),
+          challenge(opponent_id, opponentChallenges.games, opponentChallenges.invitations),
         ]
         req.cyclopia.message = 'Challenge Declined'
+        next()
       },
       sendChallenges,
       res200,
