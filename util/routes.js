@@ -126,9 +126,9 @@ const routes = {
     ],
     post: [
       async (req, res, next) => {
-        const {deck_id, user_id} = req.body
+        const {deck_id: send_deck_id, user_id} = req.body
         next([
-          {deck_id, user_id},
+          {send_deck_id, user_id},
           {
             send_deck_id: [val.required()],
             user_id: [val.required()],
@@ -154,6 +154,17 @@ const routes = {
       res200,
     ],
     put: [
+      async (req, res, next) => {
+        const {deck_id: recieved_deck_id, opponent_id} = req.body
+        next([
+          {recieved_deck_id, opponent_id},
+          {
+            recieved_deck_id: [val.required()],
+            opponent_id: [val.required()],
+          }
+        ])
+      },
+      validate,
       async (req, res, next) => {
         const {user: {id: user_id}} = req.session
         const {deck_id, game_id, opponent_id} = req.body
