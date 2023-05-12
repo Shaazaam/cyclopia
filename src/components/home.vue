@@ -157,8 +157,7 @@
       },
       copy(id) {
         navigator.clipboard.writeText(`${window.location.origin}/${this.$router.resolve({name: 'game', params: {id}}).href}`)
-        this.store.setMessage({kind: 'success', message: 'Link copied to clipboard'})
-        window.setTimeout(() => this.store.clearMessage(), 4 * 1000)
+        this.store.setSuccessMessage('Link copied to clipboard')
       },
     },
   }

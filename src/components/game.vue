@@ -691,6 +691,10 @@
       },
       tokenSearch() {
         this.fetch.get('/token', [this.token], (data) => {
+          if (this.functions.isEmpty(data)) {
+            this.store.setErrorMessage('No Tokens Found')
+            return false
+          }
           this.tokenObjects = data
           this.tokenModal.show()
         })

@@ -125,7 +125,14 @@ const vstore = reactive({
   set(key, value) {this[key] = value},
   get(key) {return this[key]},
 
-  setMessage(x) {this.set('message', x)},
+  setSuccessMessage(message) {
+    this.set('message', {kind: 'success', message})
+    window.setTimeout(() => this.clearMessage(), 4 * 1000)
+  },
+  setErrorMessage(message) {
+    this.set('message', {kind: 'error', message})
+    window.setTimeout(() => this.clearMessage(), 4 * 1000)
+  },
   clearMessage() {this.set('message', null)},
 
   setUser(x) {this.set('user', x)},
