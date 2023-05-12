@@ -18,7 +18,6 @@
     props: {
       modelValue: {
         type: [String, Number],
-        required: true,
       },
       type: {
         type: String,
