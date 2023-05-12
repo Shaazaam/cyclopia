@@ -1,5 +1,5 @@
 import * as dal from './dal.js'
-import {toUpperCaseWords} from './formatters.js'
+import {snakeCasedToUpperCasedWord} from './formatters.js'
 import {
   copy,
   isEmail,
@@ -67,7 +67,7 @@ const setRules = (kind, params = []) => ({kind, params})
 export const validate = (input, fieldRules) =>
   Object.entries(fieldRules).reduce((agg, [field, rules]) => {
     const results = rules.reduce((agg, {kind, params}) =>
-      agg = agg.concat((test[kind])(input[field], params) ? [] : [(messages[kind])(toUpperCaseWords(field), params)]), []
+      agg = agg.concat((test[kind])(input[field], params) ? [] : [(messages[kind])(snakeCasedToUpperCasedWord(field), params)]), []
     )
     if (isNotEmpty(results)) {
       agg = copy(agg, {[field]: results})
