@@ -154,7 +154,6 @@ const routes = {
         next()
       },
       sendChallenges,
-      res200,
     ],
     put: [
       async (req, res, next) => {
@@ -182,7 +181,6 @@ const routes = {
         next()
       },
       sendChallenges,
-      res200,
     ],
     del: [
       async (req, res, next) => {
@@ -199,7 +197,6 @@ const routes = {
         next()
       },
       sendChallenges,
-      res200,
     ],
   },
   'counter': {
@@ -218,7 +215,6 @@ const routes = {
       log,
       sendGame,
       sendEvents,
-      res200,
     ],
   },
   'counters': {
@@ -229,7 +225,6 @@ const routes = {
         req.cyclopia.data = counters
         next()
       },
-      res200,
     ],
   },
   'decks': {
@@ -241,7 +236,6 @@ const routes = {
         req.cyclopia.data = decks
         next()
       },
-      res200,
     ],
     /*del: [
       async (req, res, next) => {
@@ -265,7 +259,6 @@ const routes = {
       log,
       sendGame,
       sendEvents,
-      res200,
     ],
   },
   'end-game': {
@@ -280,7 +273,6 @@ const routes = {
       log,
       sendGame,
       sendEvents,
-      res200,
     ],
   },
   'end-turn': {
@@ -295,7 +287,6 @@ const routes = {
       log,
       sendGame,
       sendEvents,
-      res200,
     ],
   },
   'events': {
@@ -309,7 +300,6 @@ const routes = {
         next()
       },
       sendEvents,
-      res200,
     ],
   },
   'game': {
@@ -321,7 +311,6 @@ const routes = {
         next()
       },
       sendGame,
-      res200,
     ],
   },
   'import': {
@@ -366,7 +355,6 @@ const routes = {
           return res500(req, res)
         })
       },
-      res200,
     ],
   },
   'life': {
@@ -381,7 +369,6 @@ const routes = {
       log,
       sendGame,
       sendEvents,
-      res200,
     ],
   },
   'login': {
@@ -418,7 +405,6 @@ const routes = {
           })
         })
       },
-      res200
     ],
   },
   'logout': {
@@ -428,7 +414,6 @@ const routes = {
         close(req.session.user)
         req.session.destroy(() => next())
       },
-      res200,
     ],
   },
   'mill': {
@@ -443,7 +428,6 @@ const routes = {
       log,
       sendGame,
       sendEvents,
-      res200,
     ],
   },
   'move': {
@@ -458,7 +442,6 @@ const routes = {
       log,
       sendGame,
       sendEvents,
-      res200,
     ],
   },
   'mulligan': {
@@ -473,7 +456,6 @@ const routes = {
       log,
       sendGame,
       sendEvents,
-      res200,
     ],
   },
   'password': {
@@ -489,7 +471,6 @@ const routes = {
           })
         )
       },
-      res200,
     ],
   },
   'power': {
@@ -504,7 +485,6 @@ const routes = {
       log,
       sendGame,
       sendEvents,
-      res200,
     ],
   },
   'register': {
@@ -535,7 +515,6 @@ const routes = {
           })
         )
       },
-      res200,
     ],
   },
   'scry': {
@@ -550,7 +529,6 @@ const routes = {
         next(event(game_id, 'scry', [{amount}], user_id))
       },
       log,
-      res200,
     ],
   },
   'shuffle': {
@@ -565,7 +543,6 @@ const routes = {
       log,
       sendGame,
       sendEvents,
-      res200,
     ],
   },
   'start': {
@@ -578,7 +555,6 @@ const routes = {
         next(game_id)
       },
       sendGame,
-      res200,
     ],
   },
   'tap': {
@@ -593,7 +569,6 @@ const routes = {
       log,
       sendGame,
       sendEvents,
-      res200,
     ],
   },
   'token': {
@@ -607,7 +582,6 @@ const routes = {
         req.cyclopia.data = tokens
         next()
       },
-      res200,
     ],
     put: [
       authorize,
@@ -620,7 +594,6 @@ const routes = {
       log,
       sendGame,
       sendEvents,
-      res200,
     ],
   },
   'toughness': {
@@ -635,7 +608,6 @@ const routes = {
       log,
       sendGame,
       sendEvents,
-      res200,
     ],
   },
   'transform': {
@@ -650,7 +622,6 @@ const routes = {
       log,
       sendGame,
       sendEvents,
-      res200,
     ],
   },
   'user': {
@@ -669,7 +640,6 @@ const routes = {
           })
         })
       },
-      res200,
     ],
   },
   'users': {
@@ -680,7 +650,6 @@ const routes = {
         req.cyclopia.data = users
         next()
       },
-      res200,
     ],
   },
   'user-cards': {
@@ -692,7 +661,6 @@ const routes = {
         req.cyclopia.data = cards
         next()
       },
-      res200,
     ],
   },
   'zones': {
@@ -703,7 +671,6 @@ const routes = {
         req.cyclopia.data = zones
         next()
       },
-      res200,
     ],
   },
   /*seed: {
@@ -741,13 +708,14 @@ export default (app) => {
         : {},
     ))
 
-    middleware = [mutateReq].concat(isUndefined(middleware) ? [] : middleware)
+    const beforeMiddleware = [mutateReq].concat(isUndefined(middleware) ? [] : middleware)
+    const afterMiddleware = [res200]
 
-    app.get(isUndefined(params) ? `/${route}` : `/${route}/:${params.join('/:')}`, middleware, get)
+    app.get(isUndefined(params) ? `/${route}` : `/${route}/:${params.join('/:')}`, beforeMiddleware, get, afterMiddleware)
 
     app.route(`/${route}`)
-      .post(middleware, post)
-      .put(middleware, put)
-      .delete(middleware, del)
+      .post(beforeMiddleware, post, afterMiddleware)
+      .put(beforeMiddleware, put, afterMiddleware)
+      .delete(beforeMiddleware, del, afterMiddleware)
   })
 }
