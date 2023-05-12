@@ -25,7 +25,9 @@
             <label for="deck" class="col-2 col-form-label">Pick a Deck</label>
             <div class="col-10">
               <Select v-model="recieved_deck_id" id="deckRec" name="recieved_deck_id">
-                <option v-for="{id, name} in decks" :value="id">{{name}}</option>
+                <template #options>
+                  <option v-for="{id, name} in decks" :value="id">{{name}}</option>
+                </template>
               </Select>
             </div>
           </div>
@@ -59,7 +61,9 @@
             <label for="deck" class="col-2 col-form-label">Pick a Deck</label>
             <div class="col-10">
               <Select v-model="send_deck_id" id="deckSend" name="send_deck_id">
-                <option v-for="{id, name} in decks" :value="id">{{name}}</option>
+                <template #options>
+                  <option v-for="{id, name} in decks" :value="id">{{name}}</option>
+                </template>
               </Select>
             </div>
           </div>
@@ -68,7 +72,9 @@
             <label for="user" class="col-2 col-form-label">Pick a User</label>
             <div class="col-10">
               <Select v-model="user_id" id="userSend" name="user_id">
-                <option v-for="{id, handle} in users" :value="id">{{handle}}</option>
+                <template #options>
+                  <option v-for="{id, handle} in users" :value="id">{{handle}}</option>
+                </template>
               </Select>
             </div>
           </div>

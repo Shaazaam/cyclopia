@@ -10,7 +10,8 @@
     :autocomplete="autocomplete"
     @input="$emit('update:modelValue', $event.target.value)"
   />
-  <div class="invalid-feedback">{{hasErrors ? errors[name].join(', ') : ''}}</div>
+  <slot name="inputGroupAfter"></slot>
+  <div v-if="hasErrors" class="invalid-feedback">{{errors[name].join(', ')}}</div>
 </template>
 
 <script>

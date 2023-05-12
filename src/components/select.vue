@@ -10,9 +10,10 @@
     @input="$emit('update:modelValue', $event.target.value)"
   >
     <option value="" disabled hidden>{{placeholder}}</option>
-    <slot></slot>
+    <slot name="options"></slot>
   </select>
-  <div class="invalid-feedback">{{hasErrors ? errors[name].join(', ') : ''}}</div>
+  <slot name="inputGroupAfter"></slot>
+  <div v-if="hasErrors" class="invalid-feedback">{{errors[name].join(', ')}}</div>
 </template>
 
 <script>
