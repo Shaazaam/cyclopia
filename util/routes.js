@@ -251,6 +251,16 @@ const routes = {
     middleware: [authenticate, authorize],
     put: [
       async (req, res, next) => {
+        const {amount: draw_amount} = req.body
+        next([
+          {draw_amount},
+          {
+            draw_amount: [val.required(), val.min(1)],
+          }
+        ])
+      },
+      validate,
+      async (req, res, next) => {
         const {user: {id: user_id}} = req.session
         const {game_id, amount} = req.body
         const data = await dal.draw(game_id, user_id, amount)
@@ -420,6 +430,16 @@ const routes = {
     middleware: [authenticate, authorize],
     put: [
       async (req, res, next) => {
+        const {amount: mill_amount} = req.body
+        next([
+          {mill_amount},
+          {
+            mill_amount: [val.required(), val.min(1)],
+          }
+        ])
+      },
+      validate,
+      async (req, res, next) => {
         const {user: {id: user_id}} = req.session
         const {game_id, amount} = req.body
         const data = await dal.mill(game_id, user_id, amount)
@@ -521,6 +541,16 @@ const routes = {
     middleware: [authenticate, authorize],
     params: ['game_id', 'amount'],
     get: [
+      async (req, res, next) => {
+        const {amount: scry_amount} = req.params
+        next([
+          {scry_amount},
+          {
+            scry_amount: [val.required(), val.min(1)],
+          }
+        ])
+      },
+      validate,
       async (req, res, next) => {
         const {user: {id: user_id}} = req.session
         const {game_id, amount} = req.params
