@@ -43,6 +43,7 @@ const isAuthenticated = async ({user}) => isNotUndefined(user)
 
 const mutateReq = async (req, res, next) => {
   req.cyclopia = {
+    game_id: null,
     event: {},
     challenges: [],
     data: [],
@@ -80,12 +81,14 @@ const validate = async ([input, rules], req, res, next) => {
 const log = async (event, req, res, next) => {
   const {entity_id, name, data, user_id} = event
   const events = await dal.insertEvents(entity_id, name, data, user_id)
-  next(entity_id)
+  req.cyclopia.game_id = entity_id
+  next()
 }
-const sendGame = async (id, req, res, next) => {
-  const game = await dal.getGame(id)
+const sendGame = async (req, res, next) => {
+  const {game_id} = req.cyclopia
+  const game = await dal.getGame(game_id)
   const users = game.users.map((user) => user.user_id)
-  req.cyclopia.event = {entity_id: id, users}
+  req.cyclopia.event = {entity_id: game_id, users}
   send(users, {kind: 'game', data: game})
   next()
 }
@@ -314,7 +317,8 @@ const routes = {
     params: ['id'],
     get: [
       async (req, res, next) => {
-        next(req.params.id)
+        req.cyclopia.game_id = req.params.id
+        next()
       },
       sendGame,
       res200,
