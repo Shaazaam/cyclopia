@@ -19,38 +19,34 @@
         <h4>Received</h4>
         <p v-if="functions.isEmpty(challenges.invitations)">You have no received challenges</p>
 
-        <div v-for="invitation in challenges.invitations">
-          <form @submit.prevent="() => accept(invitation)">
-            Game {{invitation.game_id}} vs {{invitation.opponent.handle}}
-            <div class="row mb-3">
-              <label for="deck" class="col-2 col-form-label">Pick a Deck</label>
-              <div class="col-10">
-                <Select v-model="recieved_deck_id" id="deckRec" name="deckRec">
-                  <option v-for="deck in decks" :value="deck.id">{{deck.name}}</option>
-                </Select>
-              </div>
+        <form v-for="invitation in challenges.invitations" @submit.prevent="() => accept(invitation)">
+          Game {{invitation.game_id}} vs {{invitation.opponent.handle}}
+          <div class="row mb-3">
+            <label for="deck" class="col-2 col-form-label">Pick a Deck</label>
+            <div class="col-10">
+              <Select v-model="recieved_deck_id" id="deckRec" name="recieved_deck_id">
+                <option v-for="{id, name} in decks" :value="id">{{name}}</option>
+              </Select>
             </div>
-            <div class="d-flex justify-content-between">
-              <button type="submit" class="btn btn-success">Accept</button>
-              <button
-                type="button"
-                class="btn btn-danger"
-                @click="() => decline(invitation)"
-              >Decline</button>
-            </div>
-          </form>
-        </div>
+          </div>
+          <div class="d-flex justify-content-between">
+            <button type="submit" class="btn btn-success">Accept</button>
+            <button
+              type="button"
+              class="btn btn-danger"
+              @click="() => decline(invitation)"
+            >Decline</button>
+          </div>
+        </form>
       </div>
 
       <div class="col-4">
         <h4>Sent</h4>
         <p v-if="functions.isEmpty(challenges.pending)">You have no pending challenges</p>
 
-        <div v-for="game in challenges.pending">
-          <div class="row">
-            <div class="col">
-              <p>Game {{game.game_id}} vs {{game.opponent.handle}}</p>
-            </div>
+        <div v-for="game in challenges.pending" class="row">
+          <div class="col">
+            <p>Game {{game.game_id}} vs {{game.opponent.handle}}</p>
           </div>
         </div>
       </div>
@@ -63,7 +59,7 @@
             <label for="deck" class="col-2 col-form-label">Pick a Deck</label>
             <div class="col-10">
               <Select v-model="send_deck_id" id="deckSend" name="send_deck_id">
-                <option v-for="deck in decks" :value="deck.id">{{deck.name}}</option>
+                <option v-for="{id, name} in decks" :value="id">{{name}}</option>
               </Select>
             </div>
           </div>
@@ -72,7 +68,7 @@
             <label for="user" class="col-2 col-form-label">Pick a User</label>
             <div class="col-10">
               <Select v-model="user_id" id="userSend" name="user_id">
-                <option v-for="user in users" :value="user.id">{{user.handle}}</option>
+                <option v-for="{id, handle} in users" :value="id">{{handle}}</option>
               </Select>
             </div>
           </div>
@@ -93,7 +89,7 @@
         <h4>Ongoing</h4>
         <p v-if="functions.isEmpty(challenges.active)">You have no onging games</p>
 
-        <div v-for="game in challenges.active">
+        <div v-for="game in challenges.active" class="mb-3">
           <div class="row">
             <div class="col">
               <p>Game {{game.game_id}} vs {{game.opponent.handle}}</p>
@@ -110,11 +106,9 @@
         <h4>Completed</h4>
         <p v-if="functions.isEmpty(challenges.completed)">You have no completed games</p>
 
-        <div v-for="game in challenges.completed">
-          <div class="row">
-            <div class="col">
-              <p>Game {{game.game_id}} vs {{game.opponent.handle}} <i v-if="game.winner === authUser.id" class="bi bi-trophy-fill text-warning"></i></p>
-            </div>
+        <div v-for="game in challenges.completed" class="row">
+          <div class="col">
+            <p>Game {{game.game_id}} vs {{game.opponent.handle}} <i v-if="game.winner === authUser.id" class="bi bi-trophy-fill text-warning"></i></p>
           </div>
         </div>
       </div>
