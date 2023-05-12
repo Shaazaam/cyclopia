@@ -590,6 +590,7 @@
           'end-game': (event) => `Lost the Game, ${event.winner} is the Winner`,
           'end-turn': (event) => `Ended Their Turn`,
           'life': (event) => `Changed Their Life to ${event.data.life}`,
+          'mill': (event) => `Milled a Card`,
           'move': (event) => {
             let message = `Moved ${event.card_name} to the ${this.formatters.toUpperCaseWords(event.data.zone)}`
             if (event.data.zone === 'remove') {
