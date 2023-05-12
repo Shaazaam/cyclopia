@@ -126,6 +126,17 @@ const routes = {
     ],
     post: [
       async (req, res, next) => {
+        const {deck_id, user_id} = req.body
+        next([
+          {deck_id, user_id},
+          {
+            send_deck_id: [val.required()],
+            user_id: [val.required()],
+          }
+        ])
+      },
+      validate,
+      async (req, res, next) => {
         const {user: {id: user_id}} = req.session
         const {deck_id, user_id: invited_user_id} = req.body
         const {game_id} = await dal.insertGame(invited_user_id)

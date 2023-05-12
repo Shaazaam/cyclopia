@@ -22,11 +22,13 @@
         <div v-for="invitation in challenges.invitations">
           <form @submit.prevent="() => accept(invitation)">
             Game {{invitation.game_id}} vs {{invitation.opponent.handle}}
-            <div class="mb-3">
-              <label for="deck" class="form-label">Pick a Deck</label>
-              <select v-model="deck_id" id="deck" class="form-control">
-                <option v-for="deck in decks" :value="deck.id">{{deck.name}}</option>
-              </select>
+            <div class="row mb-3">
+              <label for="deck" class="col-2 col-form-label">Pick a Deck</label>
+              <div class="col-10">
+                <Select v-model="recieved_deck_id" id="deckRec" name="deckRec">
+                  <option v-for="deck in decks" :value="deck.id">{{deck.name}}</option>
+                </Select>
+              </div>
             </div>
             <div class="d-flex justify-content-between">
               <button type="submit" class="btn btn-success">Accept</button>
@@ -57,21 +59,25 @@
         <h4>Send</h4>
 
         <form @submit.prevent="create">
-          <div class="mb-3">
-            <label for="deck" class="form-label">Pick a Deck</label>
-            <select v-model="deck_id" id="deck" class="form-control">
-              <option v-for="deck in decks" :value="deck.id">{{deck.name}}</option>
-            </select>
+          <div class="row mb-3">
+            <label for="deck" class="col-2 col-form-label">Pick a Deck</label>
+            <div class="col-10">
+              <Select v-model="send_deck_id" id="deckSend" name="send_deck_id">
+                <option v-for="deck in decks" :value="deck.id">{{deck.name}}</option>
+              </Select>
+            </div>
           </div>
 
-          <div class="mb-3">
-            <label for="user" class="form-label">Pick a User</label>
-            <select v-model="user_id" id="user" class="form-control">
-              <option v-for="user in users" :value="user.id">{{user.handle}}</option>
-            </select>
+          <div class="row mb-3">
+            <label for="user" class="col-2 col-form-label">Pick a User</label>
+            <div class="col-10">
+              <Select v-model="user_id" id="userSend" name="user_id">
+                <option v-for="user in users" :value="user.id">{{user.handle}}</option>
+              </Select>
+            </div>
           </div>
 
-          <button type="submit" class="btn btn-primary">Send Challenge</button>
+          <button type="submit" class="btn btn-primary float-end">Send Challenge</button>
         </form>
       </div>
     </div>
@@ -122,10 +128,16 @@
 </template>
 
 <script>
+  import Select from './select.vue'
+
   export default {
+    components: {
+      Select,
+    },
     data: () => ({
       decks: [],
-      deck_id: null,
+      recieved_deck_id: null,
+      send_deck_id: null,
       users: [],
       user_id: null,
     }),
@@ -141,10 +153,10 @@
     },
     methods: {
       create() {
-        this.fetch.post('/challenges', {deck_id: this.deck_id, user_id: this.user_id})
+        this.fetch.post('/challenges', {deck_id: this.send_deck_id, user_id: this.user_id})
       },
       accept({game_id, opponent: {id: opponent_id}}) {
-        this.fetch.put('/challenges', {deck_id: this.deck_id, game_id, opponent_id})
+        this.fetch.put('/challenges', {deck_id: this.recieved_deck_id, game_id, opponent_id})
       },
       decline({game_id, opponent: {id: opponent_id}}) {
         this.fetch.del('/challenges', {game_id, opponent_id})
