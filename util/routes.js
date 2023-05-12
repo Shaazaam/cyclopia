@@ -58,7 +58,7 @@ const authenticate = async (req, res, next) => {
 }
 const authorize = async (req, res, next) => {
   const {user: {id}} = req.session
-  const {game_id} = req.body || req.params
+  const {game_id} = req.method === 'GET' ? req.params : req.body
   const users = await dal.getGameUsers(game_id)
   if (!users.map(({user_id}) => user_id).includes(id)) {
     return res401(req, res)
