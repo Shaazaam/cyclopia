@@ -21,6 +21,7 @@ const LESS_THAN_EQUAL_TO = 'lte'
 const MAX = 'max'
 const MEMBER_OF = 'mo'
 const MIN = 'min'
+const NOT_EXISTS = 'exn'
 const NUMERIC = 'num'
 const NUMERIC_WHOLE = 'wnum'
 const REGEX = 'reg'
@@ -30,7 +31,8 @@ const messages = ({
   bt: (field, [user_id]) => `${field} must belong to you`,
   em: (field) => `${field} must be a valid email`,
   et: (field, [param]) => `${field} must be equal to ${param}`,
-  ex: (field, [table, column]) => `${field} must be an existing record`,
+  ex: (field, [table, columns]) => `${field} must be an existing record`,
+  exn: (field, [table, columns]) => `${field} must be a unique record`,
   gt: (field, [param]) => `${field} must be greater than ${param}`,
   gte: (field, [param]) => `${field} must be greater than or equal to ${param}`,
   lt: (field, [param]) => `${field} must be less than ${param}`,
@@ -48,7 +50,8 @@ const test = ({
   bt: (value, [table, column, user_id]) => true,
   em: (value) => isEmail(value),
   et: (value, [param]) => (isNumber(value) && value === param) || (isString(value) && value.lenth === param),
-  ex: (value, [table, column]) => true,
+  ex: (values, [table, columns]) => dal.exists(table, columns, values),
+  exn: (values, [table, columns]) => ! test.ex(values, [table, columns]),
   gt: (value, [param]) => isNumber(value) && value > param,
   gte: (value, [param]) => isNumber(value) && value >= param,
   lt: (value, [param]) => isNumber(value) && value < param,
@@ -87,6 +90,7 @@ export const lessThanEqualTo = (value) => setRules(LESS_THAN_EQUAL_TO, [value])
 export const max = (value) => setRules(MAX, [value])
 export const memberOf = (array) => setRules(MEMBER_OF, array)
 export const min = (value) => setRules(MIN, [value])
+export const notExists = (table, column) => setRules(NOT_EXISTS, [table, column])
 export const numeric = () => setRules(NUMERIC)
 export const numericWhole = () => setRules(NUMERIC_WHOLE)
 export const regex = (expression) => setRules(REGEX, [expression])

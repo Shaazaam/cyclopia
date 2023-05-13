@@ -7,6 +7,28 @@ import {isNotEmpty, isNotNull, isNotUndefined, numericRange} from './functions.j
 const pool = new pg.Pool(config.db)
 const query = (text, values) => pool.query({text, values})
 
+const allowedColumns = {
+  deck_id: 'deck_id',
+  game_id: 'game_id',
+  user_id: 'user_id',
+}
+const allowedTables = {
+  decks: 'decks',
+  game_invites: 'game_invites',
+}
+
+export const exists = async (table, columns, values) => {
+  const where = columns.reduce((agg, cur, index) =>
+    agg.concat(`${allowedTables[table]}.${allowedColumns[cur]} = $${(1 + index)}`), []
+  ).join(' AND ')
+  const {rowCount} = await query(`
+    SELECT ${allowedTables[table]}.*
+    FROM ${allowedTables[table]}
+    WHERE ${where}
+  `, values)
+  return rowCount === 1
+}
+
 export const upsertCard = async ({
   id,
   oracle_id,
