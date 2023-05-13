@@ -607,6 +607,14 @@ const routes = {
     params: ['name'],
     get: [
       async (req, res, next) => {
+        const {name: token} = req.params
+        next([
+          {token},
+          {token: [val.required()]}
+        ])
+      },
+      validate,
+      async (req, res, next) => {
         const {user: {id: user_id}} = req.session
         const {name} = req.params
         const tokens = await dal.getTokens(name)

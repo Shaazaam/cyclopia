@@ -82,21 +82,24 @@
         >Tokens</button>
         <ul class="dropdown-menu bg-dark">
           <li class="py-1">
-            <div class="input-group">
-              <input
-                type="text"
-                class="form-control"
+            <div class="input-group has-validation">
+              <Input
                 v-model="token"
+                name="token"
+                type="text"
                 placeholder="Search"
-                @keyup.enter="tokenSearch"
-              />
-              <button
-                type="button"
-                class="btn btn-success"
-                @click="tokenSearch"
+                @keyup-enter="tokenSearch"
               >
-                <i class="bi bi-search"></i>
-              </button>
+                <template #inputGroupAfter>
+                  <button
+                    type="button"
+                    class="btn btn-success"
+                    @click="tokenSearch"
+                  >
+                    <i class="bi bi-search"></i>
+                  </button>
+                </template>
+              </Input>
             </div>
           </li>
         </ul>
