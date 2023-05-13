@@ -36,19 +36,42 @@
       </div>
     </div>
   </transition>
-  <div class="container-fluid">
-    <router-view v-cloak></router-view>
+  <div class="container-fluid" :class="{'invisible': isLoading}" v-cloak>
+    <!-- <div v-if="isLoading" class="d-flex justify-content-center hstack gap-3">
+      <div class="spinner-lg spinner-grow text-danger" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+      <div v-if="icon1" class="spinner-lg spinner-grow text-danger" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+      <div v-if="icon2" class="spinner-lg spinner-grow text-danger" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+    </div> -->
+    <router-view />
   </div>
 </template>
 
 <script>
   export default {
+    data: () => ({
+      icon1: false,
+      icon2: false,
+    }),
     computed: {
       alert() {
         return this.store.get('message')
       },
       routes() {
         return this.$router.getRoutes().filter(({meta}) => meta.requiresAuth === this.isLoggedIn && meta.main)
+      },
+    },
+    watch: {
+      isLoading(x) {
+        if (x) {
+          window.setTimeout(() => this.icon1 = true, 200)
+          window.setTimeout(() => this.icon2 = true, 400)
+        }
       },
     },
     mounted() {
@@ -114,5 +137,9 @@
   .reverse-columns {
     display: flex;
     flex-direction: column-reverse;
+  }
+  .spinner-lg {
+    width: 4rem;
+    height: 4rem;
   }
 </style>

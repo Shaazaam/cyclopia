@@ -54,6 +54,11 @@
       decks: [],
       cards: [],
     }),
+    provide() {
+      return {
+        isGameOver: true,
+      }
+    },
     created() {
       this.fetch.get('/decks', {}, (data) => {
         this.decks = data
