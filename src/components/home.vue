@@ -20,7 +20,7 @@
         <p v-if="functions.isEmpty(challenges.invitations)">You have no received challenges</p>
 
         <form v-for="invitation in challenges.invitations" @submit.prevent="() => accept(invitation)">
-          Game {{invitation.game_id}} vs {{invitation.opponent.handle}}
+          {{invitation.created_on}} vs {{invitation.opponent.handle}}
           <div class="row mb-3">
             <label for="deck" class="col-2 col-form-label">Pick a Deck</label>
             <div class="col-10">
@@ -48,7 +48,7 @@
 
         <div v-for="game in challenges.pending" class="row">
           <div class="col">
-            <p>Game {{game.game_id}} vs {{game.opponent.handle}}</p>
+            <p>{{game.created_on}} vs {{game.opponent.handle}}</p>
           </div>
         </div>
       </div>
@@ -58,7 +58,7 @@
 
         <form @submit.prevent="create">
           <div class="row mb-3">
-            <label for="deck" class="col-2 col-form-label">Pick a Deck</label>
+            <label for="deck" class="col-2 col-form-label">Deck</label>
             <div class="col-10">
               <Select v-model="send_deck_id" id="deckSend" name="send_deck_id">
                 <template #options>
@@ -69,7 +69,7 @@
           </div>
 
           <div class="row mb-3">
-            <label for="user" class="col-2 col-form-label">Pick a User</label>
+            <label for="user" class="col-2 col-form-label">User</label>
             <div class="col-10">
               <Select v-model="user_id" id="userSend" name="user_id">
                 <template #options>
@@ -98,7 +98,7 @@
         <div v-for="game in challenges.active" class="mb-3">
           <div class="row">
             <div class="col">
-              <p>Game {{game.game_id}} vs {{game.opponent.handle}}</p>
+              <p>{{game.created_on}} vs {{game.opponent.handle}}</p>
             </div>
           </div>
           <div class="d-flex justify-content-between">
@@ -114,7 +114,7 @@
 
         <div v-for="game in challenges.completed" class="row">
           <div class="col">
-            <p>Game {{game.game_id}} vs {{game.opponent.handle}} <i v-if="game.winner === authUser.id" class="bi bi-trophy-fill text-warning"></i></p>
+            <p>{{game.created_on}} vs {{game.opponent.handle}} <i v-if="game.winner === authUser.id" class="bi bi-trophy-fill text-warning"></i></p>
           </div>
         </div>
       </div>
@@ -143,12 +143,22 @@
     }),
     created() {
       this.fetch.get('/decks', {}, (data) => this.decks = data.map(this.factory.deck))
-      this.fetch.get('/users', {}, (data) => this.users = data.filter((user) => user.id !== this.authUser.id))
+      this.fetch.get('/users', {}, (data) => {
+        this.users = data.filter(({id}) => id !== this.authUser.id)
+        if (this.functions.isNotObjectEmpty(this.challenges)) {
+          this.users = this.users.filter(({id}) => ! this.challenges.pending.map(({opponent}) => opponent.id).includes(id))
+        }
+      })
       this.fetch.get('/challenges')
     },
     computed: {
       challenges() {
         return this.store.get('challenges')
+      },
+    },
+    watch: {
+      challenges({pending}) {
+        this.users = this.users.filter(({id}) => ! pending.map(({opponent}) => opponent.id).includes(id))
       },
     },
     methods: {

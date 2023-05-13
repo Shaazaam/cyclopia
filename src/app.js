@@ -171,6 +171,9 @@ app.use(router)
       isSaving() {
         return this.store.get('isSaving')
       },
+      isLoading() {
+        return this.store.get('isLoading')
+      },
       errors() {
         const [errors] = this.store.get('inputErrors')
         return errors

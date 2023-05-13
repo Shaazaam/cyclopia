@@ -412,6 +412,7 @@ const getGames = async (user_id) => {
   const {rows} = await query(`
     SELECT
       game_user.game_id,
+      games.created_on,
       COALESCE(game_invites.user_id IS NOT NULL, FALSE) AS pending_invite,
       JSON_BUILD_OBJECT(
         'id', COALESCE(invited_user.id, accepted_user.id),
@@ -435,9 +436,11 @@ const getInvitations = async (user_id) => {
       JSON_BUILD_OBJECT(
         'id', users.id,
         'handle', users.handle
-      ) AS opponent
+      ) AS opponent,
+      games.created_on
     FROM game_invites
     JOIN game_user ON game_user.game_id = game_invites.game_id
+    JOIN games ON games.id = game_invites.game_id
     JOIN users ON game_user.user_id = users.id
     WHERE game_invites.user_id = $1
   `, [user_id])
