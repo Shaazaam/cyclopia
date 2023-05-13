@@ -206,40 +206,46 @@
         <div class="card-img-overlay text-center">
           <h5>Cards: {{user.library_total}}</h5>
           <div v-if="user.is_ready && !isGameOver" class="d-grid gap-2">
-            <div class="input-group">
-              <button
-                type="button"
-                class="btn btn-success"
-                :disabled="functions.isNull(drawAmount)"
-                @click="draw"
-              >Draw</button>
-              <input
-                type="number"
+            <div class="input-group has-validation">
+              <Input
                 v-model="drawAmount"
-                class="form-control"
-                min="1"
+                type="number"
+                name="draw_amount"
+                :min="1"
                 :max="user.library_total"
-              />
+              >
+                <template #inputGroupBefore>
+                  <button
+                    type="button"
+                    class="btn btn-success"
+                    :disabled="functions.isNull(drawAmount)"
+                    @click="draw"
+                  >Draw</button>
+                </template>
+              </Input>
             </div>
             <button
               type="button"
               class="btn btn-warning"
               @click="shuffle"
             >Shuffle</button>
-            <div class="input-group">
-              <button
-                type="button"
-                class="btn btn-danger"
-                :disabled="functions.isNull(millAmount)"
-                @click="mill"
-              >Mill</button>
-              <input
-                type="number"
+            <div class="input-group has-validation">
+              <Input
                 v-model="millAmount"
-                class="form-control"
-                min="1"
+                type="number"
+                name="mill_amount"
+                :min="1"
                 :max="user.library_total"
-              />
+              >
+                <template #inputGroupBefore>
+                  <button
+                    type="button"
+                    class="btn btn-danger"
+                    :disabled="functions.isNull(millAmount)"
+                    @click="mill"
+                  >Mill</button>
+                </template>
+              </Input>
             </div>
             <button
               type="button"
@@ -247,20 +253,23 @@
               data-bs-toggle="modal"
               data-bs-target="#search"
             >Search</button>
-            <div class="input-group">
-              <button
-                type="button"
-                class="btn btn-info"
-                :disabled="functions.isNull(scryAmount)"
-                @click="scry"
-              >Scry</button>
-              <input
-                type="number"
+            <div class="input-group has-validation">
+              <Input
                 v-model="scryAmount"
-                class="form-control"
-                min="1"
+                type="number"
+                name="scry_amount"
+                :min="1"
                 :max="user.library_total"
-              />
+              >
+                <template #inputGroupBefore>
+                  <button
+                    type="button"
+                    class="btn btn-info"
+                    :disabled="functions.isNull(scryAmount)"
+                    @click="scry"
+                  >Scry</button>
+                </template>
+              </Input>
             </div>
           </div>
         </div>
@@ -417,6 +426,7 @@
   import Field from './field.vue'
   import Graveyard from './graveyard.vue'
   import Hand from './hand.vue'
+  import Input from './input.vue'
 
   export default {
     components: {
@@ -425,6 +435,7 @@
       Field,
       Graveyard,
       Hand,
+      Input,
     },
     props: {
       id: {

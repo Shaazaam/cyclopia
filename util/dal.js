@@ -515,7 +515,7 @@ export const getGame = async (id) => {
   const {rows: counts} = await query(`
     SELECT
       objects.user_id,
-      COUNT(*) AS library_total
+      COUNT(*)::integer AS library_total
     FROM objects
     WHERE objects.game_id = $1
       AND objects.zone = 'library'

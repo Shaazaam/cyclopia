@@ -1,4 +1,5 @@
 <template>
+  <slot name="inputGroupBefore"></slot>
   <input
     :value="modelValue"
     :type="type"
@@ -8,7 +9,10 @@
     :class="{'is-invalid': hasErrors}"
     :placeholder="placeholder"
     :autocomplete="autocomplete"
+    :min="min"
+    :max="max"
     @input="$emit('update:modelValue', $event.target.value)"
+    @keyup.enter="$emit('keyupEnter')"
   />
   <slot name="inputGroupAfter"></slot>
   <div v-if="hasErrors" class="invalid-feedback">{{errors[name].join(', ')}}</div>
@@ -31,6 +35,12 @@
         type: String,
         required: true,
       },
+      min: {
+        type: Number,
+      },
+      max: {
+        type: Number,
+      },
       placeholder: {
         type: String,
       },
@@ -39,7 +49,7 @@
         default: 'on',
       },
     },
-    emits: ['update:modelValue'],
+    emits: ['update:modelValue', 'keyupEnter'],
     computed: {
       hasErrors() {
         return this.functions.isNotEmpty(this.errors) && this.functions.isNotEmpty(this.errors[this.name])

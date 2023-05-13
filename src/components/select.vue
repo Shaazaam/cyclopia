@@ -1,4 +1,5 @@
 <template>
+  <slot name="inputGroupBefore"></slot>
   <select
     :value="modelValue"
     :id="id"
