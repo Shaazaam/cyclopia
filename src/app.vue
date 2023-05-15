@@ -16,9 +16,9 @@
       </ul>
     </div>
   </nav>
-  <transition name="fade">
-    <div class="position-relative">
-      <div class="toast-container top-0 end-0 px-3">
+  <div class="sticky-top">
+    <div class="toast-container top-0 end-0 px-3">
+      <Transition name="fade">
         <div
           v-if="functions.isNotNull(alert)"
           class="toast align-items-center border-0"
@@ -33,9 +33,9 @@
             <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast"></button>
           </div>
         </div>
-      </div>
+      </Transition>
     </div>
-  </transition>
+  </div>
   <div class="container-fluid" :class="{'invisible': isLoading}" v-cloak>
     <!-- <div v-if="isLoading" class="d-flex justify-content-center hstack gap-3">
       <div class="spinner-lg spinner-grow text-danger" role="status">
@@ -85,6 +85,9 @@
 <style>
   [v-cloak] {
     display: none;
+  }
+  .sticky-top {
+    top: 2.5%;
   }
   .tapped {
     transform: rotate(270deg);
