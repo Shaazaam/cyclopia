@@ -5,7 +5,7 @@ import * as factory from './factory.js'
 import {isNotEmpty, isNotNull, isNotUndefined, numericRange} from './functions.js'
 
 const pool = new pg.Pool(config.db)
-const query = (text, values) => pool.query({text, values})
+const query = (text, values) => pool.query(text, values).catch((err) => pool.query(`INSERT INTO errors (data) VALUES ($1)`, [err.toString()]))
 
 const allowedColumns = {
   deck_id: 'deck_id',

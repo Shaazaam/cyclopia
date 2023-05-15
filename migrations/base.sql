@@ -175,3 +175,9 @@ CREATE TABLE IF NOT EXISTS events (
   created_by UUID NOT NULL REFERENCES users(id),
   created_on TIMESTAMP WITHOUT TIME ZONE DEFAULT now()
 );
+
+CREATE TABLE IF NOT EXISTS errors (
+  id UUID NOT NULL PRIMARY KEY gen_random_uuid(),
+  data JSONB,
+  created_on TIMESTAMP WITHOUT TIME ZONE DEFAULT now()
+);
