@@ -142,4 +142,8 @@
     width: 4rem;
     height: 4rem;
   }
+  .invalid-feedback {
+    margin-top: unset;
+    margin-bottom: 0.5rem;
+  }
 </style>

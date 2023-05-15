@@ -209,71 +209,71 @@
         <div class="card-img-overlay text-center">
           <h5>Cards: {{user.library_total}}</h5>
           <div v-if="user.is_ready && !isGameOver" class="d-grid gap-2">
-            <div class="input-group has-validation">
-              <Input
-                v-model="drawAmount"
-                type="number"
-                name="draw_amount"
-                :min="1"
-                :max="user.library_total"
-              >
-                <template #inputGroupBefore>
-                  <button
-                    type="button"
-                    class="btn btn-success"
-                    :disabled="functions.isNull(drawAmount)"
-                    @click="draw"
-                  >Draw</button>
-                </template>
-              </Input>
-            </div>
+            <Input
+              v-model="drawAmount"
+              type="number"
+              name="draw_amount"
+              :min="1"
+              :max="user.library_total"
+              :has-margin="false"
+              :has-label="false"
+            >
+              <template #inputGroupBefore>
+                <button
+                  type="button"
+                  class="btn btn-success"
+                  :disabled="functions.isNull(drawAmount)"
+                  @click="draw"
+                >Draw</button>
+              </template>
+            </Input>
             <button
               type="button"
               class="btn btn-warning"
               @click="shuffle"
             >Shuffle</button>
-            <div class="input-group has-validation">
-              <Input
-                v-model="millAmount"
-                type="number"
-                name="mill_amount"
-                :min="1"
-                :max="user.library_total"
-              >
-                <template #inputGroupBefore>
-                  <button
-                    type="button"
-                    class="btn btn-danger"
-                    :disabled="functions.isNull(millAmount)"
-                    @click="mill"
-                  >Mill</button>
-                </template>
-              </Input>
-            </div>
+            <Input
+              v-model="millAmount"
+              type="number"
+              name="mill_amount"
+              :min="1"
+              :max="user.library_total"
+              :has-margin="false"
+              :has-label="false"
+            >
+              <template #inputGroupBefore>
+                <button
+                  type="button"
+                  class="btn btn-danger"
+                  :disabled="functions.isNull(millAmount)"
+                  @click="mill"
+                >Mill</button>
+              </template>
+            </Input>
             <button
               type="button"
               class="btn btn-info"
               data-bs-toggle="modal"
               data-bs-target="#search"
             >Search</button>
-            <div class="input-group has-validation">
-              <Input
-                v-model="scryAmount"
-                type="number"
-                name="scry_amount"
-                :min="1"
-                :max="user.library_total"
-              >
-                <template #inputGroupBefore>
-                  <button
-                    type="button"
-                    class="btn btn-info"
-                    :disabled="functions.isNull(scryAmount)"
-                    @click="scry"
-                  >Scry</button>
-                </template>
-              </Input>
-            </div>
+            <Input
+              v-model="scryAmount"
+              type="number"
+              name="scry_amount"
+              :min="1"
+              :max="user.library_total"
+              :has-margin="false"
+              :has-label="false"
+            >
+              <template #inputGroupBefore>
+                <button
+                  type="button"
+                  class="btn btn-info"
+                  :disabled="functions.isNull(scryAmount)"
+                  @click="scry"
+                >Scry</button>
+              </template>
+            </Input>
           </div>
         </div>
       </div>
