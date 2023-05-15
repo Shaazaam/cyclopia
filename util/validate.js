@@ -46,6 +46,12 @@ const messages = ({
   req: (field) => `${field} is required`,
 })
 
+const formatField = (field) => ({
+  'send_deck_id': 'Deck',
+  'recieved_deck_id': 'Deck',
+  'user_id': 'User',
+})[field] || snakeCasedToUpperCasedWord(field)
+
 const test = ({
   bt: (value, [table, column, user_id]) => true,
   em: (value) => isEmail(value),
@@ -70,7 +76,7 @@ const setRules = (kind, params = []) => ({kind, params})
 export const validate = (input, fieldRules) =>
   Object.entries(fieldRules).reduce((agg, [field, rules]) => {
     const results = rules.reduce((agg, {kind, params}) =>
-      agg = agg.concat((test[kind])(input[field], params) ? [] : [(messages[kind])(snakeCasedToUpperCasedWord(field), params)]), []
+      agg = agg.concat((test[kind])(input[field], params) ? [] : [(messages[kind])(formatField(field), params)]), []
     )
     if (isNotEmpty(results)) {
       agg = copy(agg, {[field]: results})
