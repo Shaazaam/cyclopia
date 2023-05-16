@@ -7,6 +7,7 @@
       class="col-15"
       @expand="expand"
       @move="move"
+      @transform="transform"
     >
     </Card>
   </div>
@@ -29,13 +30,20 @@
         required: true,
       },
     },
-    emits: ['expand', 'move'],
+    emits: [
+      'expand',
+      'move',
+      'transform',
+    ],
     methods: {
       expand(object) {
         this.$emit('expand', object)
       },
       move(id, zone) {
         this.$emit('move', id, zone)
+      },
+      transform(object_id, card_face_id) {
+        this.$emit('transform', object_id, card_face_id)
       },
     },
   }
