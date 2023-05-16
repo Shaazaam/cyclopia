@@ -28,7 +28,7 @@ const response = (req, res, status) => {
   return res.status(status).send({
     status,
     message: message || codeMessages[status],
-    data: isArray(data) ? data : [data]
+    data: isArray(data) ? data : [data],
   })
 }
 const res200 = async (req, res) => response(req, res, 200)

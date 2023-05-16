@@ -3,6 +3,7 @@
     class="card text-light mb-3"
     :class="'bg-' + bg"
     @mouseenter="hover = true"
+    @mouseleave="hover = false"
   >
     <img
       :src="image"
@@ -12,7 +13,6 @@
     <div
       class="card-img-overlay"
       :class="{'invisible': !hover}"
-      @mouseleave="hover = false"
     >
       <div class="d-flex justify-content-between mb-2">
         <button
