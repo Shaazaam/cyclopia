@@ -674,7 +674,7 @@
         this.fetch.get('/scry', [this.id, this.scryAmount], (data) => {
           this.scryObjects = data
           this.scryModal.show()
-        })
+        }, false)
       },
       scryBottom(object_id) {
         this.scryObjects = this.scryObjects.filter((object) => object.id !== object_id)
@@ -712,7 +712,7 @@
           }
           this.tokenObjects = data
           this.tokenModal.show()
-        })
+        }, false)
       },
       toughness(object_id, value) {
         this.fetch.put('/toughness', {game_id: this.id, object_id, value})
