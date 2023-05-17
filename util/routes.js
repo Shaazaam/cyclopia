@@ -44,6 +44,8 @@ const isAuthenticated = async ({user}) => isNotUndefined(user)
 const mutateReq = async (req, res, next) => {
   req.cyclopia = {
     game_id: null,
+    event_entity_id: null,
+    users: [],
     event: {},
     challenges: [],
     data: [],
@@ -78,8 +80,8 @@ const validate = async ([input, rules], req, res, next) => {
   }
   next()
 }
-const log = async (event, req, res, next) => {
-  const {entity_id, name, data, user_id} = event
+const log = async (req, res, next) => {
+  const {entity_id, name, data, user_id} = req.cyclopia.event
   const events = await dal.insertEvents(entity_id, name, data, user_id)
   req.cyclopia.game_id = entity_id
   next()
@@ -88,13 +90,13 @@ const sendGame = async (req, res, next) => {
   const {game_id} = req.cyclopia
   const game = await dal.getGame(game_id)
   const users = game.users.map((user) => user.user_id)
-  req.cyclopia.event = {entity_id: game_id, users}
+  req.cyclopia = copy(req.cyclopia, {event_entity_id: game_id, users})
   send(users, {kind: 'game', data: game})
   next()
 }
 const sendEvents = async (req, res, next) => {
-  const {entity_id, users} = req.cyclopia.event
-  const events = await dal.getEvents(entity_id)
+  const {event_entity_id, users} = req.cyclopia
+  const events = await dal.getEvents(event_entity_id)
   send(users, {kind: 'event', data: events})
   next()
 }
@@ -209,7 +211,8 @@ const routes = {
           user: async () => await dal.userCounter(game_id, user_id, name, amount),
         })[x])(kind)
         const data = await func()
-        next(event(game_id, `counter-${kind}`, data, user_id))
+        req.cyclopia.event = event(game_id, `counter-${kind}`, data, user_id)
+        next()
       },
       log,
       sendGame,
@@ -263,7 +266,8 @@ const routes = {
         const {user: {id: user_id}} = req.session
         const {game_id, amount} = req.body
         const data = await dal.draw(game_id, user_id, amount)
-        next(event(game_id, 'draw', data, user_id))
+        req.cyclopia.event = event(game_id, 'draw', data, user_id)
+        next()
       },
       log,
       sendGame,
@@ -277,7 +281,8 @@ const routes = {
         const {user: {id: user_id}} = req.session
         const {game_id} = req.body
         const data = await dal.endGame(game_id, user_id)
-        next(event(game_id, 'end-game', data, user_id))
+        req.cyclopia.event = event(game_id, 'end-game', data, user_id)
+        next()
       },
       log,
       sendGame,
@@ -291,7 +296,8 @@ const routes = {
         const {user: {id: user_id}} = req.session
         const {game_id} = req.body
         const data = await dal.endTurn(game_id, user_id)
-        next(event(game_id, 'end-turn', data, user_id))
+        req.cyclopia.event = event(game_id, 'end-turn', data, user_id)
+        next()
       },
       log,
       sendGame,
@@ -373,7 +379,8 @@ const routes = {
         const {user: {id: user_id}} = req.session
         const {game_id, amount} = req.body
         const data = await dal.life(game_id, user_id, amount)
-        next(event(game_id, 'life', data, user_id))
+        req.cyclopia.event = event(game_id, 'life', data, user_id)
+        next()
       },
       log,
       sendGame,
@@ -442,7 +449,8 @@ const routes = {
         const {user: {id: user_id}} = req.session
         const {game_id, amount} = req.body
         const data = await dal.mill(game_id, user_id, amount)
-        next(event(game_id, 'mill', data, user_id))
+        req.cyclopia.event = event(game_id, 'mill', data, user_id)
+        next()
       },
       log,
       sendGame,
@@ -456,7 +464,8 @@ const routes = {
         const {user: {id: user_id}} = req.session
         const {game_id, object_id, zone, location} = req.body
         const data = await dal.move(game_id, object_id, user_id, zone, location)
-        next(event(game_id, 'move', data, user_id))
+        req.cyclopia.event = event(game_id, 'move', data, user_id)
+        next()
       },
       log,
       sendGame,
@@ -470,7 +479,8 @@ const routes = {
         const {user: {id: user_id}} = req.session
         const {game_id} = req.body
         await dal.mulligan(game_id, user_id)
-        next(event(game_id, 'mulligan', [{}], user_id))
+        req.cyclopia.event = event(game_id, 'mulligan', [{}], user_id)
+        next()
       },
       log,
       sendGame,
@@ -499,7 +509,8 @@ const routes = {
         const {user: {id: user_id}} = req.session
         const {game_id, object_id, value} = req.body
         const data = await dal.power(game_id, object_id, user_id, value)
-        next(event(game_id, 'power', data, user_id))
+        req.cyclopia.event = event(game_id, 'power', data, user_id)
+        next()
       },
       log,
       sendGame,
@@ -555,7 +566,8 @@ const routes = {
         const {game_id, amount} = req.params
         const objects = await dal.scry(game_id, user_id, amount)
         req.cyclopia.data = objects
-        next(event(game_id, 'scry', [{amount}], user_id))
+        req.cyclopia.event = event(game_id, 'scry', [{amount}], user_id)
+        next()
       },
       log,
     ],
@@ -567,7 +579,8 @@ const routes = {
         const {user: {id: user_id}} = req.session
         const {game_id} = req.body
         await dal.shuffle(game_id, user_id)
-        next(event(game_id, 'shuffle', [{}], user_id))
+        req.cyclopia.event = event(game_id, 'shuffle', [{}], user_id)
+        next()
       },
       log,
       sendGame,
@@ -594,7 +607,8 @@ const routes = {
         const {user: {id: user_id}} = req.session
         const {game_id, object_id, state} = req.body
         const data = await dal.tap(game_id, object_id, user_id, state)
-        next(event(game_id, 'tap', data, user_id))
+        req.cyclopia.event = event(game_id, 'tap', data, user_id)
+        next()
       },
       log,
       sendGame,
@@ -627,7 +641,8 @@ const routes = {
         const {user: {id: user_id}} = req.session
         const {game_id, card_id, amount} = req.body
         const data = await dal.insertTokens(game_id, card_id, user_id, amount)
-        next(event(game_id, 'token', data, user_id))
+        req.cyclopia.event = event(game_id, 'token', data, user_id)
+        next()
       },
       log,
       sendGame,
@@ -641,7 +656,8 @@ const routes = {
         const {user: {id: user_id}} = req.session
         const {game_id, object_id, value} = req.body
         const data = await dal.toughness(game_id, object_id, user_id, value)
-        next(event(game_id, 'toughness', data, user_id))
+        req.cyclopia.event = event(game_id, 'toughness', data, user_id)
+        next()
       },
       log,
       sendGame,
@@ -655,7 +671,8 @@ const routes = {
         const {user: {id: user_id}} = req.session
         const {game_id, object_id, card_face_id} = req.body
         const data = await dal.transform(game_id, object_id, user_id, card_face_id)
-        next(event(game_id, 'transform', data, user_id))
+        req.cyclopia.event = event(game_id, 'transform', data, user_id)
+        next()
       },
       log,
       sendGame,
