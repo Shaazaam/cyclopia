@@ -71,13 +71,14 @@ const test = ({
   req: (value) => isNotNull(value) && isNotEmpty(value),
 })
 
-const setRules = (kind, params = []) => ({kind, params})
+const setRules = (kind, params = [], callback, message) => ({kind, params, callback, message})
 
 export const validate = (input, fieldRules) =>
   Object.entries(fieldRules).reduce((agg, [field, rules]) => {
-    const results = rules.reduce((agg, {kind, params}) =>
-      agg = agg.concat((test[kind])(input[field], params) ? [] : [(messages[kind])(formatField(field), params)]), []
-    )
+    const results = rules.reduce((agg, {kind, params, callback, message}) => {
+      const valid = isNotNull(callback) ? callback(input, params) : (test[kind])(input[field], params)
+      return agg = agg.concat(valid ? [] : [message || (messages[kind])(formatField(field), params)])
+    }, [])
     if (isNotEmpty(results)) {
       agg = copy(agg, {[field]: results})
     }
@@ -85,19 +86,19 @@ export const validate = (input, fieldRules) =>
   }, {})
 export const isValid = (results) => isObjectEmpty(results)
 
-export const belongsTo = (user) => setRules(BELONGS_TO, [user])
-export const email = () => setRules(EMAIL)
-export const equalTo = (value) => setRules(EQUAL_TO, [value])
-export const exists = (table, column) => setRules(EXISTS, [table, column])
-export const greaterThan = (value) => setRules(GREATER_THAN, [value])
-export const greaterThanEqualTo = (value) => setRules(GREATER_THAN_EQUAL_TO, [value])
-export const lessThan = (value) => setRules(LESS_THAN, [value])
-export const lessThanEqualTo = (value) => setRules(LESS_THAN_EQUAL_TO, [value])
-export const max = (value) => setRules(MAX, [value])
-export const memberOf = (array) => setRules(MEMBER_OF, array)
-export const min = (value) => setRules(MIN, [value])
-export const notExists = (table, column) => setRules(NOT_EXISTS, [table, column])
-export const numeric = () => setRules(NUMERIC)
-export const numericWhole = () => setRules(NUMERIC_WHOLE)
-export const regex = (expression) => setRules(REGEX, [expression])
-export const required = () => setRules(REQUIRED)
+export const belongsTo = (user, callback = null, message = null) => setRules(BELONGS_TO, [user], callback, message)
+export const email = (callback = null, message = null) => setRules(EMAIL, callback, message)
+export const equalTo = (value, callback = null, message = null) => setRules(EQUAL_TO, [value], callback, message)
+export const exists = (table, column, callback = null, message = null) => setRules(EXISTS, [table, column], callback, message)
+export const greaterThan = (value, callback = null, message = null) => setRules(GREATER_THAN, [value], callback, message)
+export const greaterThanEqualTo = (value, callback = null, message = null) => setRules(GREATER_THAN_EQUAL_TO, [value], callback, message)
+export const lessThan = (value, callback = null, message = null) => setRules(LESS_THAN, [value], callback, message)
+export const lessThanEqualTo = (value, callback = null, message = null) => setRules(LESS_THAN_EQUAL_TO, [value], callback, message)
+export const max = (value, callback = null, message = null) => setRules(MAX, [value], callback, message)
+export const memberOf = (array, callback = null, message = null) => setRules(MEMBER_OF, array, callback, message)
+export const min = (value, callback = null, message = null) => setRules(MIN, [value], callback, message)
+export const notExists = (table, column, callback = null, message = null) => setRules(NOT_EXISTS, [table, column], callback, message)
+export const numeric = (callback = null, message = null) => setRules(NUMERIC, callback, message)
+export const numericWhole = (callback = null, message = null) => setRules(NUMERIC_WHOLE, callback, message)
+export const regex = (expression, callback = null, message = null) => setRules(REGEX, [expression], callback, message)
+export const required = (callback = null, message = null) => setRules(REQUIRED, callback, message)
