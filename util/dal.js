@@ -12,7 +12,10 @@ const query = (text, values, expectedCount = null) => pool.query(text, values)
     }
     return res
   })
-  .catch(({message, cause}) => pool.query(`INSERT INTO errors (data) VALUES ($1)`, [{message, cause}]))
+  .catch(({message, cause}) => {
+    pool.query(`INSERT INTO errors (data) VALUES ($1)`, [{message, cause}])
+    throw new Error(message, {cause})
+  })
 
 const allowedColumns = {
   deck_id: 'deck_id',
