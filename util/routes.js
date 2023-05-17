@@ -125,7 +125,6 @@ const routes = {
         next()
       },
       sendChallenges,
-      res200,
     ],
     post: [
       async (req, res, next) => {
