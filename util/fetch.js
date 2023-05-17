@@ -32,25 +32,26 @@ const __fetch = (url, settings, params, callback) => {
     })
 }
 
-const get = (url, params, callback = () => false) => {
-  store.set('isLoading', true)
+const get = (url, params, callback = () => false, isLoading = true) => {
+  store.set('isLoading', isLoading)
   setGetRequests(requests.get.concat([{url, params, callback}]))
   return __fetch(url, {method: 'GET'}, params, callback)
 }
 
-const post = (url, data, callback = () => false) => {
-  store.set('isSaving', true)
+const post = (url, data, callback = () => false, isSaving = true) => {
+  store.set('isSaving', isSaving)
   setPostRequests(requests.post.concat([{data, url, callback}]))
   return __fetch(url, {body: JSON.stringify(data), method: 'POST'}, null, callback)
 }
 
-const put = (url, data, callback = () => false) => {
-  store.set('isSaving', true)
+const put = (url, data, callback = () => false, isSaving = true) => {
+  store.set('isSaving', isSaving)
   setPutRequests(requests.put.concat([{data, url, callback}]))
   return __fetch(url, {body: JSON.stringify(data), method: 'PUT'}, null, callback)
 }
 
-const del = (url, data, callback = () => false) => {
+const del = (url, data, callback = () => false, isSaving = true) => {
+  store.set('isSaving', isSaving)
   setDeleteRequests(requests.del.concat([{data, url, callback}]))
   return __fetch(url, {body: JSON.stringify(data), method: 'DELETE'}, null, callback)
 }

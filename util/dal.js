@@ -5,7 +5,39 @@ import * as factory from './factory.js'
 import {isNotEmpty, isNotNull, isNotUndefined, numericRange} from './functions.js'
 
 const pool = new pg.Pool(config.db)
-const query = (text, values) => pool.query({text, values})
+const query = (text, values, expectedCount = null) => pool.query(text, values)
+  .then((res) => {
+    if (isNotNull(expectedCount) && expectedCount !== res.rowCount) {
+      return Promise.reject(new Error('Row count does not match expected result', {cause: text.replace(/^\s{2,}/g, '').replace(/\s{2,}/g, ' ').replace(/\s{1,}$/g, '')}))
+    }
+    return res
+  })
+  .catch(({message, cause}) => {
+    pool.query(`INSERT INTO errors (data) VALUES ($1)`, [{message, cause}])
+    throw new Error(message, {cause})
+  })
+
+const allowedColumns = {
+  deck_id: 'deck_id',
+  game_id: 'game_id',
+  user_id: 'user_id',
+}
+const allowedTables = {
+  decks: 'decks',
+  game_invites: 'game_invites',
+}
+
+export const exists = async (table, columns, values) => {
+  const where = columns.reduce((agg, cur, index) =>
+    agg.concat(`${allowedTables[table]}.${allowedColumns[cur]} = $${(1 + index)}`), []
+  ).join(' AND ')
+  const {rowCount} = await query(`
+    SELECT ${allowedTables[table]}.*
+    FROM ${allowedTables[table]}
+    WHERE ${where}
+  `, values)
+  return rowCount === 1
+}
 
 export const upsertCard = async ({
   id,
@@ -390,6 +422,7 @@ const getGames = async (user_id) => {
   const {rows} = await query(`
     SELECT
       game_user.game_id,
+      games.created_on,
       COALESCE(game_invites.user_id IS NOT NULL, FALSE) AS pending_invite,
       JSON_BUILD_OBJECT(
         'id', COALESCE(invited_user.id, accepted_user.id),
@@ -413,9 +446,11 @@ const getInvitations = async (user_id) => {
       JSON_BUILD_OBJECT(
         'id', users.id,
         'handle', users.handle
-      ) AS opponent
+      ) AS opponent,
+      games.created_on
     FROM game_invites
     JOIN game_user ON game_user.game_id = game_invites.game_id
+    JOIN games ON games.id = game_invites.game_id
     JOIN users ON game_user.user_id = users.id
     WHERE game_invites.user_id = $1
   `, [user_id])
@@ -515,7 +550,7 @@ export const getGame = async (id) => {
   const {rows: counts} = await query(`
     SELECT
       objects.user_id,
-      COUNT(*) AS library_total
+      COUNT(*)::integer AS library_total
     FROM objects
     WHERE objects.game_id = $1
       AND objects.zone = 'library'
@@ -524,14 +559,11 @@ export const getGame = async (id) => {
   return factory.game({id, users, objects, counts})
 }
 export const getGameUsers = async (game_id) => {
-  const {rows, rowCount} = await query(`
+  const {rows} = await query(`
     SELECT game_user.user_id
     FROM game_user
     WHERE game_user.game_id = $1
-  `, [game_id])
-  if (rowCount !== 2) {
-    //throw
-  }
+  `, [game_id], 2)
   return rows
 }
 export const getCounters = async () => {
@@ -590,42 +622,33 @@ export const insertEvents = async (entity_id, name, data, user_id) => {
 }
 
 export const life = async (game_id, user_id, amount) => {
-  const {rows, rowCount} = await query(`
+  const {rows} = await query(`
     UPDATE game_user
     SET life = $3
     WHERE game_user.game_id = $1
       AND game_user.user_id = $2
     RETURNING *
-  `, [game_id, user_id, amount])
-  if (rowCount !== 1) {
-    //throw
-  }
+  `, [game_id, user_id, amount], 1)
   return rows
 }
 export const userCounter = async (game_id, user_id, name, amount) => {
-  const {rows, rowCount} = await query(`
+  const {rows} = await query(`
     INSERT INTO counter_game_user (game_id, user_id, counter, amount)
     VALUES ($1, $2, $3, $4)
     ON CONFLICT ON CONSTRAINT counter_game_user_pkey
     DO UPDATE SET amount = $4
-  `, [game_id, user_id, name, amount])
-  if (rowCount !== 1) {
-    //throw
-  }
+  `, [game_id, user_id, name, amount], 1)
   return rows
 }
 
 export const start = async (game_id, user_id) => {
-  const {rows: user, rowCount: userRowCount} = await query(`
+  const {rows: user} = await query(`
     UPDATE game_user
     SET is_ready = TRUE
     WHERE game_user.game_id = $1
       AND game_user.user_id = $2
     RETURNING *
-  `, [game_id, user_id])
-  if (userRowCount !== 1) {
-    //throw
-  }
+  `, [game_id, user_id], 1)
   const {rows: game, rowCount: gameRowCount} = await query(`
     UPDATE games
     SET active_turn = (
@@ -649,7 +672,7 @@ export const start = async (game_id, user_id) => {
   return [user, game]
 }
 export const endTurn = async (game_id, user_id) => {
-  const {rows, rowCount} = await query(`
+  const {rows} = await query(`
     UPDATE games
     SET active_turn = (
       SELECT game_user.user_id
@@ -659,14 +682,11 @@ export const endTurn = async (game_id, user_id) => {
     )
     WHERE games.id = $1
     RETURNING *
-  `, [game_id, user_id])
-  if (rowCount !== 1) {
-    //throw
-  }
+  `, [game_id, user_id], 1)
   return rows
 }
 export const endGame = async (game_id, user_id) => {
-  const {rows, rowCount} = await query(`
+  const {rows} = await query(`
     UPDATE games
     SET winner = (
       SELECT game_user.user_id
@@ -676,15 +696,12 @@ export const endGame = async (game_id, user_id) => {
     )
     WHERE games.id = $1
     RETURNING *
-  `, [game_id, user_id])
-  if (rowCount !== 1) {
-    //throw
-  }
+  `, [game_id, user_id], 1)
   return rows
 }
 
 const moveAmountFromLibrary = async (game_id, user_id, amount, zone) => {
-  const {rows, rowCount} = await query(`
+  const {rows} = await query(`
     WITH cards AS (
       SELECT
         objects.id,
@@ -709,16 +726,13 @@ const moveAmountFromLibrary = async (game_id, user_id, amount, zone) => {
     FROM cards
     WHERE objects.id = cards.id
     RETURNING *
-  `, [game_id, user_id, amount, zone])
-  if (rowCount !== amount) {
-    //throw
-  }
+  `, [game_id, user_id, amount, zone], amount)
   return rows
 }
 export const draw = async (game_id, user_id, amount = 1) => moveAmountFromLibrary(game_id, user_id, amount, 'hand')
 export const mill = async (game_id, user_id, amount = 1) => moveAmountFromLibrary(game_id, user_id, amount, 'graveyard')
 export const move = async (game_id, object_id, user_id, zone, location) => {
-  const {rows, rowCount} = await query(`
+  const {rows} = await query(`
     WITH count AS (
       SELECT
         CASE $5
@@ -740,14 +754,11 @@ export const move = async (game_id, object_id, user_id, zone, location) => {
       AND objects.game_id = $2
       AND objects.user_id = $3
     RETURNING *
-  `, [object_id, game_id, user_id, zone, location])
-  if (rowCount !== 1) {
-    //throw
-  }
+  `, [object_id, game_id, user_id, zone, location], 1)
   return rows
 }
 export const mulligan = async (game_id, user_id) => {
-  const {rows, rowCount} = await query(`
+  const {rows} = await query(`
     UPDATE objects
     SET zone = 'library'
     WHERE objects.game_id = $1
@@ -760,20 +771,17 @@ export const mulligan = async (game_id, user_id) => {
 }
 
 export const cardCounter = async (object_id, name, amount) => {
-  const {rows, rowCount} = await query(`
+  const {rows} = await query(`
     INSERT INTO counter_object (object_id, counter, amount)
     VALUES ($1, $2, $3)
     ON CONFLICT ON CONSTRAINT counter_object_pkey
     DO UPDATE SET amount = $3
     RETURNING *
-  `, [object_id, name, amount])
-  if (rowCount !== 1) {
-    //throw
-  }
+  `, [object_id, name, amount], 1)
   return rows
 }
 export const power = async (game_id, object_id, user_id, value) => {
-  const {rows, rowCount} = await query(`
+  const {rows} = await query(`
     UPDATE objects
     SET power = $4
     WHERE objects.id = $1
@@ -781,14 +789,11 @@ export const power = async (game_id, object_id, user_id, value) => {
       AND objects.user_id = $3
       AND objects.zone = 'field'
     RETURNING *
-  `, [object_id, game_id, user_id, value])
-  if (rowCount !== 1) {
-    //throw
-  }
+  `, [object_id, game_id, user_id, value], 1)
   return rows
 }
 export const scry = async (game_id, user_id, amount) => {
-  const {rows, rowCount} = await query(`
+  const {rows} = await query(`
     SELECT
       objects.id,
       objects.card_id,
@@ -813,10 +818,7 @@ export const scry = async (game_id, user_id, amount) => {
       AND objects.zone = 'library'
     ORDER BY objects.position DESC
     LIMIT $3
-  `, [game_id, user_id, amount])
-  if (rowCount !== amount) {
-    //throw
-  }
+  `, [game_id, user_id, amount], amount)
   return rows.map(factory.object)
 }
 export const shuffle = async (game_id, user_id) => {
@@ -838,7 +840,7 @@ export const shuffle = async (game_id, user_id) => {
   return true
 }
 export const tap = async (game_id, object_id, user_id, state) => {
-  const {rows, rowCount} = await query(`
+  const {rows} = await query(`
     UPDATE objects
     SET is_tapped = $4
     WHERE objects.id = $1
@@ -846,14 +848,11 @@ export const tap = async (game_id, object_id, user_id, state) => {
       AND objects.user_id = $3
       AND objects.zone = 'field'
     RETURNING *
-  `, [object_id, game_id, user_id, state])
-  if (rowCount !== 1) {
-    //throw
-  }
+  `, [object_id, game_id, user_id, state], 1)
   return rows
 }
 export const insertTokens = async (game_id, card_id, user_id, amount) => {
-  const {rows, rowCount} = await query(`
+  const {rows} = await query(`
     WITH count AS (
       SELECT
         GENERATE_SERIES(COALESCE(MAX(objects.position) + 1, 1), COALESCE(MAX(objects.position) + $4::integer, 1)) AS position
@@ -902,14 +901,11 @@ export const insertTokens = async (game_id, card_id, user_id, amount) => {
       WHERE cards.id = $2
     ) cd
     RETURNING *
-  `, [game_id, card_id, user_id, amount])
-  if (rowCount !== amount) {
-    //throw
-  }
+  `, [game_id, card_id, user_id, amount], amount)
   return rows
 }
 export const toughness = async (game_id, object_id, user_id, value) => {
-  const {rows, rowCount} = await query(`
+  const {rows} = await query(`
     UPDATE objects
     SET toughness = $4
     WHERE objects.id = $1
@@ -917,23 +913,17 @@ export const toughness = async (game_id, object_id, user_id, value) => {
       AND objects.user_id = $3
       AND objects.zone = 'field'
     RETURNING *
-  `, [object_id, game_id, user_id, value])
-  if (rowCount !== 1) {
-    //throw
-  }
+  `, [object_id, game_id, user_id, value], 1)
   return rows
 }
 export const transform = async (game_id, object_id, user_id, card_face_id) => {
-  const {rows, rowCount} = await query(`
+  const {rows} = await query(`
     UPDATE objects
     SET card_face_id = $4
     WHERE objects.id = $1
       AND objects.game_id = $2
       AND objects.user_id = $3
     RETURNING *
-  `, [object_id, game_id, user_id, card_face_id])
-  if (rowCount !== 1) {
-    //throw
-  }
+  `, [object_id, game_id, user_id, card_face_id], 1)
   return rows
 }

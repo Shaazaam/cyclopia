@@ -30,7 +30,11 @@
         required: true,
       },
     },
-    emits: ['counter', 'expand', 'move'],
+    emits: [
+      'counter',
+      'expand',
+      'move',
+    ],
     methods: {
       counter(id, name, amount) {
         this.$emit('counter', id, name, amount)

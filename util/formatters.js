@@ -16,6 +16,7 @@ export const toCamelCase = (string) => string.replace(/(?:^\w|[A-Z]|\b\w)/g, (ma
   index === 0 ? match.toLowerCase() : match.toUpperCase()
 ).replace(/\s+/g, '')
 export const camelCasedToUpperCasedWords = (string) => toUpperCaseWords(string.replace(/([A-Z])/g, ' $&'))
+export const snakeCasedToUpperCasedWord = (string) => toUpperCaseWords(string.replace(/_/g, ' '))
 
 // Strings with defined formats
 export const currency = (integer, decimals = 2) => Intl.NumberFormat('en-US', {

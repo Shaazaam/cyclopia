@@ -82,22 +82,25 @@
         >Tokens</button>
         <ul class="dropdown-menu bg-dark">
           <li class="py-1">
-            <div class="input-group">
-              <input
-                type="text"
-                class="form-control"
-                v-model="token"
-                placeholder="Search"
-                @keyup.enter="tokenSearch"
-              />
-              <button
-                type="button"
-                class="btn btn-success"
-                @click="tokenSearch"
-              >
-                <i class="bi bi-search"></i>
-              </button>
-            </div>
+            <Input
+              v-model="token"
+              name="token"
+              type="text"
+              placeholder="Search"
+              :has-margin="false"
+              :has-label="false"
+              @keyup-enter="tokenSearch"
+            >
+              <template #inputGroupAfter>
+                <button
+                  type="button"
+                  class="btn btn-success"
+                  @click="tokenSearch"
+                >
+                  <i class="bi bi-search"></i>
+                </button>
+              </template>
+            </Input>
           </li>
         </ul>
       </div>
@@ -206,62 +209,71 @@
         <div class="card-img-overlay text-center">
           <h5>Cards: {{user.library_total}}</h5>
           <div v-if="user.is_ready && !isGameOver" class="d-grid gap-2">
-            <div class="input-group">
-              <button
-                type="button"
-                class="btn btn-success"
-                :disabled="functions.isNull(drawAmount)"
-                @click="draw"
-              >Draw</button>
-              <input
-                type="number"
-                v-model="drawAmount"
-                class="form-control"
-                min="1"
-                :max="user.library_total"
-              />
-            </div>
+            <Input
+              v-model="drawAmount"
+              type="number"
+              name="draw_amount"
+              :min="1"
+              :max="user.library_total"
+              :has-margin="false"
+              :has-label="false"
+            >
+              <template #inputGroupBefore>
+                <button
+                  type="button"
+                  class="btn btn-success"
+                  :disabled="functions.isNull(drawAmount)"
+                  @click="draw"
+                >Draw</button>
+              </template>
+            </Input>
             <button
               type="button"
               class="btn btn-warning"
               @click="shuffle"
             >Shuffle</button>
-            <div class="input-group">
-              <button
-                type="button"
-                class="btn btn-danger"
-                :disabled="functions.isNull(millAmount)"
-                @click="mill"
-              >Mill</button>
-              <input
-                type="number"
-                v-model="millAmount"
-                class="form-control"
-                min="1"
-                :max="user.library_total"
-              />
-            </div>
+            <Input
+              v-model="millAmount"
+              type="number"
+              name="mill_amount"
+              :min="1"
+              :max="user.library_total"
+              :has-margin="false"
+              :has-label="false"
+            >
+              <template #inputGroupBefore>
+                <button
+                  type="button"
+                  class="btn btn-danger"
+                  :disabled="functions.isNull(millAmount)"
+                  @click="mill"
+                >Mill</button>
+              </template>
+            </Input>
             <button
               type="button"
               class="btn btn-info"
               data-bs-toggle="modal"
               data-bs-target="#search"
             >Search</button>
-            <div class="input-group">
-              <button
-                type="button"
-                class="btn btn-info"
-                :disabled="functions.isNull(scryAmount)"
-                @click="scry"
-              >Scry</button>
-              <input
-                type="number"
-                v-model="scryAmount"
-                class="form-control"
-                min="1"
-                :max="user.library_total"
-              />
-            </div>
+            <Input
+              v-model="scryAmount"
+              type="number"
+              name="scry_amount"
+              :min="1"
+              :max="user.library_total"
+              :has-margin="false"
+              :has-label="false"
+            >
+              <template #inputGroupBefore>
+                <button
+                  type="button"
+                  class="btn btn-info"
+                  :disabled="functions.isNull(scryAmount)"
+                  @click="scry"
+                >Scry</button>
+              </template>
+            </Input>
           </div>
         </div>
       </div>
@@ -312,7 +324,7 @@
 
   <div id="search" ref="searchModal" class="modal fade" tabindex="-1">
     <div class="modal-dialog modal-xl modal-dialog-centered">
-      <div class="modal-content bg-dark">
+      <div class="modal-content bg-transparent">
         <div class="modal-body">
           <div class="row">
             <Card
@@ -322,6 +334,7 @@
                 expand: false,
                 move: functions.removeByValue(zones, 'library'),
               })"
+              bg="transparent"
               class="col-4"
               @move="move"
               @transform="transform"
@@ -335,17 +348,20 @@
 
   <div id="scry" ref="scryModal" class="modal fade" tabindex="-1">
     <div class="modal-dialog modal-xl modal-dialog-centered">
-      <div class="modal-content bg-dark">
+      <div class="modal-content bg-transparent">
         <div class="modal-body">
           <div class="row">
             <Card
               v-for="object in scryObjects"
               :object="object"
               :actions="factory.actions({expand: false})"
+              bg="transparent"
               class="col-4"
             >
-              <button type="button" class="btn btn-success" @click="scryTop(object.id)">Top</button>
-              <button type="button" class="btn btn-danger" @click="scryBottom(object.id)">Bottom</button>
+              <div class="d-flex justify-content-center hstack gap-3">
+                <button type="button" class="btn btn-success" @click="scryTop(object.id)">Top</button>
+                <button type="button" class="btn btn-danger" @click="scryBottom(object.id)">Bottom</button>
+              </div>
             </Card>
           </div>
         </div>
@@ -355,7 +371,7 @@
 
   <div id="tokenSearch" ref="tokenModal" class="modal fade" tabindex="-1">
     <div class="modal-dialog modal-xl modal-dialog-centered">
-      <div class="modal-content bg-dark">
+      <div class="modal-content bg-transparent">
         <div class="modal-body">
           <div class="row">
             <Card
@@ -365,6 +381,7 @@
                 expand: false,
                 create: true,
               })"
+              bg="transparent"
               class="col-4"
               @create="tokenCreate"
             >
@@ -412,6 +429,7 @@
   import Field from './field.vue'
   import Graveyard from './graveyard.vue'
   import Hand from './hand.vue'
+  import Input from './input.vue'
 
   export default {
     components: {
@@ -420,6 +438,7 @@
       Field,
       Graveyard,
       Hand,
+      Input,
     },
     props: {
       id: {
@@ -585,6 +604,7 @@
           'end-game': (event) => `Lost the Game, ${event.winner} is the Winner`,
           'end-turn': (event) => `Ended Their Turn`,
           'life': (event) => `Changed Their Life to ${event.data.life}`,
+          'mill': (event) => `Milled a Card`,
           'move': (event) => {
             let message = `Moved ${event.card_name} to the ${this.formatters.toUpperCaseWords(event.data.zone)}`
             if (event.data.zone === 'remove') {
@@ -654,7 +674,7 @@
         this.fetch.get('/scry', [this.id, this.scryAmount], (data) => {
           this.scryObjects = data
           this.scryModal.show()
-        })
+        }, false)
       },
       scryBottom(object_id) {
         this.scryObjects = this.scryObjects.filter((object) => object.id !== object_id)
@@ -686,9 +706,13 @@
       },
       tokenSearch() {
         this.fetch.get('/token', [this.token], (data) => {
+          if (this.functions.isEmpty(data)) {
+            this.store.setErrorMessage('No Tokens Found')
+            return false
+          }
           this.tokenObjects = data
           this.tokenModal.show()
-        })
+        }, false)
       },
       toughness(object_id, value) {
         this.fetch.put('/toughness', {game_id: this.id, object_id, value})
