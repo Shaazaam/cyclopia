@@ -306,8 +306,9 @@
 
   <div id="card" ref="cardModal" class="modal fade" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content modal-fullscreen bg-transparent">
-        <div class="modal-header">
+      <div class="modal-content bg-transparent">
+        <div class="modal-header" @click="closeModal('cardModal')">
+          <h5 class="text-light">{{object.card.name}}</h5>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
@@ -327,8 +328,9 @@
 
   <div id="search" ref="searchModal" class="modal fade" tabindex="-1">
     <div class="modal-dialog modal-fullscreen modal-dialog-centered">
-      <div class="modal-content modal-fullscreen bg-transparent">
-        <div class="modal-header">
+      <div class="modal-content bg-transparent">
+        <div class="modal-header" @click="closeModal('searchModal')">
+          <h5 class="text-light">Search Deck</h5>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
@@ -355,7 +357,8 @@
   <div id="scry" ref="scryModal" class="modal fade" tabindex="-1">
     <div class="modal-dialog modal-fullscreen modal-dialog-centered">
       <div class="modal-content bg-transparent">
-        <div class="modal-header">
+        <div class="modal-header" @click="closeModal('scryModal')">
+          <h5 class="text-light">Scry</h5>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
@@ -381,7 +384,8 @@
   <div id="tokenSearch" ref="tokenModal" class="modal fade" tabindex="-1">
     <div class="modal-dialog modal-fullscreen modal-dialog-centered">
       <div class="modal-content bg-transparent">
-        <div class="modal-header">
+        <div class="modal-header" @click="closeModal('tokenModal')">
+          <h5 class="text-light">Tokens</h5>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
@@ -634,6 +638,9 @@
           'transform': () => `Transformed a Card`,
         }))()[event.name]
         return `${event.created_on}: ${event.handle} ${text(event)}`
+      },
+      closeModal(modal) {
+        this[modal].hide()
       },
       determineAmount(amount) {
         return amount > this.user.library_total
