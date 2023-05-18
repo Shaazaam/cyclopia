@@ -306,9 +306,12 @@
 
   <div id="card" ref="cardModal" class="modal fade" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content bg-transparent">
+      <div class="modal-content modal-fullscreen bg-transparent">
+        <div class="modal-header">
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
         <div class="modal-body">
-          <div class="row">
+          <div class="row justify-content-center">
             <Card
               :object="object"
               :actions="factory.actions({expand: false})"
@@ -323,10 +326,13 @@
   </div>
 
   <div id="search" ref="searchModal" class="modal fade" tabindex="-1">
-    <div class="modal-dialog modal-xl modal-dialog-centered">
-      <div class="modal-content bg-transparent">
+    <div class="modal-dialog modal-fullscreen modal-dialog-centered">
+      <div class="modal-content modal-fullscreen bg-transparent">
+        <div class="modal-header">
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
         <div class="modal-body">
-          <div class="row">
+          <div class="row justify-content-center">
             <Card
               v-for="object in user.library"
               :object="object"
@@ -335,7 +341,7 @@
                 move: functions.removeByValue(zones, 'library'),
               })"
               bg="transparent"
-              class="col-4"
+              class="col-3"
               @move="move"
               @transform="transform"
             >
@@ -347,16 +353,19 @@
   </div>
 
   <div id="scry" ref="scryModal" class="modal fade" tabindex="-1">
-    <div class="modal-dialog modal-xl modal-dialog-centered">
+    <div class="modal-dialog modal-fullscreen modal-dialog-centered">
       <div class="modal-content bg-transparent">
+        <div class="modal-header">
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
         <div class="modal-body">
-          <div class="row">
+          <div class="row justify-content-center">
             <Card
               v-for="object in scryObjects"
               :object="object"
               :actions="factory.actions({expand: false})"
               bg="transparent"
-              class="col-4"
+              class="col-3"
             >
               <div class="d-flex justify-content-center hstack gap-3">
                 <button type="button" class="btn btn-success" @click="scryTop(object.id)">Top</button>
@@ -370,10 +379,13 @@
   </div>
 
   <div id="tokenSearch" ref="tokenModal" class="modal fade" tabindex="-1">
-    <div class="modal-dialog modal-xl modal-dialog-centered">
+    <div class="modal-dialog modal-fullscreen modal-dialog-centered">
       <div class="modal-content bg-transparent">
+        <div class="modal-header">
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
         <div class="modal-body">
-          <div class="row">
+          <div class="row justify-content-center">
             <Card
               v-for="object in tokenObjects"
               :object="object"
@@ -382,7 +394,7 @@
                 create: true,
               })"
               bg="transparent"
-              class="col-4"
+              class="col-3"
               @create="tokenCreate"
             >
             </Card>
