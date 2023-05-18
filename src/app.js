@@ -13,7 +13,6 @@ import Profile from './components/profile.vue'
 
 import * as factory from '../util/factory.js'
 import fetch from '../util/fetch.js'
-import * as formatters from '../util/formatters.js'
 import * as functions from '../util/functions.js'
 import storage from '../util/storage.js'
 import store from '../util/store.js'
@@ -110,7 +109,7 @@ router.beforeEach(({meta}, from) => {
     }
   }
 })
-router.afterEach(({name}, from) => nextTick(() => document.title = `Cyclopia | ${formatters.toUpperCaseWords(name)}`))
+router.afterEach(({name}, from) => nextTick(() => document.title = `Cyclopia | ${functions.toUpperCaseWords(name)}`))
 
 const vstore = reactive({
   message: undefined,
@@ -155,7 +154,6 @@ app.use(router)
     data: () => ({
       factory,
       fetch,
-      formatters,
       functions,
       store: vstore,
       socket,
