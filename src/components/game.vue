@@ -45,7 +45,7 @@
         />
       </div>
       <div v-for="{name} in userCounters" class="input-group">
-        <span class="input-group-text bg-dark text-light">{{formatters.toUpperCaseWords(name)}}</span>
+        <span class="input-group-text bg-dark text-light">{{functions.toUpperCaseWords(name)}}</span>
         <input
           type="text"
           class="form-control bg-dark text-light"
@@ -109,7 +109,7 @@
         <ul class="dropdown-menu bg-dark">
           <li v-for="{name} in userCounters" class="py-1">
             <div class="input-group">
-              <span class="input-group-text bg-dark text-light">{{formatters.toUpperCaseWords(name)}}</span>
+              <span class="input-group-text bg-dark text-light">{{functions.toUpperCaseWords(name)}}</span>
               <input
                 :type="!isGameOver ? 'number' : 'text'"
                 class="form-control"
@@ -598,15 +598,15 @@
     methods: {
       getEventText(event) {
         const text = (() => ({
-          'counter-card': (event) => `Placed ${event.data.amount} ${this.formatters.toUpperCaseWords(event.data.counter)} Counters on ${event.card_name}`,
-          'counter-user': (event) => `Received ${event.data.amount} ${this.formatters.toUpperCaseWords(event.data.counter)} Counters`,
+          'counter-card': (event) => `Placed ${event.data.amount} ${this.functions.toUpperCaseWords(event.data.counter)} Counters on ${event.card_name}`,
+          'counter-user': (event) => `Received ${event.data.amount} ${this.functions.toUpperCaseWords(event.data.counter)} Counters`,
           'draw': (event) => `Drew a Card`,
           'end-game': (event) => `Lost the Game, ${event.winner} is the Winner`,
           'end-turn': (event) => `Ended Their Turn`,
           'life': (event) => `Changed Their Life to ${event.data.life}`,
           'mill': (event) => `Milled a Card`,
           'move': (event) => {
-            let message = `Moved ${event.card_name} to the ${this.formatters.toUpperCaseWords(event.data.zone)}`
+            let message = `Moved ${event.card_name} to the ${this.functions.toUpperCaseWords(event.data.zone)}`
             if (event.data.zone === 'remove') {
               message = `Removed ${event.card_name} from the Game`
             }

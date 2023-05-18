@@ -1,5 +1,4 @@
-import {encodeObjectAsQueryString} from './formatters.js'
-import {copy, deepCopy, isArray, isNotArray, isObject, isNotNull} from './functions.js'
+import {copy, deepCopy, isArray, isNotArray, isObject, isNotNull, encodeObjectAsQueryString} from './functions.js'
 
 export const route = (endpoint, params = null) => {
   if (isNotNull(params) && isObject(params) && isNotArray(params)) {

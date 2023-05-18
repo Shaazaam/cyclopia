@@ -37,7 +37,7 @@
           </button>
           <ul class="dropdown-menu bg-transparent">
             <li v-for="zone in _actions.move" class="py-1">
-              <button type="button" class="btn btn-primary" @click="move(zone)">{{formatters.toUpperCaseWords(zone)}}</button>
+              <button type="button" class="btn btn-primary" @click="move(zone)">{{functions.toUpperCaseWords(zone)}}</button>
             </li>
           </ul>
         </div>
@@ -95,7 +95,7 @@
       <template v-for="{name, amount} in object.counters">
         <div v-if="amount > 0" class="d-flex justify-content-between mb-2">
           <div class="input-group">
-            <span class="input-group-text bg-dark text-light">{{formatters.toUpperCaseWords(name)}}</span>
+            <span class="input-group-text bg-dark text-light">{{functions.toUpperCaseWords(name)}}</span>
             <input
               type="text"
               class="form-control bg-dark text-light"
@@ -113,7 +113,7 @@
               <div class="input-group">
                 <select v-model="selectedCounter" class="form-control">
                   <option value="" disabled></option>
-                  <option v-for="{name} in _actions.counters" :value="name">{{formatters.toUpperCaseWords(name)}}</option>
+                  <option v-for="{name} in _actions.counters" :value="name">{{functions.toUpperCaseWords(name)}}</option>
                 </select>
                 <input
                   type="number"
