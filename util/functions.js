@@ -165,3 +165,43 @@ export const removeKeys = (object, keys) => Object.fromEntries(Object.entries(ob
 // Utilities
 export const characterRange = (start, end) => [...Array(end.charCodeAt(0) - start.charCodeAt(0) + 1).keys()].map((i) => String.fromCharCode(start.charCodeAt(0) + i))
 export const numericRange = (start, stop, step = 1) => Array.from({length: (stop - start) / step + 1}, (_, i) => start + (i * step))
+
+// Basic string formatting
+export const stringOrNoDataState = (string, state = 'N/A') => isNotEmpty(string) ? string : state
+export const truncateString = (string, limit) => {
+  const elipsis = '...'
+  if (string.length > limit) {
+    return string.substring(0, limit - elipsis.length) + elipsis
+  }
+  return string
+}
+export const stripSpaces = (string) => string.toLowerCase().replace(/\s{1,}/g, '')
+export const toStudlyCase = (string) => string.slice(0, 1).toUpperCase() + string.slice(1)
+export const toUpperCaseWords = (string) => string.toLowerCase().replace(/\b[a-z]/g, (letter) => letter.toUpperCase())
+export const toCamelCase = (string) => string.replace(/(?:^\w|[A-Z]|\b\w)/g, (match, index) =>
+  index === 0 ? match.toLowerCase() : match.toUpperCase()
+).replace(/\s+/g, '')
+export const camelCasedToUpperCasedWords = (string) => toUpperCaseWords(string.replace(/([A-Z])/g, ' $&'))
+export const snakeCasedToUpperCasedWord = (string) => toUpperCaseWords(string.replace(/_/g, ' '))
+
+// Strings with defined formats
+export const currency = (integer, decimals = 2) => Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: 'USD',
+  minimumFractionDigits: decimals,
+  maximumFractionDigits: decimals,
+}).format(integer)
+export const percentage = (number) => Intl.NumberFormat('en-US', {
+  style: 'percent',
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+  signDisplay: 'always',
+}).format(number)
+export const numberFormat = (number) => new Intl.NumberFormat().format(number)
+
+// Conversion functions
+export const toNumber = (string) => parseInt(string, 10)
+
+// Query strings
+export const encodeArrayAsQueryString = (key, array) => '?' + array.map((v) => encodeURIComponent(key) + '=' + encodeURIComponent(v)).join('&')
+export const encodeObjectAsQueryString = (object) => '?' + new URLSearchParams(object).toString()

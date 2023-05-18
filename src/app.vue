@@ -10,7 +10,7 @@
             :to="{name}"
             class="nav-link"
           >
-            {{formatters.toUpperCaseWords(name)}}
+            {{functions.toUpperCaseWords(name)}}
           </router-link>
         </li>
       </ul>

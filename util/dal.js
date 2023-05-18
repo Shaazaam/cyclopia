@@ -2,12 +2,12 @@ import pg from 'pg'
 
 import config from './config.js'
 import * as factory from './factory.js'
-import {isNotEmpty, isNotNull, isNotUndefined, numericRange} from './functions.js'
+import {isNotEmpty, isNotNull, isNotUndefined, numericRange, toNumber} from './functions.js'
 
 const pool = new pg.Pool(config.db)
 const query = (text, values, expectedCount = null) => pool.query(text, values)
   .then((res) => {
-    if (isNotNull(expectedCount) && expectedCount !== res.rowCount) {
+    if (isNotNull(expectedCount) && toNumber(expectedCount) !== res.rowCount) {
       return Promise.reject(new Error('Row count does not match expected result', {cause: text.replace(/^\s{2,}/g, '').replace(/\s{2,}/g, ' ').replace(/\s{1,}$/g, '')}))
     }
     return res

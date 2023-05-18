@@ -1,5 +1,4 @@
 import * as dal from './dal.js'
-import {snakeCasedToUpperCasedWord} from './formatters.js'
 import {
   copy,
   isEmail,
@@ -8,6 +7,7 @@ import {
   isNumber,
   isObjectEmpty,
   isString,
+  snakeCasedToUpperCasedWord,
 } from './functions.js'
 
 const BELONGS_TO = 'bt'
