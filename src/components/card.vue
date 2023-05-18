@@ -79,8 +79,7 @@
             class="form-control"
             :class="!isMine || isGameOver ? ['bg-dark', 'text-light'] : []"
             :disabled="!isMine || isGameOver"
-            @focusout="(e) => power(e.target.value)"
-            @keyup.enter="(e) => power(e.target.value)"
+            @change="(e) => power(e.target.value)"
           />
           <span class="input-group-text bg-dark text-light">/</span>
           <input
@@ -89,8 +88,7 @@
             class="form-control"
             :class="!isMine || isGameOver ? ['bg-dark', 'text-light'] : []"
             :disabled="!isMine || isGameOver"
-            @focusout="(e) => toughness(e.target.value)"
-            @keyup.enter="(e) => toughness(e.target.value)"
+            @change="(e) => toughness(e.target.value)"
           />
         </div>
       </div>

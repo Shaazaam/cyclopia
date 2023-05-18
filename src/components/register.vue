@@ -22,7 +22,13 @@
           type="text"
           name="handle"
           placeholder="User Handle"
-        />
+        >
+          <template #helpText>
+            <div class="form-text text-light">
+              Maximum of 50 characters.
+            </div>
+          </template>
+        </Input>
         <Input
           v-model="user.password"
           id="password"
