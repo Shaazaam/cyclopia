@@ -99,11 +99,12 @@ CREATE TABLE IF NOT EXISTS zones (
 );
 
 INSERT INTO zones (name) VALUES
-  ('library'),
-  ('hand'),
-  ('graveyard'),
+  ('exile'),
   ('field'),
-  ('exile')
+  ('graveyard'),
+  ('hand'),
+  ('library'),
+  ('remove')
 ON CONFLICT zones_pkey DO NOTHING;
 
 CREATE TABLE IF NOT EXISTS objects (
@@ -172,5 +173,11 @@ CREATE TABLE IF NOT EXISTS events (
   name VARCHAR(25) NOT NULL,
   data JSONB,
   created_by UUID NOT NULL REFERENCES users(id),
+  created_on TIMESTAMP WITHOUT TIME ZONE DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS errors (
+  id UUID NOT NULL PRIMARY KEY gen_random_uuid(),
+  data JSONB,
   created_on TIMESTAMP WITHOUT TIME ZONE DEFAULT now()
 );

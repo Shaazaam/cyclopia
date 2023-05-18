@@ -16,9 +16,9 @@
       </ul>
     </div>
   </nav>
-  <transition name="fade">
-    <div class="position-relative">
-      <div class="toast-container top-0 end-0 px-3">
+  <div class="sticky-top">
+    <div class="toast-container top-0 end-0 px-3">
+      <Transition name="fade">
         <div
           v-if="functions.isNotNull(alert)"
           class="toast align-items-center border-0"
@@ -33,22 +33,45 @@
             <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast"></button>
           </div>
         </div>
-      </div>
+      </Transition>
     </div>
-  </transition>
-  <div class="container-fluid">
-    <router-view v-cloak></router-view>
+  </div>
+  <div class="container-fluid" :class="{'invisible': isLoading}" v-cloak>
+    <!-- <div v-if="isLoading" class="d-flex justify-content-center hstack gap-3">
+      <div class="spinner-lg spinner-grow text-danger" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+      <div v-if="icon1" class="spinner-lg spinner-grow text-danger" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+      <div v-if="icon2" class="spinner-lg spinner-grow text-danger" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+    </div> -->
+    <router-view />
   </div>
 </template>
 
 <script>
   export default {
+    data: () => ({
+      icon1: false,
+      icon2: false,
+    }),
     computed: {
       alert() {
         return this.store.get('message')
       },
       routes() {
         return this.$router.getRoutes().filter(({meta}) => meta.requiresAuth === this.isLoggedIn && meta.main)
+      },
+    },
+    watch: {
+      isLoading(x) {
+        if (x) {
+          window.setTimeout(() => this.icon1 = true, 200)
+          window.setTimeout(() => this.icon2 = true, 400)
+        }
       },
     },
     mounted() {
@@ -62,6 +85,9 @@
 <style>
   [v-cloak] {
     display: none;
+  }
+  .sticky-top {
+    top: 2.5%;
   }
   .tapped {
     transform: rotate(270deg);
@@ -114,5 +140,13 @@
   .reverse-columns {
     display: flex;
     flex-direction: column-reverse;
+  }
+  .spinner-lg {
+    width: 4rem;
+    height: 4rem;
+  }
+  .invalid-feedback {
+    margin-top: unset;
+    margin-bottom: 0.5rem;
   }
 </style>

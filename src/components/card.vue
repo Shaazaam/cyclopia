@@ -3,6 +3,7 @@
     class="card text-light mb-3"
     :class="'bg-' + bg"
     @mouseenter="hover = true"
+    @mouseleave="hover = false"
   >
     <img
       :src="image"
@@ -11,12 +12,11 @@
     />
     <div
       class="card-img-overlay"
-      :class="{'invisible': !hover || isGameOver}"
-      @mouseleave="hover = false"
+      :class="{'invisible': !hover}"
     >
       <div class="d-flex justify-content-between mb-2">
         <button
-          v-if="_actions.tap"
+          v-if="_actions.tap && !isGameOver"
           type="button"
           class="btn"
           :class="{
@@ -27,7 +27,7 @@
         >
           <i class="bi bi-reply-fill"></i>
         </button>
-        <div v-if="functions.isNotEmpty(_actions.move)" class="dropdown-center">
+        <div v-if="functions.isNotEmpty(_actions.move) && !isGameOver" class="dropdown-center">
           <button
             type="button"
             class="btn btn-primary dropdown-toggle"
@@ -42,7 +42,7 @@
           </ul>
         </div>
         <button
-          v-if="_actions.transform && functions.isNotNull(object.active_face)"
+          v-if="_actions.transform && functions.isNotNull(object.active_face) && !isGameOver"
           type="button"
           class="btn btn-info"
           @click="transform"
@@ -74,25 +74,27 @@
       <div class="d-flex justify-content-between mb-2">
         <div v-if="_actions.stats" class="input-group">
           <input
-            :type="isMine ? 'number' : 'text'"
+            :type="isMine && !isGameOver ? 'number' : 'text'"
             :value="object.power"
             class="form-control"
-            :class="!isMine ? ['bg-dark', 'text-light'] : []"
-            :disabled="!isMine"
-            @change="(e) => power(e.target.value)"
+            :class="!isMine || isGameOver ? ['bg-dark', 'text-light'] : []"
+            :disabled="!isMine || isGameOver"
+            @focusout="(e) => power(e.target.value)"
+            @keyup.enter="(e) => power(e.target.value)"
           />
           <span class="input-group-text bg-dark text-light">/</span>
           <input
-            :type="isMine ? 'number' : 'text'"
+            :type="isMine && !isGameOver ? 'number' : 'text'"
             :value="object.toughness"
             class="form-control"
-            :class="!isMine ? ['bg-dark', 'text-light'] : []"
-            :disabled="!isMine"
-            @change="(e) => toughness(e.target.value)"
+            :class="!isMine || isGameOver ? ['bg-dark', 'text-light'] : []"
+            :disabled="!isMine || isGameOver"
+            @focusout="(e) => toughness(e.target.value)"
+            @keyup.enter="(e) => toughness(e.target.value)"
           />
         </div>
       </div>
-      <template v-for="{name, amount} in object.counters" >
+      <template v-for="{name, amount} in object.counters">
         <div v-if="amount > 0" class="d-flex justify-content-between mb-2">
           <div class="input-group">
             <span class="input-group-text bg-dark text-light">{{formatters.toUpperCaseWords(name)}}</span>
@@ -105,7 +107,7 @@
           </div>
         </div>
       </template>
-      <div class="d-flex justify-content-between">
+      <div v-if="!isGameOver" class="d-flex justify-content-between">
         <div v-if="functions.isNotEmpty(_actions.counters)" class="dropdown-center" style="width: 100%;">
           <button type="button" class="btn btn-info dropdown-toggle" data-bs-toggle="dropdown">Counters</button>
           <ul class="dropdown-menu bg-transparent">
@@ -118,74 +120,17 @@
                 <input
                   type="number"
                   class="form-control"
-                  v-model="selectedCounterAmount"
+                  :value="selectedCounterAmount"
                   min="0"
+                  @change="(e) => counter(e.target.value)"
                 />
               </div>
             </li>
           </ul>
         </div>
       </div>
+      <slot></slot>
     </div>
-    <!-- <div class="card-body">
-      <div class="d-grid gap-2">
-        <div class="input-group">
-          <input
-            :type="object.user_id === authUser.id ? 'number' : 'text'"
-            :value="object.power"
-            class="form-control"
-            :class="object.user_id !== authUser.id ? ['bg-dark', 'text-light'] : []"
-            :disabled="object.user_id !== authUser.id"
-            @change="(e) => power(object.id, e.target.value)"
-          />
-          <span class="input-group-text bg-dark text-light">/</span>
-          <input
-            :type="object.user_id === authUser.id ? 'number' : 'text'"
-            :value="object.toughness"
-            class="form-control"
-            :class="object.user_id !== authUser.id ? ['bg-dark', 'text-light'] : []"
-            :disabled="object.user_id !== authUser.id"
-            @change="(e) => toughness(object.id, e.target.value)"
-          />
-        </div>
-        <template v-if="object.user_id === authUser.id">
-          <button
-            type="button"
-            class="btn"
-            :class="{
-              'btn-success': object.is_tapped,
-              'btn-warning': !object.is_tapped,
-            }"
-            @click="tap(object.id, !object.is_tapped)"
-          >{{object.is_tapped ? 'Untap' : 'Tap'}}</button>
-          <div class="dropdown-center">
-            <button type="button" class="btn btn-info dropdown-toggle" data-bs-toggle="dropdown">Counters</button>
-            <ul class="dropdown-menu bg-dark">
-              <li v-for="{name} in counters" class="py-1">
-                <div class="input-group">
-                  <span class="input-group-text bg-dark text-light">{{formatters.toUpperCaseWords(name)}}</span>
-                  <input
-                    type="number"
-                    class="form-control"
-                    :value="object.counters[name]"
-                    @change="(e) => counter(object.id, name, e.target.value)"
-                  />
-                </div>
-              </li>
-            </ul>
-          </div>
-          <div v-if="functions.isNotEmpty(zones)" class="dropdown-center">
-            <button type="button" class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown">Move</button>
-            <ul class="dropdown-menu bg-dark">
-              <li v-for="zone in zones" class="py-1">
-                <button type="button" class="btn btn-primary" @click="move(object.id, zone)">{{formatters.toUpperCaseWords(zone)}}</button>
-              </li>
-            </ul>
-          </div>
-        </template>
-      </div>
-    </div> -->
-    <slot></slot>
   </div>
 </template>
 
@@ -240,17 +185,19 @@
         }
         return image
       },
-      selectedCounterAmount: {
-        get() {
-          return this.functions.isNotNull(this.selectedCounter) ? this.object.counters.find(({name}) => name === this.selectedCounter).amount : 0
-        },
-        set(x) {
-          this.counter(x)
-        },
+      selectedCounterAmount() {
+        return this.functions.isNotNull(this.selectedCounter) ? this.object.counters.find(({name}) => name === this.selectedCounter).amount : 0
       },
     },
     created() {
-      this._actions = this.functions.isNull(this.actions) ? this.factory.actions() : this.actions
+      this._actions = this.functions.isNull(this.actions)
+        ? this.factory.actions()
+        : this.actions
+      if (['exile', 'field', 'graveyard'].includes(this.object.zone) && this.object.card.type_line.includes('Token')) {
+        this._actions = this.functions.copy(this._actions, {
+          move: this.functions.removeByValue(this._actions.move, 'graveyard')
+        })
+      }
     },
     methods: {
       create() {

@@ -103,6 +103,7 @@ const router = createRouter({
   routes,
 })
 router.beforeEach(({meta}, from) => {
+  store.set('inputErrors', [])
   if (meta.requiresAuth && !isLoggedIn()) {
     return {
       name: 'login',
@@ -119,11 +120,19 @@ const vstore = reactive({
   user: undefined,
   games: [],
   challenges: {},
+  events: [],
 
   set(key, value) {this[key] = value},
   get(key) {return this[key]},
 
-  setMessage(x) {this.set('message', x)},
+  setSuccessMessage(message) {
+    this.set('message', {kind: 'success', message})
+    window.setTimeout(() => this.clearMessage(), 4 * 1000)
+  },
+  setErrorMessage(message) {
+    this.set('message', {kind: 'error', message})
+    window.setTimeout(() => this.clearMessage(), 4 * 1000)
+  },
   clearMessage() {this.set('message', null)},
 
   setUser(x) {this.set('user', x)},
@@ -137,6 +146,7 @@ store.set('inputErrors', [], (key, value) => vstore[key] = value)
 store.set('user', factory.user(user()), (key, value) => vstore[key] = value)
 store.set('games', [], (key, value) => vstore[key] = value)
 store.set('challenges', {}, (key, value) => vstore[key] = value)
+store.set('events', [], (key, value) => vstore[key] = value)
 
 app.config.unwrapInjectedRef = true
 
@@ -157,6 +167,16 @@ app.use(router)
       },
       isLoggedIn() {
         return this.functions.isNotNull(this.store.get('user').id)
+      },
+      isSaving() {
+        return this.store.get('isSaving')
+      },
+      isLoading() {
+        return this.store.get('isLoading')
+      },
+      errors() {
+        const [errors] = this.store.get('inputErrors')
+        return errors
       },
     },
   })

@@ -87,11 +87,6 @@ const onClose = (event) => {
     } = wsc())
   }
 
-  /*
-    Reconnect only if it's configured to
-    If attempted connections are less than or equal to number of attempt
-    Add stacking timeout to the number of attempted
-  */
   if (isNotNull(socket) && reconnect && timeout.attempts >= timeout.attempted) {
     timeout.attempted = timeout.attempted + 1
     update('Disconnected. Reconnecting...', event)
@@ -119,7 +114,8 @@ const onMessage = (event) => {
     },
     '__pong__': () => window.clearTimeout(timeout.event),
     'game': () => store.set('games', store.get('games').concat(data)),
-    'challenge': () => store.set('challenges', copy(store.get('challenges'), data)),
+    'challenge': () => store.set('challenges', data),
+    'event': () => store.set('events', data),
   }))()[kind]
   func()
 }

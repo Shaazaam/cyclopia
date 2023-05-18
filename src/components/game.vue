@@ -31,7 +31,10 @@
   </div>
 
   <div v-if="functions.isNotEmpty(users)" class="row px-3">
-    <div class="col-1">
+    <div
+      class="col-4 hstack gap-3"
+      :class="{'invisible': !opponent.is_ready}"
+    >
       <div class="input-group">
         <span class="input-group-text bg-dark text-light">Life</span>
         <input
@@ -41,9 +44,7 @@
           disabled
         />
       </div>
-    </div>
-    <div v-for="{name} in userCounters" class="col-1">
-      <div class="input-group">
+      <div v-for="{name} in userCounters" class="input-group">
         <span class="input-group-text bg-dark text-light">{{formatters.toUpperCaseWords(name)}}</span>
         <input
           type="text"
@@ -53,17 +54,20 @@
         />
       </div>
     </div>
-    <h2 class="col text-center">
+    <h4 class="col text-center">
       <i v-if="opponent.is_winner" class="bi bi-trophy-fill text-warning"></i>
       <i v-if="opponent.is_active_turn && !isGameOver" class="bi bi-caret-right-fill text-danger"></i>
         {{opponent.handle}} vs {{user.handle}}
       <i v-if="user.is_active_turn && !isGameOver" class="bi bi-caret-left-fill text-success"></i>
       <i v-if="user.is_winner" class="bi bi-trophy-fill text-warning"></i>
-    </h2>
-    <div class="col-3 d-flex justify-content-between">
+    </h4>
+    <div
+      class="col-4 hstack gap-3"
+      :class="{'invisible': !user.is_ready}"
+    >
       <button
         type="button"
-        class="btn btn-danger align-self-baseline"
+        class="btn btn-danger"
         :class="{'invisible': isGameOver}"
         @click="endGame"
         :disabled="isGameOver"
@@ -78,22 +82,25 @@
         >Tokens</button>
         <ul class="dropdown-menu bg-dark">
           <li class="py-1">
-            <div class="input-group">
-              <input
-                type="text"
-                class="form-control"
-                v-model="token"
-                placeholder="Search for Token by Name"
-                @keyup.enter="tokenSearch"
-              />
-              <button
-                type="button"
-                class="btn btn-success"
-                @click="tokenSearch"
-              >
-                <i class="bi bi-search"></i>
-              </button>
-            </div>
+            <Input
+              v-model="token"
+              name="token"
+              type="text"
+              placeholder="Search"
+              :has-margin="false"
+              :has-label="false"
+              @keyup-enter="tokenSearch"
+            >
+              <template #inputGroupAfter>
+                <button
+                  type="button"
+                  class="btn btn-success"
+                  @click="tokenSearch"
+                >
+                  <i class="bi bi-search"></i>
+                </button>
+              </template>
+            </Input>
           </li>
         </ul>
       </div>
@@ -115,8 +122,12 @@
           </li>
         </ul>
       </div>
-    </div>
-    <div class="col-1">
+      <button
+        type="button"
+        class="btn btn-primary"
+        data-bs-toggle="offcanvas"
+        data-bs-target="#eventLog"
+      >Log</button>
       <div class="input-group">
         <span class="input-group-text bg-dark text-light">Life</span>
         <input
@@ -124,37 +135,42 @@
           class="form-control"
           :class="!isGameOver ? [] : ['bg-dark', 'text-light']"
           :disabled="isGameOver"
-          v-model="life"
+          :value="user.life"
+          @change="(e) => life(e.target.value)"
         />
       </div>
     </div>
   </div>
 
-  <div class="row justify-content-center px-5 mb-3" :class="{'invisible': isGameOver}">
-    <button
-      v-if="!user.is_ready && functions.isNotEmpty(user.hand)"
-      type="button"
-      class="btn btn-success col-1 me-1"
-      @click="start"
-    >Start Game</button>
-    <button
-      v-if="!user.is_ready && functions.isEmpty(user.hand)"
-      type="button"
-      class="btn btn-info col-1 me-1"
-      @click="draw"
-    >Draw Hand</button>
-    <button
-      v-if="!user.is_ready && functions.isNotEmpty(user.hand)"
-      type="button"
-      class="btn btn-warning col-1 me-1"
-      @click="mulligan"
-    >Mulligan</button>
-    <button
-      type="button"
-      class="btn btn-danger col-1 me-1"
-      :class="{'invisible': !user.is_active_turn}"
-      @click="endTurn"
-    >End Turn</button>
+  <div class="row px-5 mb-3" :class="{'invisible': isGameOver}">
+    <div v-if="!user.is_ready" class="col d-flex justify-content-center hstack gap-3">
+      <button
+        v-if="!user.is_ready && functions.isNotEmpty(user.hand)"
+        type="button"
+        class="btn btn-success"
+        @click="start"
+      >Start Game</button>
+      <button
+        v-if="!user.is_ready && functions.isEmpty(user.hand)"
+        type="button"
+        class="btn btn-info"
+        @click="draw"
+      >Draw Hand</button>
+      <button
+        v-if="!user.is_ready && functions.isNotEmpty(user.hand)"
+        type="button"
+        class="btn btn-warning"
+        @click="mulligan"
+      >Mulligan</button>
+    </div>
+    <div v-else class="col d-flex justify-content-center">
+      <button
+        type="button"
+        class="btn btn-danger"
+        :class="{'invisible': !user.is_active_turn}"
+        @click="endTurn"
+      >End Turn</button>
+    </div>
   </div>
 
   <Field
@@ -193,62 +209,71 @@
         <div class="card-img-overlay text-center">
           <h5>Cards: {{user.library_total}}</h5>
           <div v-if="user.is_ready && !isGameOver" class="d-grid gap-2">
-            <div class="input-group">
-              <button
-                type="button"
-                class="btn btn-success"
-                :disabled="functions.isNull(drawAmount)"
-                @click="draw"
-              >Draw</button>
-              <input
-                type="number"
-                v-model="drawAmount"
-                class="form-control"
-                min="1"
-                :max="user.library_total"
-              />
-            </div>
+            <Input
+              v-model="drawAmount"
+              type="number"
+              name="draw_amount"
+              :min="1"
+              :max="user.library_total"
+              :has-margin="false"
+              :has-label="false"
+            >
+              <template #inputGroupBefore>
+                <button
+                  type="button"
+                  class="btn btn-success"
+                  :disabled="functions.isNull(drawAmount)"
+                  @click="draw"
+                >Draw</button>
+              </template>
+            </Input>
             <button
               type="button"
               class="btn btn-warning"
               @click="shuffle"
             >Shuffle</button>
-            <div class="input-group">
-              <button
-                type="button"
-                class="btn btn-danger"
-                :disabled="functions.isNull(millAmount)"
-                @click="mill"
-              >Mill</button>
-              <input
-                type="number"
-                v-model="millAmount"
-                class="form-control"
-                min="1"
-                :max="user.library_total"
-              />
-            </div>
+            <Input
+              v-model="millAmount"
+              type="number"
+              name="mill_amount"
+              :min="1"
+              :max="user.library_total"
+              :has-margin="false"
+              :has-label="false"
+            >
+              <template #inputGroupBefore>
+                <button
+                  type="button"
+                  class="btn btn-danger"
+                  :disabled="functions.isNull(millAmount)"
+                  @click="mill"
+                >Mill</button>
+              </template>
+            </Input>
             <button
               type="button"
               class="btn btn-info"
               data-bs-toggle="modal"
               data-bs-target="#search"
             >Search</button>
-            <div class="input-group">
-              <button
-                type="button"
-                class="btn btn-info"
-                :disabled="functions.isNull(scryAmount)"
-                @click="scry"
-              >Scry</button>
-              <input
-                type="number"
-                v-model="scryAmount"
-                class="form-control"
-                min="1"
-                :max="user.library_total"
-              />
-            </div>
+            <Input
+              v-model="scryAmount"
+              type="number"
+              name="scry_amount"
+              :min="1"
+              :max="user.library_total"
+              :has-margin="false"
+              :has-label="false"
+            >
+              <template #inputGroupBefore>
+                <button
+                  type="button"
+                  class="btn btn-info"
+                  :disabled="functions.isNull(scryAmount)"
+                  @click="scry"
+                >Scry</button>
+              </template>
+            </Input>
           </div>
         </div>
       </div>
@@ -299,7 +324,7 @@
 
   <div id="search" ref="searchModal" class="modal fade" tabindex="-1">
     <div class="modal-dialog modal-xl modal-dialog-centered">
-      <div class="modal-content bg-dark">
+      <div class="modal-content bg-transparent">
         <div class="modal-body">
           <div class="row">
             <Card
@@ -309,6 +334,7 @@
                 expand: false,
                 move: functions.removeByValue(zones, 'library'),
               })"
+              bg="transparent"
               class="col-4"
               @move="move"
               @transform="transform"
@@ -322,17 +348,20 @@
 
   <div id="scry" ref="scryModal" class="modal fade" tabindex="-1">
     <div class="modal-dialog modal-xl modal-dialog-centered">
-      <div class="modal-content bg-dark">
+      <div class="modal-content bg-transparent">
         <div class="modal-body">
           <div class="row">
             <Card
               v-for="object in scryObjects"
               :object="object"
               :actions="factory.actions({expand: false})"
+              bg="transparent"
               class="col-4"
             >
-              <button type="button" class="btn btn-success" @click="scryTop(object.id)">Top</button>
-              <button type="button" class="btn btn-danger" @click="scryBottom(object.id)">Bottom</button>
+              <div class="d-flex justify-content-center hstack gap-3">
+                <button type="button" class="btn btn-success" @click="scryTop(object.id)">Top</button>
+                <button type="button" class="btn btn-danger" @click="scryBottom(object.id)">Bottom</button>
+              </div>
             </Card>
           </div>
         </div>
@@ -342,7 +371,7 @@
 
   <div id="tokenSearch" ref="tokenModal" class="modal fade" tabindex="-1">
     <div class="modal-dialog modal-xl modal-dialog-centered">
-      <div class="modal-content bg-dark">
+      <div class="modal-content bg-transparent">
         <div class="modal-body">
           <div class="row">
             <Card
@@ -352,6 +381,7 @@
                 expand: false,
                 create: true,
               })"
+              bg="transparent"
               class="col-4"
               @create="tokenCreate"
             >
@@ -375,6 +405,20 @@
       </div>
     </div>
   </div>
+
+  <div id="eventLog" class="offcanvas offcanvas-start text-bg-dark" data-bs-scroll="true" data-bs-backdrop="false" tabindex="-1">
+    <div class="offcanvas-header">
+      <h5 class="offcanvas-title">Game Log</h5>
+      <button
+        type="button"
+        class="btn-close btn-close-white"
+        data-bs-dismiss="offcanvas"
+      ></button>
+    </div>
+    <div class="offcanvas-body">
+      <p v-for="event in events">{{getEventText(event)}}</p>
+    </div>
+  </div>
 </template>
 
 <script>
@@ -385,6 +429,7 @@
   import Field from './field.vue'
   import Graveyard from './graveyard.vue'
   import Hand from './hand.vue'
+  import Input from './input.vue'
 
   export default {
     components: {
@@ -393,6 +438,7 @@
       Field,
       Graveyard,
       Hand,
+      Input,
     },
     props: {
       id: {
@@ -416,11 +462,12 @@
       counters: [],
       zones: [],
       cardZones: {
-        library: [],
-        hand: [],
-        field: [],
         exile: [],
+        field: [],
         graveyard: [],
+        hand: [],
+        library: [],
+        remove: [],
       },
     }),
     provide() {
@@ -501,13 +548,8 @@
       isGameOver() {
         return this.user.is_winner || this.opponent.is_winner
       },
-      life: {
-        get() {
-          return this.user.life
-        },
-        set(x) {
-          this.fetch.put('/life', {game_id: this.id, amount: x})
-        },
+      events() {
+        return this.store.events
       },
     },
     created() {
@@ -517,6 +559,7 @@
         //this.cardZones = this.zones.reduce((agg, name) => agg = this.functions.copy(agg, {[name]: []}), {})
       })
       this.fetch.get('/game', [this.id])
+      this.fetch.get('/events', [this.id])
       this.object = this.factory.object()
     },
     mounted() {
@@ -553,6 +596,33 @@
       },
     },
     methods: {
+      getEventText(event) {
+        const text = (() => ({
+          'counter-card': (event) => `Placed ${event.data.amount} ${this.formatters.toUpperCaseWords(event.data.counter)} Counters on ${event.card_name}`,
+          'counter-user': (event) => `Received ${event.data.amount} ${this.formatters.toUpperCaseWords(event.data.counter)} Counters`,
+          'draw': (event) => `Drew a Card`,
+          'end-game': (event) => `Lost the Game, ${event.winner} is the Winner`,
+          'end-turn': (event) => `Ended Their Turn`,
+          'life': (event) => `Changed Their Life to ${event.data.life}`,
+          'mill': (event) => `Milled a Card`,
+          'move': (event) => {
+            let message = `Moved ${event.card_name} to the ${this.formatters.toUpperCaseWords(event.data.zone)}`
+            if (event.data.zone === 'remove') {
+              message = `Removed ${event.card_name} from the Game`
+            }
+            return message
+          },
+          'mulligan': (event) => `Performed a Mulligan`,
+          'power': (event) => `Changed the Power of ${event.card_name} to ${event.data.power}`,
+          'scry': (event) => `Scried for ${event.data.amount}`,
+          'shuffle': (event) => `Shuffled Their Deck`,
+          'tap': (event) => `Tapped ${event.card_name}`,
+          'token': (event) => `Created a ${event.card_name} Token`,
+          'toughness': (event) => `Changed the Toughness of ${event.card_name} to ${event.data.toughness}`,
+          'transform': () => `Transformed a Card`,
+        }))()[event.name]
+        return `${event.created_on}: ${event.handle} ${text(event)}`
+      },
       determineAmount(amount) {
         return amount > this.user.library_total
           ? this.user.library_total
@@ -585,6 +655,9 @@
         this.object = this.functions.copy(object, {is_tapped: false})
         this.cardModal.show()
       },
+      life(amount) {
+        this.fetch.put('/life', {game_id: this.id, amount})
+      },
       mill() {
         this.fetch.put('/mill', {game_id: this.id, amount: this.millAmount})
       },
@@ -601,7 +674,7 @@
         this.fetch.get('/scry', [this.id, this.scryAmount], (data) => {
           this.scryObjects = data
           this.scryModal.show()
-        })
+        }, false)
       },
       scryBottom(object_id) {
         this.scryObjects = this.scryObjects.filter((object) => object.id !== object_id)
@@ -633,9 +706,13 @@
       },
       tokenSearch() {
         this.fetch.get('/token', [this.token], (data) => {
+          if (this.functions.isEmpty(data)) {
+            this.store.setErrorMessage('No Tokens Found')
+            return false
+          }
           this.tokenObjects = data
           this.tokenModal.show()
-        })
+        }, false)
       },
       toughness(object_id, value) {
         this.fetch.put('/toughness', {game_id: this.id, object_id, value})

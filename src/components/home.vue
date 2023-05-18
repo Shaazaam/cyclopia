@@ -19,36 +19,38 @@
         <h4>Received</h4>
         <p v-if="functions.isEmpty(challenges.invitations)">You have no received challenges</p>
 
-        <div v-for="invitation in challenges.invitations">
-          <form @submit.prevent="() => accept(invitation)">
-            Game {{invitation.game_id}} vs {{invitation.opponent.handle}}
-            <div class="mb-3">
-              <label for="deck" class="form-label">Pick a Deck</label>
-              <select v-model="deck_id" id="deck" class="form-control">
-                <option v-for="deck in decks" :value="deck.id">{{deck.name}}</option>
-              </select>
-            </div>
-            <div class="d-flex justify-content-between">
-              <button type="submit" class="btn btn-success">Accept</button>
-              <button
-                type="button"
-                class="btn btn-danger"
-                @click="() => decline(invitation)"
-              >Decline</button>
-            </div>
-          </form>
-        </div>
+        <form v-for="invitation in challenges.invitations" @submit.prevent="() => accept(invitation)">
+          {{invitation.created_on}} vs {{invitation.opponent.handle}}
+          <Input
+            v-model="recieved_deck_id"
+            type="select"
+            id="deckRec"
+            name="recieved_deck_id"
+            placeholder="Select a Deck"
+          >
+            <template #label>Deck</template>
+            <template #options>
+              <option v-for="{id, name} in decks" :value="id">{{name}}</option>
+            </template>
+          </Input>
+          <div class="d-flex justify-content-between">
+            <button type="submit" class="btn btn-success">Accept</button>
+            <button
+              type="button"
+              class="btn btn-danger"
+              @click="() => decline(invitation)"
+            >Decline</button>
+          </div>
+        </form>
       </div>
 
       <div class="col-4">
         <h4>Sent</h4>
         <p v-if="functions.isEmpty(challenges.pending)">You have no pending challenges</p>
 
-        <div v-for="game in challenges.pending">
-          <div class="row">
-            <div class="col">
-              <p>Game {{game.game_id}} vs {{game.opponent.handle}}</p>
-            </div>
+        <div v-for="game in challenges.pending" class="row">
+          <div class="col">
+            <p>{{game.created_on}} vs {{game.opponent.handle}}</p>
           </div>
         </div>
       </div>
@@ -57,21 +59,31 @@
         <h4>Send</h4>
 
         <form @submit.prevent="create">
-          <div class="mb-3">
-            <label for="deck" class="form-label">Pick a Deck</label>
-            <select v-model="deck_id" id="deck" class="form-control">
-              <option v-for="deck in decks" :value="deck.id">{{deck.name}}</option>
-            </select>
-          </div>
-
-          <div class="mb-3">
-            <label for="user" class="form-label">Pick a User</label>
-            <select v-model="user_id" id="user" class="form-control">
-              <option v-for="user in users" :value="user.id">{{user.handle}}</option>
-            </select>
-          </div>
-
-          <button type="submit" class="btn btn-primary">Send Challenge</button>
+          <Input
+            v-model="send_deck_id"
+            type="select"
+            id="deckSend"
+            name="send_deck_id"
+            placeholder="Select a Deck"
+          >
+            <template #label>Deck</template>
+            <template #options>
+              <option v-for="{id, name} in decks" :value="id">{{name}}</option>
+            </template>
+          </Input>
+          <Input
+            v-model="user_id"
+            type="select"
+            id="userSend"
+            name="user_id"
+            placeholder="Select a User"
+          >
+            <template #label>User</template>
+            <template #options>
+              <option v-for="{id, handle} in users" :value="id">{{handle}}</option>
+            </template>
+          </Input>
+          <button type="submit" class="btn btn-primary float-end">Send Challenge</button>
         </form>
       </div>
     </div>
@@ -87,10 +99,10 @@
         <h4>Ongoing</h4>
         <p v-if="functions.isEmpty(challenges.active)">You have no onging games</p>
 
-        <div v-for="game in challenges.active">
+        <div v-for="game in challenges.active" class="mb-3">
           <div class="row">
             <div class="col">
-              <p>Game {{game.game_id}} vs {{game.opponent.handle}}</p>
+              <p>{{game.created_on}} vs {{game.opponent.handle}}</p>
             </div>
           </div>
           <div class="d-flex justify-content-between">
@@ -104,11 +116,9 @@
         <h4>Completed</h4>
         <p v-if="functions.isEmpty(challenges.completed)">You have no completed games</p>
 
-        <div v-for="game in challenges.completed">
-          <div class="row">
-            <div class="col">
-              <p>Game {{game.game_id}} vs {{game.opponent.handle}} <i v-if="game.winner === authUser.id" class="bi bi-trophy-fill text-warning"></i></p>
-            </div>
+        <div v-for="game in challenges.completed" class="row">
+          <div class="col">
+            <p>{{game.created_on}} vs {{game.opponent.handle}} <i v-if="game.winner === authUser.id" class="bi bi-trophy-fill text-warning"></i></p>
           </div>
         </div>
       </div>
@@ -122,16 +132,27 @@
 </template>
 
 <script>
+  import Input from './input.vue'
+
   export default {
+    components: {
+      Input,
+    },
     data: () => ({
       decks: [],
-      deck_id: null,
+      recieved_deck_id: null,
+      send_deck_id: null,
       users: [],
       user_id: null,
     }),
     created() {
       this.fetch.get('/decks', {}, (data) => this.decks = data.map(this.factory.deck))
-      this.fetch.get('/users', {}, (data) => this.users = data.filter((user) => user.id !== this.authUser.id))
+      this.fetch.get('/users', {}, (data) => {
+        this.users = data.filter(({id}) => id !== this.authUser.id)
+        if (this.functions.isNotObjectEmpty(this.challenges)) {
+          this.users = this.users.filter(({id}) => ! this.challenges.pending.map(({opponent}) => opponent.id).includes(id))
+        }
+      })
       this.fetch.get('/challenges')
     },
     computed: {
@@ -139,20 +160,27 @@
         return this.store.get('challenges')
       },
     },
+    watch: {
+      challenges({pending}) {
+        this.users = this.users.filter(({id}) => ! pending.map(({opponent}) => opponent.id).includes(id))
+      },
+    },
     methods: {
       create() {
-        this.fetch.post('/challenges', {deck_id: this.deck_id, user_id: this.user_id})
+        this.fetch.post('/challenges', {deck_id: this.send_deck_id, user_id: this.user_id}, () => {
+          this.send_deck_id = null
+          this.user_id = null
+        })
       },
       accept({game_id, opponent: {id: opponent_id}}) {
-        this.fetch.put('/challenges', {deck_id: this.deck_id, game_id, opponent_id})
+        this.fetch.put('/challenges', {deck_id: this.recieved_deck_id, game_id, opponent_id}, () => this.recieved_deck_id = null)
       },
       decline({game_id, opponent: {id: opponent_id}}) {
         this.fetch.del('/challenges', {game_id, opponent_id})
       },
       copy(id) {
         navigator.clipboard.writeText(`${window.location.origin}/${this.$router.resolve({name: 'game', params: {id}}).href}`)
-        this.store.setMessage({kind: 'success', message: 'Link copied to clipboard'})
-        window.setTimeout(() => this.store.clearMessage(), 4 * 1000)
+        this.store.setSuccessMessage('Link copied to clipboard')
       },
     },
   }

@@ -15,6 +15,7 @@ const setPutRequests = (x) => requests.put = x
 const setDeleteRequests = (x) => requests.del = x
 
 const __fetch = (url, settings, params, callback) => {
+  store.set('inputErrors', [])
   return fetch(route(url, params), copy({
     headers: {'Content-Type': 'application/json'},
   }, settings))
@@ -31,22 +32,26 @@ const __fetch = (url, settings, params, callback) => {
     })
 }
 
-const get = (url, params, callback = () => false) => {
+const get = (url, params, callback = () => false, isLoading = true) => {
+  store.set('isLoading', isLoading)
   setGetRequests(requests.get.concat([{url, params, callback}]))
   return __fetch(url, {method: 'GET'}, params, callback)
 }
 
-const post = (url, data, callback = () => false) => {
+const post = (url, data, callback = () => false, isSaving = true) => {
+  store.set('isSaving', isSaving)
   setPostRequests(requests.post.concat([{data, url, callback}]))
   return __fetch(url, {body: JSON.stringify(data), method: 'POST'}, null, callback)
 }
 
-const put = (url, data, callback = () => false) => {
+const put = (url, data, callback = () => false, isSaving = true) => {
+  store.set('isSaving', isSaving)
   setPutRequests(requests.put.concat([{data, url, callback}]))
   return __fetch(url, {body: JSON.stringify(data), method: 'PUT'}, null, callback)
 }
 
-const del = (url, data, callback = () => false) => {
+const del = (url, data, callback = () => false, isSaving = true) => {
+  store.set('isSaving', isSaving)
   setDeleteRequests(requests.del.concat([{data, url, callback}]))
   return __fetch(url, {body: JSON.stringify(data), method: 'DELETE'}, null, callback)
 }
@@ -61,11 +66,11 @@ const handle = (response, callback) => {
       fail(response.message)
       break;
     case 422:
-      fail('Validation error')
+      fail(response.message)
       store.set('inputErrors', response.data)
       break;
     case 500:
-      fail(`Server error: ${response.message}`)
+      fail(`Server Error: ${response.message}`)
       break;
     default:
       throw new Error('Unknown response code')
