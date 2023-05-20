@@ -404,7 +404,7 @@ const routes = {
       validate,
       async (req, res, next) => {
         const {email, password} = req.body
-        const {id, handle, password: hash} = await dal.authorizeUser(email)
+        const {id, handle, password: hash, is_admin} = await dal.authorizeUser(email)
         if (isNull(id)) {
           req.cyclopia.message = 'User Not Found'
           return res422(req, res)
@@ -415,9 +415,9 @@ const routes = {
             return res422(req, res)
           }
           req.session.regenerate(() => {
-            req.session.user = {id, handle, email}
+            req.session.user = {id, handle, email, is_admin}
             req.session.save(() => {
-              req.cyclopia.data = {id, handle, email}
+              req.cyclopia.data = {id, handle, email, is_admin}
               next()
             })
           })
@@ -538,9 +538,9 @@ const routes = {
         bcrypt.hash(password, 10).then((hash) =>
           dal.insertUser({email, handle, password: hash}).then(({id}) => {
             req.session.regenerate(() => {
-              req.session.user = {id, handle, email}
+              req.session.user = {id, handle, email, is_admin: false}
               req.session.save(() => {
-                req.cyclopia.data = {id, handle, email}
+                req.cyclopia.data = {id, handle, email, is_admin: false}
                 next()
               })
             })
@@ -687,11 +687,11 @@ const routes = {
       async (req, res, next) => {
         const {user: {id}} = req.session
         const {email, handle} = req.body
-        await dal.updateUser(id, email, handle)
+        const user = await dal.updateUser(id, email, handle)
         req.session.regenerate(() => {
-          req.session.user = {id, handle, email}
+          req.session.user = user
           req.session.save(() => {
-            req.cyclopia.data = {id, handle, email}
+            req.cyclopia.data = user
             req.cyclopia.message = 'Profile Updated'
             next()
           })

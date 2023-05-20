@@ -321,33 +321,35 @@ export const getUser = async (id) => {
     SELECT
       users.id,
       users.handle,
-      users.email
+      users.email,
+      users.is_admin
     FROM users
     WHERE users.id = $1
   `, [id])
   return factory.user(row)
 }
 export const getUsers = async (id) => {
-  const {rows} = await query(`SELECT users.id, users.handle FROM users`)
+  const {rows} = await query(`SELECT users.id, users.handle, users.is_admin FROM users`)
   return rows.map(factory.user)
 }
 export const insertUser = async ({email, handle, password} = factory.getUser()) => {
   const {rows: [row]} = await query(`
     INSERT INTO users (email, handle, password)
     VALUES ($1, $2, $3)
-    RETURNING *
+    RETURNING id, email, handle, is_admin
   `, [email, handle, password])
   return factory.user(row)
 }
 export const updateUser = async (id, email, handle) => {
-  await query(`
+  const {rows: [row]} = await query(`
     UPDATE users
     SET
       email = $2,
       handle = $3
     WHERE users.id = $1
+    RETURNING id, email, handle, is_admin
   `, [id, email, handle])
-  return true
+  return factory.user(row)
 }
 export const changePassword = async (id, password) => {
   await query(`UPDATE users SET password = $2 WHERE users.id = $1`, [id, password])

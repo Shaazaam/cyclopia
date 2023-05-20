@@ -52,11 +52,25 @@ CREATE TABLE IF NOT EXISTS card_faces (
   image_uris JSONB
 );
 
+CREATE TABLE IF NOT EXISTS rulings (
+  id UUID NOT NULL PRIMARY KEY DEFAULT gen_random_uuid(),
+  oracle_id UUID NOT NULL,
+  published DATE NOT NULL,
+  comment TEXT
+);
+
+CREATE TABLE IF NOT EXISTS catalog (
+  kind VARCHAR(20) NOT NULL,
+  value VARCHAR(30) NOT NULL,
+  PRIMARY KEY (kind, value)
+);
+
 CREATE TABLE IF NOT EXISTS users (
   id UUID NOT NULL PRIMARY KEY DEFAULT gen_random_uuid(),
   email VARCHAR(50) UNIQUE NOT NULL,
   handle VARCHAR(50) NOT NULL,
-  password VARCHAR(60) NOT NULL
+  password VARCHAR(60) NOT NULL,
+  is_admin BOOLEAN DEFAULT FALSE
 );
 
 CREATE TABLE IF NOT EXISTS decks (
