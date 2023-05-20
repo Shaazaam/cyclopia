@@ -16,6 +16,9 @@ const query = (text, values, expectedCount = null) => pool.query(text, values)
     pool.query(`INSERT INTO errors (data) VALUES ($1)`, [{message, cause}])
     throw new Error(message, {cause})
   })
+const formatPlaceholders = (data, numValues) => data.reduce((agg, cur, index) =>
+  agg.concat(`($${numericRange(1 + (numValues * index), numValues + (numValues * index)).join(', $')})`), []
+).join(', ')
 
 const allowedColumns = {
   deck_id: 'deck_id',
@@ -611,9 +614,7 @@ export const getEvents = async (entity_id) => {
 }
 
 export const insertEvents = async (entity_id, name, data, user_id) => {
-  const placeholders = data.reduce((agg, cur, index) =>
-    agg.concat(`($${numericRange(1 + (4 * index), 4 + (4 * index)).join(', $')})`), []
-  ).join(', ')
+  const placeholders = formatPlaceholders(data, 4)
   const values = data.reduce((agg, cur) => agg.concat([entity_id, name, cur, user_id]), [])
   const {rows} = await query(`
     INSERT INTO events (entity_id, name, data, created_by)

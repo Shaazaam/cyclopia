@@ -72,6 +72,13 @@ const authorize = async (req, res, next) => {
   }
   next()
 }
+const isAdmin = async (req, res, next) => {
+  const {user: {is_admin}} = req.session
+  if (!is_admin) {
+    return res422(req, res)
+  }
+  next()
+}
 
 const event = (entity_id, name, data, user_id) => ({entity_id, name, data, user_id})
 const challenge = (user_id, games, invitations) => ({user_id, games, invitations})
