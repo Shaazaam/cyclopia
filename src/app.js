@@ -2,6 +2,7 @@ import {createApp, reactive, nextTick} from 'vue'
 import {createRouter, createWebHashHistory} from 'vue-router'
 
 import App from './app.vue'
+import Admin from './components/admin.vue'
 import Decks from './components/decks.vue'
 import Game from './components/game.vue'
 import Home from './components/home.vue'
@@ -30,6 +31,20 @@ const routes = [
     meta: {
       requiresAuth: true,
       main: true,
+    },
+  },
+  {
+    path: '/admin',
+    name: 'admin',
+    component: Admin,
+    meta: {
+      requiresAuth: true,
+      main: user().is_admin,
+    },
+    beforeEnter: (to, from) => {
+      if (!user().is_admin) {
+        return false
+      }
     },
   },
   {
