@@ -1,7 +1,9 @@
 import bcrypt from 'bcrypt'
 import {readFile} from 'fs/promises'
 
+import config from './config.js'
 import * as dal from './dal.js'
+import fetch from './fetch.js'
 import {
   copy,
   isArray,
@@ -14,6 +16,8 @@ import {
 } from './functions.js'
 import * as val from './validate.js'
 import {wss, send, close} from './wss.js'
+
+const {SCRYFALL_API_URL} = config.app
 
 const codeMessages = {
   200: null,
