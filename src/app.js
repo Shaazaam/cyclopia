@@ -126,11 +126,11 @@ const vstore = reactive({
 
   setSuccessMessage(message) {
     this.set('message', {kind: 'success', message})
-    window.setTimeout(() => this.clearMessage(), 4 * 1000)
+    setTimeout(() => this.clearMessage(), 4 * 1000)
   },
   setErrorMessage(message) {
     this.set('message', {kind: 'error', message})
-    window.setTimeout(() => this.clearMessage(), 4 * 1000)
+    setTimeout(() => this.clearMessage(), 4 * 1000)
   },
   clearMessage() {this.set('message', null)},
 

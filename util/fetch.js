@@ -94,7 +94,7 @@ const fail = (message) => {
 const always = () => {
   store.set('isSaving', false)
   store.set('isLoading', false)
-  window.setTimeout(() => store.set('message', null), 4 * 1000)
+  setTimeout(() => store.set('message', null), 4 * 1000)
 }
 
 export default {get, post, put, del}
