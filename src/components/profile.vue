@@ -75,7 +75,7 @@
         this.fetch.put('/password', this.user)
       },
       profile() {
-        this.fetch.put('/user', this.user, ([user]) => {
+        this.fetch.put('/user', this.user, ({data: [user]}) => {
           this.storage.set('user', user)
           this.store.setUser(user)
         })

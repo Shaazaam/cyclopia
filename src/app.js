@@ -39,7 +39,7 @@ const routes = [
     component: Admin,
     meta: {
       requiresAuth: true,
-      main: user().is_admin,
+      main: isLoggedIn() && user().is_admin,
     },
     beforeEnter: (to, from) => {
       if (!user().is_admin) {

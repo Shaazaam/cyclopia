@@ -43,7 +43,7 @@
     },
     methods: {
       submit() {
-        this.fetch.post('/login', this.user, ([user]) => {
+        this.fetch.post('/login', this.user, ({data: [user]}) => {
           this.storage.set('user', user)
           this.store.setUser(user)
           this.$router.push({name: 'home'})
