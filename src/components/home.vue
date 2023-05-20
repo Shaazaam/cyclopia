@@ -20,7 +20,7 @@
         <p v-if="functions.isEmpty(challenges.invitations)">You have no received challenges</p>
 
         <form v-for="invitation in challenges.invitations" @submit.prevent="() => accept(invitation)">
-          {{invitation.created_on}} vs {{invitation.opponent.handle}}
+          {{functions.localeDateTime(invitation.created_on)}} vs {{invitation.opponent.handle}}
           <Input
             v-model="recieved_deck_id"
             type="select"
@@ -50,7 +50,7 @@
 
         <div v-for="game in challenges.pending" class="row">
           <div class="col">
-            <p>{{game.created_on}} vs {{game.opponent.handle}}</p>
+            <p>{{functions.localeDateTime(game.created_on)}} vs {{game.opponent.handle}}</p>
           </div>
         </div>
       </div>
@@ -102,7 +102,7 @@
         <div v-for="game in challenges.active" class="mb-3">
           <div class="row">
             <div class="col">
-              <p>{{game.created_on}} vs {{game.opponent.handle}}</p>
+              <p>{{functions.localeDateTime(game.created_on)}} vs {{game.opponent.handle}}</p>
             </div>
           </div>
           <div class="d-flex justify-content-between">
@@ -118,7 +118,7 @@
 
         <div v-for="game in challenges.completed" class="row">
           <div class="col">
-            <p>{{game.created_on}} vs {{game.opponent.handle}} <i v-if="game.winner === authUser.id" class="bi bi-trophy-fill text-warning"></i></p>
+            <p>{{functions.localeDateTime(game.created_on)}} vs {{game.opponent.handle}} <i v-if="game.winner === authUser.id" class="bi bi-trophy-fill text-warning"></i></p>
           </div>
         </div>
       </div>
