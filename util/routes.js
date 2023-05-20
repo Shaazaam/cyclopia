@@ -128,6 +128,20 @@ const sendChallenges = async (req, res, next) => {
 }
 
 const routes = {
+  'catalog': {
+    middleware: [authenticate],
+    post: [
+      isAdmin,
+      async (req, res, next) => {
+        const {kind} = req.body
+        fetch.get(`${SCRYFALL_API_URL}/catalog`, [kind], async (data) => {
+          await dal.insertCatalog(kind, data)
+          req.cyclopia.message = `Catalog ${kind} Imported`
+          next()
+        }).catch((err) => next(err))
+      },
+    ],
+  },
   'challenges': {
     middleware: [authenticate],
     get: [

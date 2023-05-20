@@ -42,6 +42,18 @@ export const exists = async (table, columns, values) => {
   return rowCount === 1
 }
 
+export const insertCatalog = async (kind, data) => {
+  const placeholders = formatPlaceholders(data, 2)
+  const values = data.reduce((agg, cur) => agg.concat([kind, cur]), [])
+  await query(`
+    INSERT INTO catalog (kind, value)
+    VALUES ${placeholders}
+    ON CONFLICT ON CONSTRAINT catalog_pkey
+    DO NOTHING
+  `, values)
+  return true
+}
+
 export const upsertCard = async ({
   id,
   oracle_id,
