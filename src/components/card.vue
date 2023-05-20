@@ -1,7 +1,6 @@
 <template>
   <div
-    class="card text-light mb-3"
-    :class="'bg-' + bg"
+    class="card text-light bg-transparent"
     @mouseenter="hover = true"
     @mouseleave="hover = false"
   >
@@ -138,10 +137,6 @@
       actions: {
         type: Object,
         default: null,
-      },
-      bg: {
-        type: String,
-        default: 'dark',
       },
       object: {
         type: Object,
