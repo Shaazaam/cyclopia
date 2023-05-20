@@ -1,15 +1,228 @@
 <template>
-  <div class="row px-5">
-    <div class="col-6">
-      <Graveyard :objects="opponent.graveyard" @expand="expand" />
+  <div class="sticky-top mb-3">
+    <div v-if="functions.isNotEmpty(users)" class="row px-3 mb-3">
+      <div
+        class="col-4 hstack gap-3"
+        :class="{'invisible': !opponent.is_ready}"
+      >
+        <div class="input-group">
+          <span class="input-group-text bg-dark text-light">Life</span>
+          <input
+            type="text"
+            class="form-control bg-dark text-light"
+            :value="opponent.life"
+            disabled
+          />
+        </div>
+        <div v-for="{name} in userCounters.toReversed()" class="input-group">
+          <span class="input-group-text bg-dark text-light">{{functions.toUpperCaseWords(name)}}</span>
+          <input
+            type="text"
+            class="form-control bg-dark text-light"
+            :value="opponent.counters[name]"
+            disabled
+          />
+        </div>
+      </div>
+      <h4 class="col text-center">
+        <i v-if="opponent.is_winner" class="bi bi-trophy-fill text-warning"></i>
+        <i v-if="opponent.is_active_turn && !isGameOver" class="bi bi-caret-right-fill text-danger"></i>
+          {{opponent.handle}} vs {{user.handle}}
+        <i v-if="user.is_active_turn && !isGameOver" class="bi bi-caret-left-fill text-success"></i>
+        <i v-if="user.is_winner" class="bi bi-trophy-fill text-warning"></i>
+      </h4>
+      <div
+        class="col-4 hstack gap-3 text-nowrap"
+        :class="{'invisible': !user.is_ready}"
+      >
+        <div v-for="{name} in userCounters" class="input-group">
+          <span class="input-group-text bg-dark text-light">{{functions.toUpperCaseWords(name)}}</span>
+          <input
+            :type="!isGameOver ? 'number' : 'text'"
+            class="form-control"
+            :class="!isGameOver ? [] : ['bg-dark', 'text-light']"
+            :value="user.counters[name]"
+            :disabled="isGameOver"
+              @change="(e) => counterOnUser(name, e.target.value)"
+          />
+        </div>
+        <!-- <div class="dropdown-center">
+          <button type="button" class="btn btn-info dropdown-toggle" data-bs-toggle="dropdown">Counters</button>
+          <ul class="dropdown-menu bg-dark">
+            <li v-for="{name} in userCounters" class="py-1">
+              <div class="input-group">
+                <span class="input-group-text bg-dark text-light">{{functions.toUpperCaseWords(name)}}</span>
+                <input
+                  :type="!isGameOver ? 'number' : 'text'"
+                  class="form-control"
+                  :class="!isGameOver ? [] : ['bg-dark', 'text-light']"
+                  :value="user.counters[name]"
+                  :disabled="isGameOver"
+                  @change="(e) => counterOnUser(name, e.target.value)"
+                />
+              </div>
+            </li>
+          </ul>
+        </div> -->
+        <div class="input-group">
+          <span class="input-group-text bg-dark text-light">Life</span>
+          <input
+            :type="!isGameOver ? 'number' : 'text'"
+            class="form-control"
+            :class="!isGameOver ? [] : ['bg-dark', 'text-light']"
+            :disabled="isGameOver"
+            :value="user.life"
+            @change="(e) => life(e.target.value)"
+          />
+        </div>
+      </div>
     </div>
-    <div class="col-6">
-      <Exile :objects="opponent.exile" @expand="expand" />
+
+    <div class="row px-5" :class="{'invisible': isGameOver}">
+      <div v-if="!user.is_ready" class="col justify-content-center hstack gap-3">
+        <button
+          v-if="!user.is_ready && functions.isNotEmpty(user.hand)"
+          type="button"
+          class="btn btn-success"
+          @click="start"
+        >Start Game</button>
+        <button
+          v-if="!user.is_ready && functions.isEmpty(user.hand)"
+          type="button"
+          class="btn btn-info"
+          @click="draw"
+        >Draw Hand</button>
+        <button
+          v-if="!user.is_ready && functions.isNotEmpty(user.hand)"
+          type="button"
+          class="btn btn-warning"
+          @click="mulligan"
+        >Mulligan</button>
+      </div>
+      <div v-else class="col justify-content-center hstack gap-3" :class="{'invisible': isGameOver}">
+        <button
+          type="button"
+          class="btn btn-danger"
+          :class="{'invisible': !user.is_active_turn}"
+          @click="endTurn"
+        >End Turn</button>
+        <Input
+          v-model="drawAmount"
+          :class="{'invisible': isGameOver}"
+          type="number"
+          name="draw_amount"
+          :min="1"
+          :max="user.library_total"
+          :has-margin="false"
+          :has-label="false"
+        >
+          <template #inputGroupBefore>
+            <button
+              type="button"
+              class="btn btn-success"
+              :disabled="functions.isNull(drawAmount)"
+              @click="draw"
+            >Draw</button>
+          </template>
+        </Input>
+        <button
+          type="button"
+          class="btn btn-warning"
+          @click="shuffle"
+        >Shuffle</button>
+        <Input
+          v-model="millAmount"
+          type="number"
+          name="mill_amount"
+          :min="1"
+          :max="user.library_total"
+          :has-margin="false"
+          :has-label="false"
+        >
+          <template #inputGroupBefore>
+            <button
+              type="button"
+              class="btn btn-danger"
+              :disabled="functions.isNull(millAmount)"
+              @click="mill"
+            >Mill</button>
+          </template>
+        </Input>
+        <button
+          type="button"
+          class="btn btn-info"
+          data-bs-toggle="modal"
+          data-bs-target="#search"
+        >Search</button>
+        <Input
+          v-model="scryAmount"
+          type="number"
+          name="scry_amount"
+          :min="1"
+          :max="user.library_total"
+          :has-margin="false"
+          :has-label="false"
+        >
+          <template #inputGroupBefore>
+            <button
+              type="button"
+              class="btn btn-info"
+              :disabled="functions.isNull(scryAmount)"
+              @click="scry"
+            >Scry</button>
+          </template>
+        </Input>
+        <div class="dropdown-center">
+          <button
+            type="button"
+            class="btn btn-info dropdown-toggle"
+            :class="{'invisible': isGameOver}"
+            data-bs-toggle="dropdown"
+            :disabled="isGameOver"
+          >Tokens</button>
+          <ul class="dropdown-menu bg-dark">
+            <li class="py-1">
+              <Input
+                v-model="token"
+                name="token"
+                type="text"
+                placeholder="Search"
+                :has-margin="false"
+                :has-label="false"
+                @keyup-enter="tokenSearch"
+              >
+                <template #inputGroupAfter>
+                  <button
+                    type="button"
+                    class="btn btn-success"
+                    @click="tokenSearch"
+                  >
+                    <i class="bi bi-search"></i>
+                  </button>
+                </template>
+              </Input>
+            </li>
+          </ul>
+        </div>
+        <button
+          type="button"
+          class="btn btn-primary"
+          data-bs-toggle="offcanvas"
+          data-bs-target="#eventLog"
+        >Log</button>
+        <button
+          type="button"
+          class="btn btn-danger"
+          :class="{'invisible': isGameOver}"
+          @click="endGame"
+          :disabled="isGameOver"
+        >Concede</button>
+      </div>
     </div>
   </div>
 
-  <div class="row px-5">
-    <div class="col-15 mb-3">
+  <div class="row px-5 mb-3">
+    <div class="col-2">
       <div class="card bg-dark text-light">
         <img
           src="/images/card-back.jpg"
@@ -19,6 +232,12 @@
           <h5>Cards: {{opponent.library_total}}</h5>
         </div>
       </div>
+    </div>
+    <div class="col-5">
+      <Graveyard :objects="opponent.graveyard" @expand="expand" />
+    </div>
+    <div class="col-5">
+      <Exile :objects="opponent.exile" @expand="expand" />
     </div>
   </div>
 
@@ -30,148 +249,7 @@
     />
   </div>
 
-  <div v-if="functions.isNotEmpty(users)" class="row px-3">
-    <div
-      class="col-4 hstack gap-3"
-      :class="{'invisible': !opponent.is_ready}"
-    >
-      <div class="input-group">
-        <span class="input-group-text bg-dark text-light">Life</span>
-        <input
-          type="text"
-          class="form-control bg-dark text-light"
-          :value="opponent.life"
-          disabled
-        />
-      </div>
-      <div v-for="{name} in userCounters" class="input-group">
-        <span class="input-group-text bg-dark text-light">{{functions.toUpperCaseWords(name)}}</span>
-        <input
-          type="text"
-          class="form-control bg-dark text-light"
-          :value="opponent.counters[name]"
-          disabled
-        />
-      </div>
-    </div>
-    <h4 class="col text-center">
-      <i v-if="opponent.is_winner" class="bi bi-trophy-fill text-warning"></i>
-      <i v-if="opponent.is_active_turn && !isGameOver" class="bi bi-caret-right-fill text-danger"></i>
-        {{opponent.handle}} vs {{user.handle}}
-      <i v-if="user.is_active_turn && !isGameOver" class="bi bi-caret-left-fill text-success"></i>
-      <i v-if="user.is_winner" class="bi bi-trophy-fill text-warning"></i>
-    </h4>
-    <div
-      class="col-4 hstack gap-3"
-      :class="{'invisible': !user.is_ready}"
-    >
-      <button
-        type="button"
-        class="btn btn-danger"
-        :class="{'invisible': isGameOver}"
-        @click="endGame"
-        :disabled="isGameOver"
-      >Concede</button>
-      <div class="dropdown-center">
-        <button
-          type="button"
-          class="btn btn-info dropdown-toggle"
-          :class="{'invisible': isGameOver}"
-          data-bs-toggle="dropdown"
-          :disabled="isGameOver"
-        >Tokens</button>
-        <ul class="dropdown-menu bg-dark">
-          <li class="py-1">
-            <Input
-              v-model="token"
-              name="token"
-              type="text"
-              placeholder="Search"
-              :has-margin="false"
-              :has-label="false"
-              @keyup-enter="tokenSearch"
-            >
-              <template #inputGroupAfter>
-                <button
-                  type="button"
-                  class="btn btn-success"
-                  @click="tokenSearch"
-                >
-                  <i class="bi bi-search"></i>
-                </button>
-              </template>
-            </Input>
-          </li>
-        </ul>
-      </div>
-      <div class="dropdown-center">
-        <button type="button" class="btn btn-info dropdown-toggle" data-bs-toggle="dropdown">Counters</button>
-        <ul class="dropdown-menu bg-dark">
-          <li v-for="{name} in userCounters" class="py-1">
-            <div class="input-group">
-              <span class="input-group-text bg-dark text-light">{{functions.toUpperCaseWords(name)}}</span>
-              <input
-                :type="!isGameOver ? 'number' : 'text'"
-                class="form-control"
-                :class="!isGameOver ? [] : ['bg-dark', 'text-light']"
-                :value="user.counters[name]"
-                :disabled="isGameOver"
-                @change="(e) => counterOnUser(name, e.target.value)"
-              />
-            </div>
-          </li>
-        </ul>
-      </div>
-      <button
-        type="button"
-        class="btn btn-primary"
-        data-bs-toggle="offcanvas"
-        data-bs-target="#eventLog"
-      >Log</button>
-      <div class="input-group">
-        <span class="input-group-text bg-dark text-light">Life</span>
-        <input
-          :type="!isGameOver ? 'number' : 'text'"
-          class="form-control"
-          :class="!isGameOver ? [] : ['bg-dark', 'text-light']"
-          :disabled="isGameOver"
-          :value="user.life"
-          @change="(e) => life(e.target.value)"
-        />
-      </div>
-    </div>
-  </div>
-
-  <div class="row px-5 mb-3" :class="{'invisible': isGameOver}">
-    <div v-if="!user.is_ready" class="col d-flex justify-content-center hstack gap-3">
-      <button
-        v-if="!user.is_ready && functions.isNotEmpty(user.hand)"
-        type="button"
-        class="btn btn-success"
-        @click="start"
-      >Start Game</button>
-      <button
-        v-if="!user.is_ready && functions.isEmpty(user.hand)"
-        type="button"
-        class="btn btn-info"
-        @click="draw"
-      >Draw Hand</button>
-      <button
-        v-if="!user.is_ready && functions.isNotEmpty(user.hand)"
-        type="button"
-        class="btn btn-warning"
-        @click="mulligan"
-      >Mulligan</button>
-    </div>
-    <div v-else class="col d-flex justify-content-center">
-      <button
-        type="button"
-        class="btn btn-danger"
-        :class="{'invisible': !user.is_active_turn}"
-        @click="endTurn"
-      >End Turn</button>
-    </div>
-  </div>
+  <hr />
 
   <Field
     :objects="user.field"
@@ -190,98 +268,8 @@
     @transform="transform"
   />
 
-  <div class="row px-5">
-    <div class="col-105">
-      <Hand
-        :objects="user.hand"
-        :actions="factory.actions({move: functions.removeByValue(zones, 'hand')})"
-        @expand="expand"
-        @move="move"
-        @transform="transform"
-      />
-    </div>
-    <div class="col-15 mb-3">
-      <div class="card bg-dark text-light">
-        <img
-          src="/images/card-back.jpg"
-          class="card-img"
-        />
-        <div class="card-img-overlay text-center">
-          <h5>Cards: {{user.library_total}}</h5>
-          <div v-if="user.is_ready && !isGameOver" class="d-grid gap-2">
-            <Input
-              v-model="drawAmount"
-              type="number"
-              name="draw_amount"
-              :min="1"
-              :max="user.library_total"
-              :has-margin="false"
-              :has-label="false"
-            >
-              <template #inputGroupBefore>
-                <button
-                  type="button"
-                  class="btn btn-success"
-                  :disabled="functions.isNull(drawAmount)"
-                  @click="draw"
-                >Draw</button>
-              </template>
-            </Input>
-            <button
-              type="button"
-              class="btn btn-warning"
-              @click="shuffle"
-            >Shuffle</button>
-            <Input
-              v-model="millAmount"
-              type="number"
-              name="mill_amount"
-              :min="1"
-              :max="user.library_total"
-              :has-margin="false"
-              :has-label="false"
-            >
-              <template #inputGroupBefore>
-                <button
-                  type="button"
-                  class="btn btn-danger"
-                  :disabled="functions.isNull(millAmount)"
-                  @click="mill"
-                >Mill</button>
-              </template>
-            </Input>
-            <button
-              type="button"
-              class="btn btn-info"
-              data-bs-toggle="modal"
-              data-bs-target="#search"
-            >Search</button>
-            <Input
-              v-model="scryAmount"
-              type="number"
-              name="scry_amount"
-              :min="1"
-              :max="user.library_total"
-              :has-margin="false"
-              :has-label="false"
-            >
-              <template #inputGroupBefore>
-                <button
-                  type="button"
-                  class="btn btn-info"
-                  :disabled="functions.isNull(scryAmount)"
-                  @click="scry"
-                >Scry</button>
-              </template>
-            </Input>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="row px-5">
-    <div class="col-6">
+  <div class="row justify-content-end px-5 mb-3">
+    <div class="col-5">
       <Exile
         :objects="user.exile"
         :actions="factory.actions({
@@ -294,7 +282,7 @@
         @transform="transform"
       />
     </div>
-    <div class="col-6">
+    <div class="col-5">
       <Graveyard
         :objects="user.graveyard"
         :actions="factory.actions({move: functions.removeByValue(zones, 'graveyard')})"
@@ -302,13 +290,37 @@
         @move="move"
       />
     </div>
+    <div class="col-2">
+      <div class="card bg-dark text-light">
+        <img
+          src="/images/card-back.jpg"
+          class="card-img"
+        />
+        <div class="card-img-overlay text-center">
+          <h5>Cards: {{user.library_total}}</h5>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sticky-bottom px-5">
+    <div class="d-flex justify-content-center hstack gap-3">
+      <Card
+        v-for="object in user.hand"
+        :object="object"
+        :actions="factory.actions({move: functions.removeByValue(zones, 'hand')})"
+        @expand="expand"
+        @move="move"
+        @transform="transform"
+      />
+    </div>
   </div>
 
   <div id="card" ref="cardModal" class="modal fade" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content bg-transparent">
-        <div class="modal-header" @click="closeModal('cardModal')">
-          <h5 class="text-light">{{object.card.name}}</h5>
+        <div class="modal-header bg-dark" @click="closeModal('cardModal')">
+          <h5 class="modal-title text-light">{{object.card.name}}</h5>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
@@ -316,7 +328,6 @@
             <Card
               :object="object"
               :actions="factory.actions({expand: false})"
-              bg="transparent"
               class="col"
               data-bs-dismiss="modal"
             />
@@ -329,8 +340,8 @@
   <div id="search" ref="searchModal" class="modal fade" tabindex="-1">
     <div class="modal-dialog modal-fullscreen modal-dialog-centered">
       <div class="modal-content bg-transparent">
-        <div class="modal-header" @click="closeModal('searchModal')">
-          <h5 class="text-light">Search Deck</h5>
+        <div class="modal-header bg-dark" @click="closeModal('searchModal')">
+          <h5 class="modal-title text-light">Search Deck</h5>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
@@ -342,7 +353,6 @@
                 expand: false,
                 move: functions.removeByValue(zones, 'library'),
               })"
-              bg="transparent"
               class="col-3"
               @move="move"
               @transform="transform"
@@ -357,8 +367,8 @@
   <div id="scry" ref="scryModal" class="modal fade" tabindex="-1">
     <div class="modal-dialog modal-fullscreen modal-dialog-centered">
       <div class="modal-content bg-transparent">
-        <div class="modal-header" @click="closeModal('scryModal')">
-          <h5 class="text-light">Scry</h5>
+        <div class="modal-header bg-dark" @click="closeModal('scryModal')">
+          <h5 class="modal-title text-light">Scry</h5>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
@@ -367,7 +377,6 @@
               v-for="object in scryObjects"
               :object="object"
               :actions="factory.actions({expand: false})"
-              bg="transparent"
               class="col-3"
             >
               <div class="d-flex justify-content-center hstack gap-3">
@@ -384,8 +393,8 @@
   <div id="tokenSearch" ref="tokenModal" class="modal fade" tabindex="-1">
     <div class="modal-dialog modal-fullscreen modal-dialog-centered">
       <div class="modal-content bg-transparent">
-        <div class="modal-header" @click="closeModal('tokenModal')">
-          <h5 class="text-light">Tokens</h5>
+        <div class="modal-header bg-dark" @click="closeModal('tokenModal')">
+          <h5 class="modal-title text-light">Tokens</h5>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
@@ -397,7 +406,6 @@
                 expand: false,
                 create: true,
               })"
-              bg="transparent"
               class="col-3"
               @create="tokenCreate"
             >
@@ -432,7 +440,9 @@
       ></button>
     </div>
     <div class="offcanvas-body">
-      <p v-for="event in events">{{getEventText(event)}}</p>
+      <p v-for="event in events">
+        <span class="small text-warning">{{functions.localeDateTime(event.created_on)}}</span>: {{getEventText(event)}}
+      </p>
     </div>
   </div>
 </template>
@@ -444,7 +454,6 @@
   import Exile from './exile.vue'
   import Field from './field.vue'
   import Graveyard from './graveyard.vue'
-  import Hand from './hand.vue'
   import Input from './input.vue'
 
   export default {
@@ -453,7 +462,6 @@
       Exile,
       Field,
       Graveyard,
-      Hand,
       Input,
     },
     props: {
@@ -526,6 +534,13 @@
                     .filter((object) => object.user_id === this.authUser.id)
                     .filter((object) => object.zone === name)
                     .sort(({position: a}, {position: b}) => this.functions.sortNumber(a, b))
+                    /*.sort(({position: aPos, card_id: aId}, {position: bPos, card_id: bId}) => {
+                      if (aId > bId) return 1
+                      if (aId < bId) return -1
+                      if (aPos > bPos) return 1
+                      if (aPos < bPos) return -1
+                      //return this.functions.sortString(aId, bId) - this.functions.sortNumber(aPos, bPos)
+                    })*/
                 ),
               }
             ),
@@ -637,7 +652,7 @@
           'toughness': (event) => `Changed the Toughness of ${event.card_name} to ${event.data.toughness}`,
           'transform': () => `Transformed a Card`,
         }))()[event.name]
-        return `${event.created_on}: ${event.handle} ${text(event)}`
+        return `${event.handle} ${text(event)}`
       },
       closeModal(modal) {
         this[modal].hide()
