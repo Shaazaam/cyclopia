@@ -553,8 +553,8 @@
       },
     },
     created() {
-      this.fetch.get('/counters', {}, (data) => this.counters = data)
-      this.fetch.get('/zones', {}, (data) => {
+      this.fetch.get('/counters', {}, ({data}) => this.counters = data)
+      this.fetch.get('/zones', {}, ({data}) => {
         this.zones = data.map(({name}) => name)
         //this.cardZones = this.zones.reduce((agg, name) => agg = this.functions.copy(agg, {[name]: []}), {})
       })
@@ -671,7 +671,7 @@
         this.fetch.put('/power', {game_id: this.id, object_id, value})
       },
       scry() {
-        this.fetch.get('/scry', [this.id, this.scryAmount], (data) => {
+        this.fetch.get('/scry', [this.id, this.scryAmount], ({data}) => {
           this.scryObjects = data
           this.scryModal.show()
         }, false)
@@ -705,7 +705,7 @@
         this.tokenModal.hide()
       },
       tokenSearch() {
-        this.fetch.get('/token', [this.token], (data) => {
+        this.fetch.get('/token', [this.token], ({data}) => {
           if (this.functions.isEmpty(data)) {
             this.store.setErrorMessage('No Tokens Found')
             return false

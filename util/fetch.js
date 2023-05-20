@@ -70,7 +70,7 @@ const handle = (response, callback) => {
   switch (status) {
     case 200:
       success(message)
-      callback(data)
+      callback(response)
       break;
     case 401:
       fail(message)
