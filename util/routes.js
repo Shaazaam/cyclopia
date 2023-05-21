@@ -84,7 +84,7 @@ const event = (entity_id, name, data, user_id) => ({entity_id, name, data, user_
 const challenge = (user_id, games, invitations) => ({user_id, games, invitations})
 
 const validate = async ([input, rules], req, res, next) => {
-  const results = val.validate(input, rules)
+  const results = await val.validate(input, rules)
   if (!val.isValid(results)) {
     req.cyclopia.data = [results]
     return res422(req, res)

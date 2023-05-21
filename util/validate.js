@@ -53,34 +53,34 @@ const formatField = (field) => ({
 })[field] || snakeCasedToUpperCasedWords(field)
 
 const test = ({
-  bt: (value, [table, column, user_id]) => true,
-  em: (value) => isEmail(value),
-  et: (value, [param]) => (isNumber(value) && value === param) || (isString(value) && value.lenth === param),
-  ex: (values, [table, columns]) => dal.exists(table, columns, values),
-  exn: (values, [table, columns]) => ! test.ex(values, [table, columns]),
-  gt: (value, [param]) => isNumber(value) && value > param,
-  gte: (value, [param]) => isNumber(value) && value >= param,
-  lt: (value, [param]) => isNumber(value) && value < param,
-  lte: (value, [param]) => isNumber(value) && value <= param,
-  max: (value, [param]) => (isNumber(value) && test.lte(value, [param])) || (isString(value) && test.lte(value.length, [param])),
-  min: (value, [param]) => (isNumber(value) && test.gte(value, [param])) || (isString(value) && test.gte(value.length, [param])),
-  mo: (value, params) => params.includes(value),
-  num: (value) => isNumber(value),
-  wnum: (value) => isNumber(value) && value % 1 !== 0,
-  reg: (value, [expression]) => isNotNull(value.match(expression)),
-  req: (value) => isNotNull(value) && isNotEmpty(value),
+  bt: async (value, [table, column, user_id]) => true,
+  em: async (value) => isEmail(value),
+  et: async (value, [param]) => (isNumber(value) && value === param) || (isString(value) && value.lenth === param),
+  ex: async (values, [table, columns]) => (await dal.exists(table, columns, values)),
+  exn: async (values, [table, columns]) => ! (await test.ex(values, [table, columns])),
+  gt: async (value, [param]) => isNumber(value) && value > param,
+  gte: async (value, [param]) => isNumber(value) && value >= param,
+  lt: async (value, [param]) => isNumber(value) && value < param,
+  lte: async (value, [param]) => isNumber(value) && value <= param,
+  max: async (value, [param]) => (isNumber(value) && test.lte(value, [param])) || (isString(value) && test.lte(value.length, [param])),
+  min: async (value, [param]) => (isNumber(value) && test.gte(value, [param])) || (isString(value) && test.gte(value.length, [param])),
+  mo: async (value, params) => params.includes(value),
+  num: async (value) => isNumber(value),
+  wnum: async (value) => isNumber(value) && value % 1 !== 0,
+  reg: async (value, [expression]) => isNotNull(value.match(expression)),
+  req: async (value) => isNotNull(value) && isNotEmpty(value),
 })
 
 const setRules = (kind, params = [], callback, message) => ({kind, params, callback, message})
 
-export const validate = (input, fieldRules) =>
-  Object.entries(fieldRules).reduce((agg, [field, rules]) => {
-    const results = rules.reduce((agg, {kind, params, callback, message}) => {
-      const valid = isNotNull(callback) ? callback(input, params) : (test[kind])(input[field], params)
-      return agg = agg.concat(valid ? [] : [message || (messages[kind])(formatField(field), params)])
+export const validate = async (input, fieldRules) =>
+  await Object.entries(fieldRules).reduce(async (agg, [field, rules]) => {
+    const results = await rules.reduce(async (agg, {kind, params, callback, message}) => {
+      const valid = await (isNotNull(callback) ? callback(input, params) : (test[kind])(input[field], params))
+      return (await agg).concat(valid ? [] : [message = message || (messages[kind])(formatField(field), params)])
     }, [])
     if (isNotEmpty(results)) {
-      agg = copy(agg, {[field]: results})
+      agg = copy((await agg), {[field]: results})
     }
     return agg
   }, {})
