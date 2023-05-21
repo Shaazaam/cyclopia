@@ -530,6 +530,7 @@ export const getGame = async (id) => {
   const {rows: objects} = await query(`
     SELECT
       objects.id,
+      objects.card_id,
       objects.user_id,
       objects.zone,
       objects.position,
@@ -562,6 +563,7 @@ export const getGame = async (id) => {
     UNION ALL
     SELECT
       objects.id,
+      objects.card_id,
       objects.user_id,
       objects.zone,
       CASE
