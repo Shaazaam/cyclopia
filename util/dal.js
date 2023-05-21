@@ -399,9 +399,9 @@ const deleteInvitation = async (game_id, user_id) => {
   await query(`DELETE FROM game_invites WHERE game_id = $1 AND user_id = $2`, [game_id, user_id])
   return true
 }
-export const insertGame = async (user_id) => {
+export const insertGame = async (deck_id, user_id) => {
   const {rows: [{id: game_id}]} = await query(`INSERT INTO games DEFAULT VALUES RETURNING id`)
-  await query(`INSERT INTO game_invites (game_id, user_id) VALUES ($1, $2)`, [game_id, user_id])
+  await query(`INSERT INTO game_invites (deck_id, game_id, user_id) VALUES ($1, $2)`, [deck_id, game_id, user_id])
   return {game_id}
 }
 export const joinGame = async (deck_id, game_id, user_id) => {

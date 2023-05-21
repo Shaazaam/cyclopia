@@ -185,7 +185,7 @@ const routes = {
       async (req, res, next) => {
         const {user: {id: user_id}} = req.session
         const {deck_id, user_id: invited_user_id} = req.body
-        const {game_id} = await dal.insertGame(invited_user_id)
+        const {game_id} = await dal.insertGame(deck_id, invited_user_id)
         await dal.joinGame(deck_id, game_id, user_id)
         const userChallanges = await dal.getChallenges(user_id)
         const invitedUserChallenges = await dal.getChallenges(invited_user_id)
