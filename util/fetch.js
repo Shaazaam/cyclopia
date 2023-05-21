@@ -1,5 +1,5 @@
 import {route} from './factory.js'
-import {copy, isNotNull} from './functions.js'
+import {copy, isArray, isNotNull} from './functions.js'
 import store from './store.js'
 
 const requests = {
@@ -21,7 +21,11 @@ const __fetch = (url, settings, params, callback) => {
   }, settings))
     .then(async (response) => {
       const {status} = response
-      return copy({status}, (await response.json()))
+      let json = await response.json()
+      if (isArray(json)) {
+        json = {data: json}
+      }
+      return copy({status}, json)
     })
     .then((response) => handle(response, callback))
     .then(() => {
