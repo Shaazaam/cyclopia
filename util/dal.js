@@ -38,6 +38,7 @@ const allowedColumns = {
 const allowedTables = {
   decks: 'decks',
   game_invites: 'game_invites',
+  game_user: 'game_user',
 }
 
 export const exists = async (table, columns, values) => {
@@ -48,7 +49,7 @@ export const exists = async (table, columns, values) => {
     SELECT ${allowedTables[table]}.*
     FROM ${allowedTables[table]}
     WHERE ${where}
-  `, values)
+  `, Object.values(values))
   return rowCount === 1
 }
 
@@ -401,7 +402,7 @@ const deleteInvitation = async (game_id, user_id) => {
 }
 export const insertGame = async (deck_id, user_id) => {
   const {rows: [{id: game_id}]} = await query(`INSERT INTO games DEFAULT VALUES RETURNING id`)
-  await query(`INSERT INTO game_invites (deck_id, game_id, user_id) VALUES ($1, $2)`, [deck_id, game_id, user_id])
+  await query(`INSERT INTO game_invites (deck_id, game_id, user_id) VALUES ($1, $2, $3)`, [deck_id, game_id, user_id])
   return {game_id}
 }
 export const joinGame = async (deck_id, game_id, user_id) => {
