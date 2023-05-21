@@ -479,7 +479,7 @@ const getGames = async (user_id) => {
     LEFT JOIN game_invites ON game_user.game_id = game_invites.game_id
     LEFT JOIN users invited_user ON game_invites.user_id = invited_user.id
     LEFT JOIN game_user self ON game_user.game_id = self.game_id AND self.user_id != $1
-    LEFT JOIN decks accepted_user_deck ON self.deck_id = decks.id
+    LEFT JOIN decks accepted_user_deck ON self.deck_id = accepted_user_deck.id
     LEFT JOIN users accepted_user ON self.user_id = accepted_user.id
     WHERE game_user.user_id = $1
   `, [user_id])
