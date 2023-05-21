@@ -574,6 +574,24 @@ const routes = {
       },
     ],
   },
+  'rulings': {
+    middleware: [authenticate],
+    post: [
+      isAdmin,
+      async (req, res, next) => {
+        fetch.get(`${SCRYFALL_API_URL}/bulk-data`, ['rulings'], (data) => {
+          fetch.get(data.download_uri, {}, async ({data}) => {
+            await dal.deleteRulings()
+            data.map(async (ruling) => {
+              await dal.insertRuling(ruling)
+            })
+            req.cyclopia.message = `Rulings Imported`
+            next()
+          }).catch((err) => next(err))
+        }).catch((err) => next(err))
+      },
+    ],
+  },
   'scry': {
     middleware: [authenticate, authorize],
     params: ['game_id', 'amount'],
@@ -755,20 +773,6 @@ const routes = {
       },
     ],
   },
-  /*seed: {
-    get: async (req, res) => readFile('./files/default-cards-20230319210756.json', 'utf8')
-      .then(async (cards) => {
-        cards = JSON.parse(cards)
-        for (const card of cards) {
-          await dal.upsertCard(card)
-        }
-        return res.send('cards imported')
-      })
-      .catch((error) => {
-        console.log(error)
-        return res.send(error)
-      }),
-  },*/
 }
 
 export default (app) => {

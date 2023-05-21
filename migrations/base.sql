@@ -55,7 +55,7 @@ CREATE TABLE IF NOT EXISTS card_faces (
 CREATE TABLE IF NOT EXISTS rulings (
   id UUID NOT NULL PRIMARY KEY DEFAULT gen_random_uuid(),
   oracle_id UUID NOT NULL,
-  published DATE NOT NULL,
+  published_at DATE NOT NULL,
   comment TEXT
 );
 

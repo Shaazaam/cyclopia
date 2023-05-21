@@ -54,6 +54,21 @@ export const insertCatalog = async (kind, data) => {
   return true
 }
 
+export const insertRulings = async (data) => {
+  const placeholders = formatPlaceholders(data, 3)
+  const values = data.reduce((agg, {oracle_id, published_at, comment}) => agg.concat([oracle_id, published_at, comment]), [])
+  await query(`INSERT INTO rulings (oracle_id, published_at, comment) VALUES ${placeholders}`, values)
+  return true
+}
+export const insertRuling = async ({oracle_id, published_at, comment}) => {
+  await query(`INSERT INTO rulings (oracle_id, published_at, comment) VALUES ($1, $2, $3)`, [oracle_id, published_at, comment])
+  return true
+}
+export const deleteRulings = async () => {
+  await query(`DELETE FROM rulings`)
+  return true
+}
+
 export const upsertCard = async ({
   id,
   oracle_id,
