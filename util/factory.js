@@ -88,6 +88,7 @@ export const game = (x) => copy({
 
 export const game_user = (x) => copy({
   game_id: null,
+  deck_id: null,
   user_id: null,
   life: 20,
   is_ready: false,

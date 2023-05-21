@@ -20,7 +20,6 @@
         <p v-if="functions.isEmpty(challenges.invitations)">You have no received challenges</p>
 
         <form v-for="invitation in challenges.invitations" @submit.prevent="() => accept(invitation)">
-          {{functions.localeDateTime(invitation.created_on)}} vs {{invitation.opponent.handle}}
           <Input
             v-model="recieved_deck_id"
             type="select"
@@ -28,7 +27,10 @@
             name="recieved_deck_id"
             placeholder="Select a Deck"
           >
-            <template #label>Deck</template>
+            <template #label>
+              <span class="small text-warning">{{functions.localeDateTime(invitation.created_on)}}</span>
+              {{invitation.opponent.handle}} with {{invitation.opponent.deck}}
+            </template>
             <template #options>
               <option v-for="{id, name} in decks" :value="id">{{name}}</option>
             </template>
@@ -50,7 +52,10 @@
 
         <div v-for="game in challenges.pending" class="row">
           <div class="col">
-            <p>{{functions.localeDateTime(game.created_on)}} vs {{game.opponent.handle}}</p>
+            <p>
+              <span class="small text-warning">{{functions.localeDateTime(game.created_on)}}</span>
+              {{game.opponent.handle}} against {{game.deck_name}}
+            </p>
           </div>
         </div>
       </div>
@@ -102,7 +107,10 @@
         <div v-for="game in challenges.active" class="mb-3">
           <div class="row">
             <div class="col">
-              <p>{{functions.localeDateTime(game.created_on)}} vs {{game.opponent.handle}}</p>
+              <p>
+                <span class="small text-warning">{{functions.localeDateTime(game.created_on)}}: </span>
+                {{game.opponent.handle}} with {{game.opponent.deck}} vs You with {{game.deck_name}}
+              </p>
             </div>
           </div>
           <div class="d-flex justify-content-between">
@@ -118,7 +126,10 @@
 
         <div v-for="game in challenges.completed" class="row">
           <div class="col">
-            <p>{{functions.localeDateTime(game.created_on)}} vs {{game.opponent.handle}} <i v-if="game.winner === authUser.id" class="bi bi-trophy-fill text-warning"></i></p>
+            <p>
+              <span class="small text-warning">{{functions.localeDateTime(game.created_on)}}: </span>
+              {{game.opponent.handle}} with {{game.opponent.deck}} vs You with {{game.deck_name}} <i v-if="game.winner === authUser.id" class="bi bi-trophy-fill text-warning"></i>
+            </p>
           </div>
         </div>
       </div>

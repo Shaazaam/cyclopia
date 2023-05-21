@@ -405,7 +405,7 @@ export const insertGame = async (user_id) => {
   return {game_id}
 }
 export const joinGame = async (deck_id, game_id, user_id) => {
-  await query(`INSERT INTO game_user (game_id, user_id) VALUES ($1, $2)`, [game_id, user_id])
+  await query(`INSERT INTO game_user (deck_id, game_id, user_id) VALUES ($1, $2, $3)`, [deck_id, game_id, user_id])
   await query(`
     INSERT INTO objects (
       card_id,
@@ -462,19 +462,23 @@ export const declineGame = async (game_id, user_id, opponent_id) => {
 const getGames = async (user_id) => {
   const {rows} = await query(`
     SELECT
+      decks.name AS deck_name,
       game_user.game_id,
       games.created_on,
       COALESCE(game_invites.user_id IS NOT NULL, FALSE) AS pending_invite,
       JSON_BUILD_OBJECT(
         'id', COALESCE(invited_user.id, accepted_user.id),
+        'deck', COALESCE(accepted_user_deck.name, 'No Deck'),
         'handle', COALESCE(invited_user.handle, accepted_user.handle)
       ) AS opponent,
       games.winner
     FROM game_user
     JOIN games ON games.id = game_user.game_id
+    JOIN decks ON decks.id = game_user.deck_id
     LEFT JOIN game_invites ON game_user.game_id = game_invites.game_id
     LEFT JOIN users invited_user ON game_invites.user_id = invited_user.id
     LEFT JOIN game_user self ON game_user.game_id = self.game_id AND self.user_id != $1
+    LEFT JOIN decks accepted_user_deck ON self.deck_id = decks.id
     LEFT JOIN users accepted_user ON self.user_id = accepted_user.id
     WHERE game_user.user_id = $1
   `, [user_id])
@@ -486,13 +490,15 @@ const getInvitations = async (user_id) => {
       game_invites.game_id,
       JSON_BUILD_OBJECT(
         'id', users.id,
+        'deck', decks.name,
         'handle', users.handle
       ) AS opponent,
       games.created_on
     FROM game_invites
     JOIN game_user ON game_user.game_id = game_invites.game_id
+    JOIN decks ON decks.id = game_user.deck_id
     JOIN games ON games.id = game_invites.game_id
-    JOIN users ON game_user.user_id = users.id
+    JOIN users ON users.id = game_user.user_id
     WHERE game_invites.user_id = $1
   `, [user_id])
   return rows
