@@ -128,6 +128,21 @@ const sendChallenges = async (req, res, next) => {
 }
 
 const routes = {
+  'cards': {
+    middleware: [authenticate],
+    post: [
+      isAdmin,
+      async (req, res, next) => {
+        fetch.get(`${SCRYFALL_API_URL}/bulk-data`, ['default_cards'], (data) => {
+          fetch.get(data.download_uri, {}, async ({data}) => {
+            //
+            req.cyclopia.message = `Cards Imported`
+            next()
+          }).catch((err) => next(err))
+        }).catch((err) => next(err))
+      },
+    ],
+  },
   'catalog': {
     middleware: [authenticate],
     post: [

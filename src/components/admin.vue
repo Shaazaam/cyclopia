@@ -10,6 +10,7 @@
     </div>
   </div>
   <div class="d-flex justify-content-center hstack gap-3">
+    <button type="button" class="btn btn-primary" @click="cards">Cards</button>
     <button type="button" class="btn btn-primary" @click="rulings">Rulings</button>
   </div>
   <div class="row">
@@ -33,6 +34,9 @@
 <script>
   export default {
     methods: {
+      cards() {
+        this.fetch.post('/cards', {})
+      },
       catalog(kind) {
         this.fetch.post('/catalog', {kind})
       },
