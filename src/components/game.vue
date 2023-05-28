@@ -82,6 +82,7 @@
         >Mulligan</button>
       </div>
       <div v-else class="col justify-content-center hstack gap-3" :class="{'invisible': isGameOver}">
+        <h5 class="mb-0 me-auto">Cards: {{opponent.library_total}}</h5>
         <button
           type="button"
           class="btn btn-danger"
@@ -199,27 +200,45 @@
           @click="endGame"
           :disabled="isGameOver"
         >Concede</button>
+        <h5 class="mb-0 ms-auto">Cards: {{user.library_total}}</h5>
       </div>
     </div>
   </div>
 
   <div class="row px-5 mb-3">
     <div class="col-2">
-      <div class="card bg-dark text-light">
-        <img
-          src="/images/card-back.jpg"
-          class="card-img"
+      <div class="row">
+        <Card
+          v-for="object in opponent.graveyard"
+          :object="object"
+          class="col-3"
+          @expand="expand"
         />
-        <div class="card-img-overlay text-center">
-          <h5>Cards: {{opponent.library_total}}</h5>
-        </div>
       </div>
     </div>
-    <div class="col-5">
-      <Graveyard :objects="opponent.graveyard" @expand="expand" />
+    <div class="col-2">
+      <div class="row">
+        <Card
+          v-for="object in opponent.exile"
+          :object="object"
+          class="col-3"
+          @expand="expand"
+        />
+      </div>
     </div>
-    <div class="col-5">
-      <Exile :objects="opponent.exile" @expand="expand" />
+    <div class="col-2">
+      <div class="row">
+        <Card
+          v-for="object in opponent.remove"
+          :object="object"
+          :actions="factory.actions({
+            move: functions.removeByValue(zones, 'remove'),
+          })"
+          class="col-3"
+          @expand="expand"
+          @move="move"
+        />
+      </div>
     </div>
   </div>
 
@@ -251,36 +270,46 @@
   />
 
   <div class="row justify-content-end px-5 mb-3">
-    <div class="col-5">
-      <Exile
-        :objects="user.exile"
-        :actions="factory.actions({
-          counters: cardCounters,
-          move: functions.removeByValue(zones, 'graveyard'),
-        })"
-        @counter="counterOnCard"
-        @expand="expand"
-        @move="move"
-        @transform="transform"
-      />
-    </div>
-    <div class="col-5">
-      <Graveyard
-        :objects="user.graveyard"
-        :actions="factory.actions({move: functions.removeByValue(zones, 'graveyard')})"
-        @expand="expand"
-        @move="move"
-      />
+    <div class="col-2">
+      <div class="row">
+        <Card
+          v-for="object in user.remove"
+          :object="object"
+          :actions="factory.actions({
+            move: functions.removeByValue(zones, 'remove'),
+          })"
+          class="col-3"
+          @expand="expand"
+          @move="move"
+        />
+      </div>
     </div>
     <div class="col-2">
-      <div class="card bg-dark text-light">
-        <img
-          src="/images/card-back.jpg"
-          class="card-img"
+      <div class="row">
+        <Card
+          v-for="object in user.exile"
+          :object="object"
+          :actions="factory.actions({
+            counters: cardCounters,
+            move: functions.removeByValue(zones, 'graveyard'),
+          })"
+          class="col-3"
+          @counter="counter"
+          @expand="expand"
+          @move="move"
         />
-        <div class="card-img-overlay text-center">
-          <h5>Cards: {{user.library_total}}</h5>
-        </div>
+      </div>
+    </div>
+    <div class="col-2">
+      <div class="row">
+        <Card
+          v-for="object in user.graveyard"
+          :object="object"
+          :actions="factory.actions({move: functions.removeByValue(zones, 'graveyard')})"
+          class="col-3"
+          @expand="expand"
+          @move="move"
+        />
       </div>
     </div>
   </div>
@@ -302,10 +331,6 @@
   <div id="card" ref="cardModal" class="modal fade" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content bg-transparent">
-        <div class="modal-header bg-dark" @click="closeModal('cardModal')">
-          <h5 class="modal-title text-light">{{object.card.name}}</h5>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
         <div class="modal-body">
           <div class="row justify-content-center">
             <Card
@@ -324,7 +349,6 @@
     <div class="modal-dialog modal-fullscreen modal-dialog-centered">
       <div class="modal-content bg-transparent">
         <div class="modal-header bg-dark" @click="closeModal('searchModal')">
-          <h5 class="modal-title text-light">Search Deck</h5>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
@@ -339,8 +363,7 @@
               class="col-3 mb-3"
               @move="move"
               @transform="transform"
-            >
-            </Card>
+            />
           </div>
         </div>
       </div>
@@ -351,7 +374,6 @@
     <div class="modal-dialog modal-fullscreen modal-dialog-centered">
       <div class="modal-content bg-transparent">
         <div class="modal-header bg-dark" @click="closeModal('scryModal')">
-          <h5 class="modal-title text-light">Scry</h5>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
@@ -377,7 +399,6 @@
     <div class="modal-dialog modal-fullscreen modal-dialog-centered">
       <div class="modal-content bg-transparent">
         <div class="modal-header bg-dark" @click="closeModal('tokenModal')">
-          <h5 class="modal-title text-light">Tokens</h5>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
@@ -391,8 +412,7 @@
               })"
               class="col-3 mb-3"
               @create="tokenCreate"
-            >
-            </Card>
+            />
           </div>
         </div>
       </div>
@@ -434,17 +454,13 @@
   import {computed} from 'vue'
 
   import Card from './card.vue'
-  import Exile from './exile.vue'
   import Field from './field.vue'
-  import Graveyard from './graveyard.vue'
   import Input from './input.vue'
 
   export default {
     components: {
       Card,
-      Exile,
       Field,
-      Graveyard,
       Input,
     },
     props: {
