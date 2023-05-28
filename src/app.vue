@@ -103,6 +103,10 @@
   .card img {
     border-radius: 11px;
   }
+  .contain-height {
+    object-fit: contain;
+    height: 25vh;
+  }
   .card .dropdown-center {
     display: inline-grid;
   }

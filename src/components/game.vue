@@ -46,24 +46,6 @@
               @change="(e) => counterOnUser(name, e.target.value)"
           />
         </div>
-        <!-- <div class="dropdown-center">
-          <button type="button" class="btn btn-info dropdown-toggle" data-bs-toggle="dropdown">Counters</button>
-          <ul class="dropdown-menu bg-dark">
-            <li v-for="{name} in userCounters" class="py-1">
-              <div class="input-group">
-                <span class="input-group-text bg-dark text-light">{{functions.toUpperCaseWords(name)}}</span>
-                <input
-                  :type="!isGameOver ? 'number' : 'text'"
-                  class="form-control"
-                  :class="!isGameOver ? [] : ['bg-dark', 'text-light']"
-                  :value="user.counters[name]"
-                  :disabled="isGameOver"
-                  @change="(e) => counterOnUser(name, e.target.value)"
-                />
-              </div>
-            </li>
-          </ul>
-        </div> -->
         <div class="input-group">
           <span class="input-group-text bg-dark text-light">Life</span>
           <input
@@ -309,6 +291,7 @@
         v-for="object in user.hand"
         :object="object"
         :actions="factory.actions({move: functions.removeByValue(zones, 'hand')})"
+        contain-height
         @expand="expand"
         @move="move"
         @transform="transform"
@@ -353,7 +336,7 @@
                 expand: false,
                 move: functions.removeByValue(zones, 'library'),
               })"
-              class="col-3"
+              class="col-3 mb-3"
               @move="move"
               @transform="transform"
             >
@@ -377,7 +360,7 @@
               v-for="object in scryObjects"
               :object="object"
               :actions="factory.actions({expand: false})"
-              class="col-3"
+              class="col-3 mb-3"
             >
               <div class="d-flex justify-content-center hstack gap-3">
                 <button type="button" class="btn btn-success" @click="scryTop(object.id)">Top</button>
@@ -406,7 +389,7 @@
                 expand: false,
                 create: true,
               })"
-              class="col-3"
+              class="col-3 mb-3"
               @create="tokenCreate"
             >
             </Card>

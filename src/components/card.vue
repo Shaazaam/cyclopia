@@ -7,7 +7,10 @@
     <img
       :src="image"
       class="card-img"
-      :class="{'tapped': object.is_tapped}"
+      :class="{
+        'tapped': object.is_tapped,
+        'contain-height': containHeight,
+      }"
     />
     <div
       class="card-img-overlay"
@@ -141,6 +144,10 @@
       object: {
         type: Object,
         required: true,
+      },
+      containHeight: {
+        type: Boolean,
+        default: false,
       },
     },
     inject: {
