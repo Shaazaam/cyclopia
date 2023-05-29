@@ -60,9 +60,9 @@
       }
     },
     created() {
-      this.fetch.get('/decks', {}, (data) => {
+      this.fetch.get('/decks', {}, ({data}) => {
         this.decks = data
-        this.fetch.get('/user-cards', {}, (data) => this.cards = data)
+        this.fetch.get('/user-cards', {}, ({data}) => this.cards = data)
       })
     },
   }

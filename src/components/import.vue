@@ -54,7 +54,7 @@
           this.file = this.functions.copy(this.file, {
             base64: e.target.result.substring(e.target.result.indexOf('base64,') + 'base64,'.length),
           })
-          this.fetch.post('/import', this.file, (data) => {
+          this.fetch.post('/import', this.file, () => {
             this.file = null
             this.$refs.file.value = null
           })

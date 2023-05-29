@@ -116,6 +116,7 @@ export const user = (x) => copy({
   id: null,
   email: '',
   handle: '',
+  is_admin: false,
 }, x)
 
 export const wsc = (x) => deepCopy({

@@ -1,7 +1,9 @@
 import bcrypt from 'bcrypt'
 import {readFile} from 'fs/promises'
 
+import config from './config.js'
 import * as dal from './dal.js'
+import fetch from './fetch.js'
 import {
   copy,
   isArray,
@@ -14,6 +16,8 @@ import {
 } from './functions.js'
 import * as val from './validate.js'
 import {wss, send, close} from './wss.js'
+
+const {SCRYFALL_API_URL} = config.app
 
 const codeMessages = {
   200: null,
@@ -68,6 +72,13 @@ const authorize = async (req, res, next) => {
   }
   next()
 }
+const isAdmin = async (req, res, next) => {
+  const {user: {is_admin}} = req.session
+  if (!is_admin) {
+    return res422(req, res)
+  }
+  next()
+}
 
 const event = (entity_id, name, data, user_id) => ({entity_id, name, data, user_id})
 const challenge = (user_id, games, invitations) => ({user_id, games, invitations})
@@ -117,6 +128,35 @@ const sendChallenges = async (req, res, next) => {
 }
 
 const routes = {
+  'cards': {
+    middleware: [authenticate],
+    post: [
+      isAdmin,
+      async (req, res, next) => {
+        fetch.get(`${SCRYFALL_API_URL}/bulk-data`, ['default_cards'], (data) => {
+          fetch.get(data.download_uri, {}, async ({data}) => {
+            await dal.upsertCards(data)
+            req.cyclopia.message = `Cards Imported`
+            next()
+          }).catch((err) => next(err))
+        }).catch((err) => next(err))
+      },
+    ],
+  },
+  'catalog': {
+    middleware: [authenticate],
+    post: [
+      isAdmin,
+      async (req, res, next) => {
+        const {kind} = req.body
+        fetch.get(`${SCRYFALL_API_URL}/catalog`, [kind], async ({data}) => {
+          await dal.insertCatalog(kind, data)
+          req.cyclopia.message = `Catalog ${kind} Imported`
+          next()
+        }).catch((err) => next(err))
+      },
+    ],
+  },
   'challenges': {
     middleware: [authenticate],
     get: [
@@ -404,7 +444,7 @@ const routes = {
       validate,
       async (req, res, next) => {
         const {email, password} = req.body
-        const {id, handle, password: hash} = await dal.authorizeUser(email)
+        const {id, handle, password: hash, is_admin} = await dal.authorizeUser(email)
         if (isNull(id)) {
           req.cyclopia.message = 'User Not Found'
           return res422(req, res)
@@ -415,9 +455,9 @@ const routes = {
             return res422(req, res)
           }
           req.session.regenerate(() => {
-            req.session.user = {id, handle, email}
+            req.session.user = {id, handle, email, is_admin}
             req.session.save(() => {
-              req.cyclopia.data = {id, handle, email}
+              req.cyclopia.data = {id, handle, email, is_admin}
               next()
             })
           })
@@ -538,14 +578,33 @@ const routes = {
         bcrypt.hash(password, 10).then((hash) =>
           dal.insertUser({email, handle, password: hash}).then(({id}) => {
             req.session.regenerate(() => {
-              req.session.user = {id, handle, email}
+              req.session.user = {id, handle, email, is_admin: false}
               req.session.save(() => {
-                req.cyclopia.data = {id, handle, email}
+                req.cyclopia.data = {id, handle, email, is_admin: false}
                 next()
               })
             })
           })
         )
+      },
+    ],
+  },
+  'rulings': {
+    middleware: [authenticate],
+    post: [
+      isAdmin,
+      async (req, res, next) => {
+        fetch.get(`${SCRYFALL_API_URL}/bulk-data`, ['rulings'], (data) => {
+          fetch.get(data.download_uri, {}, async ({data}) => {
+            await dal.deleteRulings()
+            await dal.insertRulings(data)
+            req.cyclopia = copy(req.cyclopia, {
+              message: 'Rulings Imported',
+              data: 'rulings',
+            })
+            next()
+          }).catch((err) => next(err))
+        }).catch((err) => next(err))
       },
     ],
   },
@@ -687,11 +746,11 @@ const routes = {
       async (req, res, next) => {
         const {user: {id}} = req.session
         const {email, handle} = req.body
-        await dal.updateUser(id, email, handle)
+        const user = await dal.updateUser(id, email, handle)
         req.session.regenerate(() => {
-          req.session.user = {id, handle, email}
+          req.session.user = user
           req.session.save(() => {
-            req.cyclopia.data = {id, handle, email}
+            req.cyclopia.data = user
             req.cyclopia.message = 'Profile Updated'
             next()
           })
@@ -730,20 +789,6 @@ const routes = {
       },
     ],
   },
-  /*seed: {
-    get: async (req, res) => readFile('./files/default-cards-20230319210756.json', 'utf8')
-      .then(async (cards) => {
-        cards = JSON.parse(cards)
-        for (const card of cards) {
-          await dal.upsertCard(card)
-        }
-        return res.send('cards imported')
-      })
-      .catch((error) => {
-        console.log(error)
-        return res.send(error)
-      }),
-  },*/
 }
 
 export default (app) => {

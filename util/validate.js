@@ -7,7 +7,7 @@ import {
   isNumber,
   isObjectEmpty,
   isString,
-  snakeCasedToUpperCasedWord,
+  snakeCasedToUpperCasedWords,
 } from './functions.js'
 
 const BELONGS_TO = 'bt'
@@ -50,7 +50,7 @@ const formatField = (field) => ({
   'send_deck_id': 'Deck',
   'recieved_deck_id': 'Deck',
   'user_id': 'User',
-})[field] || snakeCasedToUpperCasedWord(field)
+})[field] || snakeCasedToUpperCasedWords(field)
 
 const test = ({
   bt: (value, [table, column, user_id]) => true,
