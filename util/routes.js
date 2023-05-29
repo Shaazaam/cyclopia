@@ -133,9 +133,9 @@ const routes = {
     post: [
       isAdmin,
       async (req, res, next) => {
-        fetch.get(`${SCRYFALL_API_URL}/bulk-data`, ['default_cards'], ({data}) => {
+        fetch.get(`${SCRYFALL_API_URL}/bulk-data`, ['default_cards'], (data) => {
           fetch.get(data.download_uri, {}, async ({data}) => {
-            await dal.upsertCard(data)
+            await dal.upsertCards(data)
             req.cyclopia.message = `Cards Imported`
             next()
           }).catch((err) => next(err))
