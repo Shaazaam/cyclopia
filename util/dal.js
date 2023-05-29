@@ -352,7 +352,7 @@ export const insertIntoDeck = async ({card_id, deck_id, count}) => {
   return true
 }
 
-export const authorizeUser = async (email) => {
+export const authenticateUser = async (email) => {
   const {rows: [row]} = await query(`SELECT users.* FROM users WHERE users.email = $1`, [email])
   return factory.user(row)
 }

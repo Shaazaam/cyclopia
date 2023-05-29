@@ -444,7 +444,7 @@ const routes = {
       validate,
       async (req, res, next) => {
         const {email, password} = req.body
-        const {id, handle, password: hash, is_admin} = await dal.authorizeUser(email)
+        const {id, handle, password: hash, is_admin} = await dal.authenticateUser(email)
         if (isNull(id)) {
           req.cyclopia.message = 'User Not Found'
           return res422(req, res)
