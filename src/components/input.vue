@@ -2,7 +2,7 @@
   <div :class="{'mb-3': hasMargin}">
     <div v-if="hasLabel" class="hstack gap-3">
       <label class="form-label" :class="{'is-invalid': hasErrors}" :for="id">
-        <slot name="label">{{functions.snakeCasedToUpperCasedWord(name)}}</slot>
+        <slot name="label">{{functions.snakeCasedToUpperCasedWords(name)}}</slot>
       </label>
       <div v-if="hasErrors" class="invalid-feedback">{{errors[name].join(', ')}}</div>
     </div>
