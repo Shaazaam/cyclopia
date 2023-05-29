@@ -1,70 +1,100 @@
 <template>
   <div class="row px-5">
     <div class="col-8">
-      <div class="row">
-        <Card
-          v-for="object in creatures"
-          :object="object"
-          :actions="actions"
-          class="col-2"
-          @counter="counter"
-          @expand="expand"
-          @move="move"
-          @power="power"
-          @tap="tap"
-          @toughness="toughness"
-          @transform="transform"
+      <div class="d-flex flex-wrap hstack">
+        <template
+          v-for="[id, cards] in Object.entries(creatures)"
         >
-        </Card>
+          <Card
+            v-for="(object, i) in cards"
+            :object="object"
+            :actions="actions"
+            class="me-3 mb-3"
+            contain-height
+            @counter="counter"
+            @expand="expand"
+            @move="move"
+            @power="power"
+            @tap="tap"
+            @toughness="toughness"
+            @transform="transform"
+            @mouseenter="hoverGroups[id] = i"
+            @mouseleave="delete hoverGroups[id]"
+            :style="applyStyle(id, i, cards.length)"
+          />
+        </template>
       </div>
     </div>
 
     <div class="col-4">
-      <div class="row">
-        <Card
-          v-for="object in instantsAndSorceries"
-          :object="object"
-          :actions="actions"
-          class="col-4"
-          @expand="expand"
-          @move="move"
+      <div class="d-flex flex-wrap hstack">
+        <template
+          v-for="[id, cards] in Object.entries(instantsAndSorceries)"
         >
-        </Card>
+          <Card
+            v-for="(object, i) in cards"
+            :object="object"
+            :actions="actions"
+            class="me-3 mb-3"
+            contain-height
+            @expand="expand"
+            @move="move"
+            @mouseenter="hoverGroups[id] = i"
+            @mouseleave="delete hoverGroups[id]"
+            :style="applyStyle(id, i, cards.length)"
+          />
+        </template>
       </div>
     </div>
   </div>
 
   <div class="row px-5">
     <div class="col-8">
-      <div class="row">
-        <Card
-          v-for="object in lands"
-          :object="object"
-          :actions="actions"
-          class="col-2"
-          @counter="counter"
-          @expand="expand"
-          @move="move"
-          @tap="tap"
-          @transform="transform"
+      <div class="d-flex flex-wrap hstack">
+        <template
+          v-for="[id, cards] in Object.entries(lands)"
         >
-        </Card>
+          <Card
+            v-for="(object, i) in cards"
+            :object="object"
+            :actions="actions"
+            class="me-3 mb-3"
+            contain-height
+            @counter="counter"
+            @expand="expand"
+            @move="move"
+            @tap="tap"
+            @transform="transform"
+            @mouseenter="hoverGroups[id] = i"
+            @mouseleave="delete hoverGroups[id]"
+            :style="applyStyle(id, i, cards.length)"
+          />
+        </template>
       </div>
     </div>
     <div class="col-4">
-      <div class="row">
-        <Card
-          v-for="object in artifactsAndEnchantments"
-          :object="object"
-          :actions="actions"
-          class="col-4"
-          @counter="counter"
-          @expand="expand"
-          @move="move"
-          @tap="tap"
-          @transform="transform"
+      <div class="d-flex flex-wrap hstack">
+        <div
+          v-for="[id, cards] in Object.entries(artifactsAndEnchantments)"
+          class="card-group"
+          :class="id"
         >
-        </Card>
+          <Card
+            v-for="(object, i) in cards"
+            :object="object"
+            :actions="actions"
+            class="me-3 mb-3"
+            contain-height
+            @counter="counter"
+            @expand="expand"
+            @move="move"
+            @tap="tap"
+            @transform="transform"
+            @mouseenter="hoverGroups[id] = i"
+            @mouseleave="delete hoverGroups[id]"
+            :style="applyStyle(id, i, cards.length)"
+          />
+        </div>
       </div>
     </div>
   </div>
@@ -77,6 +107,13 @@
     components: {
       Card,
     },
+    data: () => ({
+      hoverGroups: {},
+      group: {
+        'margin-left': '-6rem',
+        'margin-right': 'unset',
+      },
+    }),
     props: {
       actions: {
         type: Object,
@@ -98,24 +135,29 @@
     ],
     computed: {
       artifactsAndEnchantments() {
-        return this.objects.filter(({card}) => (
+        return this.functions.groupBy(this.objects.filter(({card}) => (
           card.type_line.includes('Artifact')
           || card.type_line.includes('Enchantment')
           || card.type_line.includes('Planeswalker')
-        ) && !card.type_line.includes('Creature'))
+        ) && !card.type_line.includes('Creature')), 'card_id')
       },
       creatures() {
-        return this.objects.filter(({card}) => card.type_line.includes('Creature'))
+        return this.functions.groupBy(this.objects.filter(({card}) => card.type_line.includes('Creature')), 'card_id')
       },
       instantsAndSorceries() {
-        return this.objects.filter(({card}) => (card.type_line.includes('Instant')
-          || card.type_line.includes('Sorcery')) && !card.type_line.includes('Creature'))
+        return this.functions.groupBy(this.objects.filter(({card}) => (card.type_line.includes('Instant')
+          || card.type_line.includes('Sorcery')) && !card.type_line.includes('Creature')), 'card_id')
       },
       lands() {
-        return this.objects.filter(({card}) => card.type_line.includes('Land'))
+        return this.functions.groupBy(this.objects.filter(({card}) => card.type_line.includes('Land')), 'card_id')
       },
     },
     methods: {
+      applyStyle(id, index, length) {
+        if (index > 0 && (!(id in this.hoverGroups) || index !== this.hoverGroups[id] + 1)) {
+          return this.group
+        }
+      },
       counter(id, name, amount) {
         this.$emit('counter', id, name, amount)
       },

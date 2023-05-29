@@ -252,22 +252,24 @@
 
   <hr />
 
-  <Field
-    :objects="user.field"
-    :actions="factory.actions({
-      counters: cardCounters,
-      move: functions.removeByValue(zones, 'field'),
-      stats: true,
-      tap: true,
-    })"
-    @counter="counterOnCard"
-    @expand="expand"
-    @move="move"
-    @power="power"
-    @tap="tap"
-    @toughness="toughness"
-    @transform="transform"
-  />
+  <div class="mt-3">
+    <Field
+      :objects="user.field"
+      :actions="factory.actions({
+        counters: cardCounters,
+        move: functions.removeByValue(zones, 'field'),
+        stats: true,
+        tap: true,
+      })"
+      @counter="counterOnCard"
+      @expand="expand"
+      @move="move"
+      @power="power"
+      @tap="tap"
+      @toughness="toughness"
+      @transform="transform"
+    />
+  </div>
 
   <div class="row justify-content-end px-5 mb-3">
     <div class="col-2">
