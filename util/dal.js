@@ -23,7 +23,7 @@ const query = (text, values, expectedCount = null) => pool.query(text, values)
     await query(`INSERT INTO errors (data) VALUES ($1)`, [{message, cause}])
     throw new Error(message, {cause})
   })
-const formatPlaceholders = (data, numValues) => data.reduce((agg, cur, index) =>
+const formatPlaceholders = (data, numValues) => data.reduce((agg, _, index) =>
   agg.concat(`($${numericRange(1 + (numValues * index), numValues + (numValues * index)).join(', $')})`), []
 ).join(', ')
 

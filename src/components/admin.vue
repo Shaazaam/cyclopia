@@ -15,13 +15,19 @@
       class="btn btn-primary"
       :disabled="waiting.includes('cards')"
       @click="cards"
-    >Cards</button>
+    >
+      <span v-if="waiting.includes('cards')" class="spinner-grow spinner-grow-sm"></span>
+      Cards
+    </button>
     <button
       type="button"
       class="btn btn-primary"
       :disabled="waiting.includes('rulings')"
       @click="rulings"
-    >Rulings</button>
+    >
+      <span v-if="waiting.includes('rulings')" class="spinner-grow spinner-grow-sm"></span>
+      Rulings
+    </button>
   </div>
   <div class="row">
     <div class="col text-center">
@@ -35,7 +41,10 @@
       class="btn btn-primary"
       :disabled="waiting.includes(kind)"
       @click="catalog(kind)"
-    >{{functions.kebabCasedToUpperCasedWords(kind)}}</button>
+    >
+      <span v-if="waiting.includes(kind)" class="spinner-grow spinner-grow-sm"></span>
+      {{functions.kebabCasedToUpperCasedWords(kind)}}
+    </button>
   </div>
 </template>
 
