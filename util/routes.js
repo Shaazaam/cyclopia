@@ -133,9 +133,9 @@ const routes = {
     post: [
       isAdmin,
       async (req, res, next) => {
-        fetch.get(`${SCRYFALL_API_URL}/bulk-data`, ['default_cards'], (data) => {
+        fetch.get(`${SCRYFALL_API_URL}/bulk-data`, ['default_cards'], ({data}) => {
           fetch.get(data.download_uri, {}, async ({data}) => {
-            //
+            await dal.upsertCard(data)
             req.cyclopia.message = `Cards Imported`
             next()
           }).catch((err) => next(err))
@@ -149,7 +149,7 @@ const routes = {
       isAdmin,
       async (req, res, next) => {
         const {kind} = req.body
-        fetch.get(`${SCRYFALL_API_URL}/catalog`, [kind], async (data) => {
+        fetch.get(`${SCRYFALL_API_URL}/catalog`, [kind], async ({data}) => {
           await dal.insertCatalog(kind, data)
           req.cyclopia.message = `Catalog ${kind} Imported`
           next()
