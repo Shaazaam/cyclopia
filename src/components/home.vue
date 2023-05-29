@@ -158,22 +158,12 @@
     }),
     created() {
       this.fetch.get('/decks', {}, ({data}) => this.decks = data.map(this.factory.deck))
-      this.fetch.get('/users', {}, ({data}) => {
-        this.users = data.filter(({id}) => id !== this.authUser.id)
-        if (this.functions.isNotObjectEmpty(this.challenges)) {
-          this.users = this.users.filter(({id}) => ! this.challenges.pending.map(({opponent}) => opponent.id).includes(id))
-        }
-      })
+      this.fetch.get('/users', {}, ({data}) => this.users = data.filter(({id}) => id !== this.authUser.id))
       this.fetch.get('/challenges')
     },
     computed: {
       challenges() {
         return this.store.get('challenges')
-      },
-    },
-    watch: {
-      challenges({pending}) {
-        this.users = this.users.filter(({id}) => ! pending.map(({opponent}) => opponent.id).includes(id))
       },
     },
     methods: {

@@ -175,9 +175,15 @@ const routes = {
           {send_deck_id, user_id},
           {
             send_deck_id: [val.required()],
-            user_id: [val.required(), /*val.notExists('game_invites', ['game_id', 'user_id'], (input, [table, columns]) => {
-              return dal.exists(table, columns, input)
-            }, 'Challange already sent to this user with this deck')*/],
+            user_id: [
+              val.required(),
+              val.notExists(
+                'game_invites',
+                ['deck_id', 'user_id'],
+                async (input, [table, columns]) => ! (await dal.exists(table, columns, input)),
+                'Challange already sent to this user with this deck'
+              )
+            ],
           }
         ])
       },
