@@ -7,6 +7,7 @@ import {
   copy,
   isNotEmpty,
   isNotNull,
+  isNotObject,
   isNotUndefined,
   numericRange,
   toNumber,
@@ -32,6 +33,7 @@ const MAX = 60000
 
 const allowedColumns = {
   deck_id: 'deck_id',
+  email: 'email',
   game_id: 'game_id',
   user_id: 'user_id',
 }
@@ -39,6 +41,7 @@ const allowedTables = {
   decks: 'decks',
   game_invites: 'game_invites',
   game_user: 'game_user',
+  users: 'users',
 }
 
 export const exists = async (table, columns, values) => {
@@ -49,7 +52,7 @@ export const exists = async (table, columns, values) => {
     SELECT ${allowedTables[table]}.*
     FROM ${allowedTables[table]}
     WHERE ${where}
-  `, Object.values(values))
+  `, isNotObject(values) ? [values] : Object.values(values))
   return rowCount === 1
 }
 

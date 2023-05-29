@@ -572,7 +572,11 @@ const routes = {
         next([
           {email, handle, password},
           {
-            email: [val.required(), val.email()],
+            email: [
+              val.required(),
+              val.email(),
+              val.notExists('users', ['email']),
+            ],
             handle: [val.required(), val.max(50)],
             password: [val.required()],
           }
