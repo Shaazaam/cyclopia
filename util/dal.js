@@ -2,7 +2,14 @@ import pg from 'pg'
 
 import config from './config.js'
 import * as factory from './factory.js'
-import {isNotEmpty, isNotNull, isNotUndefined, numericRange, toNumber} from './functions.js'
+import {
+  chunk,
+  isNotEmpty,
+  isNotNull,
+  isNotUndefined,
+  numericRange,
+  toNumber,
+} from './functions.js'
 
 const pool = new pg.Pool(config.db)
 const query = (text, values, expectedCount = null) => pool.query(text, values)
@@ -19,6 +26,8 @@ const query = (text, values, expectedCount = null) => pool.query(text, values)
 const formatPlaceholders = (data, numValues) => data.reduce((agg, cur, index) =>
   agg.concat(`($${numericRange(1 + (numValues * index), numValues + (numValues * index)).join(', $')})`), []
 ).join(', ')
+
+const MAX = 60000
 
 const allowedColumns = {
   deck_id: 'deck_id',
@@ -43,21 +52,28 @@ export const exists = async (table, columns, values) => {
 }
 
 export const insertCatalog = async (kind, data) => {
-  const placeholders = formatPlaceholders(data, 2)
-  const values = data.reduce((agg, cur) => agg.concat([kind, cur]), [])
-  await query(`
-    INSERT INTO catalog (kind, value)
-    VALUES ${placeholders}
-    ON CONFLICT ON CONSTRAINT catalog_pkey
-    DO NOTHING
-  `, values)
+  const numPlaceholders = 2
+  const chunked = chunk(data, Math.floor(MAX / numPlaceholders))
+  for (const chunk of chunked) {
+    await query(`
+      INSERT INTO catalog (kind, value)
+      VALUES ${formatPlaceholders(chunk, numPlaceholders)}
+      ON CONFLICT ON CONSTRAINT catalog_pkey
+      DO NOTHING
+    `, chunk.reduce((agg, cur) => agg.concat([kind, cur]), []))
+  }
   return true
 }
 
 export const insertRulings = async (data) => {
-  const placeholders = formatPlaceholders(data, 3)
-  const values = data.reduce((agg, {oracle_id, published_at, comment}) => agg.concat([oracle_id, published_at, comment]), [])
-  await query(`INSERT INTO rulings (oracle_id, published_at, comment) VALUES ${placeholders}`, values)
+  const numPlaceholders = 3
+  const chunked = chunk(data, Math.floor(MAX / numPlaceholders))
+  for (const chunk of chunked) {
+    await query(`
+      INSERT INTO rulings (oracle_id, published_at, comment)
+      VALUES ${formatPlaceholders(chunk, numPlaceholders)}
+    `, chunk.reduce((agg, {oracle_id, published_at, comment}) => agg.concat([oracle_id, published_at, comment]), []))
+  }
   return true
 }
 export const insertRuling = async ({oracle_id, published_at, comment}) => {

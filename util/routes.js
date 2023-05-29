@@ -597,10 +597,11 @@ const routes = {
         fetch.get(`${SCRYFALL_API_URL}/bulk-data`, ['rulings'], (data) => {
           fetch.get(data.download_uri, {}, async ({data}) => {
             await dal.deleteRulings()
-            data.map(async (ruling) => {
-              await dal.insertRuling(ruling)
+            await dal.insertRulings(data)
+            req.cyclopia = copy(req.cyclopia, {
+              message: 'Rulings Imported',
+              data: 'rulings',
             })
-            req.cyclopia.message = `Rulings Imported`
             next()
           }).catch((err) => next(err))
         }).catch((err) => next(err))
