@@ -66,18 +66,14 @@ export const insertCatalog = async (kind, data) => {
 }
 
 export const insertRulings = async (data) => {
-  const numPlaceholders = 3
+  const numPlaceholders = Object.keys(data[0]).length
   const chunked = chunk(data, Math.floor(MAX / numPlaceholders))
   for (const chunk of chunked) {
     await query(`
       INSERT INTO rulings (oracle_id, published_at, comment)
       VALUES ${formatPlaceholders(chunk, numPlaceholders)}
-    `, chunk.reduce((agg, {oracle_id, published_at, comment}) => agg.concat([oracle_id, published_at, comment]), []))
+    `, chunk.reduce((agg, cur) => agg.concat(Object.values(cur)), []))
   }
-  return true
-}
-export const insertRuling = async ({oracle_id, published_at, comment}) => {
-  await query(`INSERT INTO rulings (oracle_id, published_at, comment) VALUES ($1, $2, $3)`, [oracle_id, published_at, comment])
   return true
 }
 export const deleteRulings = async () => {
