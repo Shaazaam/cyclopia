@@ -262,9 +262,28 @@ export const upsertCards = async (data) => {
           ) VALUES ${formatPlaceholders(hunk2, numPlaceholders2)}
           RETURNING id
         `, hunk2.reduce((agg, cur) => agg.concat(Object.values(cur)), []))
-        //await query(`UPDATE objects SET card_face_id = `)
       }
     }
+    await query(`
+      WITH card_face AS (
+        SELECT
+          card_faces.id AS card_face_id,
+          objects.id AS object_id
+        FROM objects
+        JOIN cards ON objects.card_id = cards.id
+        LEFT JOIN (
+          SELECT
+            id,
+            card_id,
+            ROW_NUMBER() OVER (PARTITION BY card_faces.card_id ORDER BY card_faces.card_id) AS rn
+          FROM card_faces
+        ) card_faces ON card_faces.card_id = cards.id AND rn = 1
+      )
+      UPDATE objects
+      SET card_face_id = card_face.card_face_id
+      FROM card_face
+      WHERE objects.id = object_id
+    `)
   }
   return true
 }
