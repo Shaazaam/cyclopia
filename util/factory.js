@@ -12,6 +12,7 @@ export const route = (endpoint, params = null) => {
 
 export const actions = (x) => copy({
   counters: [],
+  drag: true,
   expand: true,
   move: [],
   stats: false,

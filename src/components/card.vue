@@ -1,8 +1,11 @@
 <template>
   <div
     class="card text-light bg-transparent"
+    :draggable="_actions.drag && functions.isNotNull(object.id) && !isGameOver"
     @mouseenter="hover = true"
     @mouseleave="hover = false"
+    @click="click"
+    @dragstart="drag"
   >
     <img
       :src="image"
@@ -17,26 +20,12 @@
       :class="{'invisible': !hover}"
     >
       <div class="d-flex justify-content-between mb-2">
-        <button
-          v-if="_actions.tap && !isGameOver"
-          type="button"
-          class="btn"
-          :class="{
-            'btn-success': object.is_tapped,
-            'btn-warning': !object.is_tapped,
-          }"
-          @click="tap(!object.is_tapped)"
-        >
-          <i class="bi bi-reply-fill"></i>
-        </button>
         <div v-if="functions.isNotEmpty(_actions.move) && !isGameOver" class="dropdown-center">
           <button
             type="button"
             class="btn btn-primary dropdown-toggle"
             data-bs-toggle="dropdown"
-          >
-            <i class="bi bi-box-arrow-up"></i>
-          </button>
+          >Move</button>
           <ul class="dropdown-menu bg-transparent">
             <li v-for="zone in _actions.move" class="py-1">
               <button type="button" class="btn btn-primary" @click="move(zone)">{{functions.toUpperCaseWords(zone)}}</button>
@@ -47,17 +36,9 @@
           v-if="_actions.transform && functions.isNotNull(object.active_face) && !isGameOver"
           type="button"
           class="btn btn-info"
-          @click="transform"
+          @click.stop="transform"
         >
           <i class="bi bi-arrow-clockwise"></i>
-        </button>
-        <button
-          v-if="_actions.expand"
-          type="button"
-          class="btn btn-light"
-          @click="expand"
-        >
-          <i class="bi bi-zoom-in"></i>
         </button>
         <div v-if="_actions.create" class="input-group">
           <button
@@ -82,6 +63,7 @@
             :class="!isMine || isGameOver ? ['bg-dark', 'text-light'] : []"
             :disabled="!isMine || isGameOver"
             @change="(e) => power(e.target.value)"
+            @click.stop
           />
           <span class="input-group-text bg-dark text-light">/</span>
           <input
@@ -91,6 +73,7 @@
             :class="!isMine || isGameOver ? ['bg-dark', 'text-light'] : []"
             :disabled="!isMine || isGameOver"
             @change="(e) => toughness(e.target.value)"
+            @click.stop
           />
         </div>
       </div>
@@ -107,7 +90,7 @@
           </div>
         </div>
       </template>
-      <div v-if="!isGameOver" class="d-flex justify-content-between">
+      <div v-if="!isGameOver" class="d-flex justify-content-between" @click.stop>
         <div v-if="functions.isNotEmpty(_actions.counters)" class="dropdown-center" style="width: 100%;">
           <button type="button" class="btn btn-info dropdown-toggle" data-bs-toggle="dropdown">Counters</button>
           <ul class="dropdown-menu bg-transparent">
@@ -158,6 +141,7 @@
     emits: [
       'create',
       'counter',
+      'drag',
       'expand',
       'move',
       'power',
@@ -170,6 +154,7 @@
       createAmount: 1,
       selectedCounter: null,
       hover: false,
+      timeout: null,
     }),
     computed: {
       isMine() {
@@ -200,6 +185,25 @@
       }
     },
     methods: {
+      drag(event) {
+        event.dataTransfer.dropEffect = 'move'
+        event.dataTransfer.effectAllowed = 'move'
+        event.dataTransfer.setData('text/plain', this.object.id)
+      },
+      click() {
+        if (this.functions.isNull(this.timeout) && this._actions.tap && !this.isGameOver) {
+          this.timeout = setTimeout(() => {
+            this.tap(!this.object.is_tapped)
+            this.timeout = null
+          }, 200)
+        } else {
+          clearTimeout(this.timeout)
+          this.timeout = null
+          if (this._actions.expand) {
+            this.expand()
+          }
+        }
+      },
       create() {
         this.$emit('create', this.object.card.id, this.createAmount)
       },

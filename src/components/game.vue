@@ -82,13 +82,19 @@
         >Mulligan</button>
       </div>
       <div v-else class="col justify-content-center hstack gap-3" :class="{'invisible': isGameOver}">
-        <h5 class="mb-0 me-auto">Cards: {{opponent.library_total}}</h5>
+        <h5 class="mb-0 me-auto">Library: {{opponent.library_total}}</h5>
+        <h5 class="mb-0 me-auto">Graveyard: {{opponent.graveyard_total}}</h5>
         <button
           type="button"
           class="btn btn-danger"
           :class="{'invisible': !user.is_active_turn}"
           @click="endTurn"
         >End Turn</button>
+        <button
+          type="button"
+          class="btn btn-success"
+          :class="{'invisible': !user.is_active_turn}"
+        >Untap</button>
         <Input
           v-model="drawAmount"
           :class="{'invisible': isGameOver}"
@@ -131,12 +137,12 @@
             >Mill</button>
           </template>
         </Input>
-        <button
+        <!-- <button
           type="button"
           class="btn btn-info"
           data-bs-toggle="modal"
-          data-bs-target="#search"
-        >Search</button>
+          data-bs-target="#librarySearch"
+        >Search</button> -->
         <Input
           v-model="scryAmount"
           type="number"
@@ -200,55 +206,16 @@
           @click="endGame"
           :disabled="isGameOver"
         >Concede</button>
-        <h5 class="mb-0 ms-auto">Cards: {{user.library_total}}</h5>
       </div>
     </div>
   </div>
 
-  <div class="row px-5 mb-3">
-    <div class="col-2">
-      <div class="row">
-        <Card
-          v-for="object in opponent.graveyard"
-          :object="object"
-          class="col-3"
-          @expand="expand"
-        />
-      </div>
-    </div>
-    <div class="col-2">
-      <div class="row">
-        <Card
-          v-for="object in opponent.exile"
-          :object="object"
-          class="col-3"
-          @expand="expand"
-        />
-      </div>
-    </div>
-    <div class="col-2">
-      <div class="row">
-        <Card
-          v-for="object in opponent.remove"
-          :object="object"
-          :actions="factory.actions({
-            move: functions.removeByValue(zones, 'remove'),
-          })"
-          class="col-3"
-          @expand="expand"
-          @move="move"
-        />
-      </div>
-    </div>
-  </div>
-
-  <div class="reverse-columns">
-    <Field
-      :objects="opponent.field"
-      :actions="factory.actions({stats: true})"
-      @expand="expand"
-    />
-  </div>
+  <Field
+    :objects="opponent.field"
+    :actions="factory.actions({stats: true, drag: false})"
+    reversed
+    @expand="expand"
+  />
 
   <hr />
 
@@ -256,7 +223,6 @@
     :objects="user.field"
     :actions="factory.actions({
       counters: cardCounters,
-      move: functions.removeByValue(zones, 'field'),
       stats: true,
       tap: true,
     })"
@@ -269,62 +235,157 @@
     @transform="transform"
   />
 
-  <div class="row justify-content-end px-5 mb-3">
-    <div class="col-2">
-      <div class="row">
-        <Card
-          v-for="object in user.remove"
-          :object="object"
-          :actions="factory.actions({
-            move: functions.removeByValue(zones, 'remove'),
-          })"
-          class="col-3"
-          @expand="expand"
-          @move="move"
-        />
+  <div class="sticky-bottom mt-3">
+    <div class="row">
+      <div class="col-8" :class="{'invisible': functions.isEmpty(user.hand)}">
+        <div
+          id="hand"
+          class="border border-info-subtle rounded bg-info collapse show"
+          :class="{
+            'bg-opacity-25': dragover,
+            'bg-opacity-10': !dragover,
+          }"
+          @drop="drop($event, 'hand')"
+          @dragover.prevent
+          @dragenter="dragover = true"
+          @dragleave="dragover = false"
+        >
+          <div class="d-flex justify-content-center gap-3">
+            <Card
+              v-for="object in user.hand"
+              :object="object"
+              :contain-height="user.hand.length <= 5"
+              @expand="expand"
+              @transform="transform"
+            />
+          </div>
+        </div>
+        <div class="d-grid">
+          <button class="btn btn-sm btn-outline-info" data-bs-toggle="collapse" data-bs-target="#hand">Hand</button>
+        </div>
       </div>
-    </div>
-    <div class="col-2">
-      <div class="row">
-        <Card
-          v-for="object in user.exile"
-          :object="object"
-          :actions="factory.actions({
-            counters: cardCounters,
-            move: functions.removeByValue(zones, 'graveyard'),
-          })"
-          class="col-3"
-          @counter="counter"
-          @expand="expand"
-          @move="move"
-        />
+      <div v-for="zone in stackZones" class="col-1">
+        <div
+          :id="zone"
+          class="border rounded collapse show"
+          :class="[{
+            'bg-opacity-25': dragover,
+            'bg-opacity-10': !dragover,
+          }, zone === 'library' ? 'border-primary-subtle bg-primary' : 'border-danger-subtle bg-danger']"
+          data-bs-toggle="modal"
+          :data-bs-target="`#${zone}Search`"
+          @drop="drop($event, zone)"
+          @dragover.prevent
+          @dragenter="dragover = true"
+          @dragleave="dragover = false"
+        >
+          <div class="d-flex justify-content-center gap-3">
+            <Card :object="zone === 'library' ? factory.object() : [factory.object()].concat(user[zone]).pop()">
+              <!-- <h5 class="mb-0">Cards: {{user.library_total}}</h5> -->
+            </Card>
+          </div>
+        </div>
+        <div class="d-grid">
+          <button
+            class="btn btn-sm"
+            :class="zone === 'library' ? 'btn-outline-primary' : 'btn-outline-danger'"
+            data-bs-toggle="collapse"
+            :data-bs-target="`#${zone}`"
+          >{{functions.toUpperCasedWords(zone)}}</button>
+        </div>
       </div>
-    </div>
-    <div class="col-2">
-      <div class="row">
-        <Card
-          v-for="object in user.graveyard"
-          :object="object"
-          :actions="factory.actions({move: functions.removeByValue(zones, 'graveyard')})"
-          class="col-3"
-          @expand="expand"
-          @move="move"
-        />
+      <!-- <div class="col-1">
+        <div
+          id="library"
+          class="border border-primary-subtle rounded bg-primary collapse show"
+          :class="{
+            'bg-opacity-25': dragover,
+            'bg-opacity-10': !dragover,
+          }"
+          data-bs-toggle="modal"
+          data-bs-target="#librarySearch"
+          @drop="drop($event, 'library')"
+          @dragover.prevent
+          @dragenter="dragover = true"
+          @dragleave="dragover = false"
+        >
+          <div class="d-flex justify-content-center gap-3">
+            <Card :object="factory.object()">
+              <h5 class="mb-0">Cards: {{user.library_total}}</h5>
+            </Card>
+          </div>
+        </div>
+        <div class="d-grid">
+          <button class="btn btn-sm btn-outline-primary" data-bs-toggle="collapse" data-bs-target="#library">Library</button>
+        </div>
       </div>
-    </div>
-  </div>
-
-  <div class="sticky-bottom px-5">
-    <div class="d-flex justify-content-center hstack gap-3">
-      <Card
-        v-for="object in user.hand"
-        :object="object"
-        :actions="factory.actions({move: functions.removeByValue(zones, 'hand')})"
-        contain-height
-        @expand="expand"
-        @move="move"
-        @transform="transform"
-      />
+      <div class="col-1">
+        <div
+          id="graveyard"
+          class="border border-danger-subtle rounded bg-danger collapse show"
+          :class="{
+            'bg-opacity-25': dragover,
+            'bg-opacity-10': !dragover,
+          }"
+          data-bs-toggle="modal"
+          data-bs-target="#graveyardSearch"
+          @drop="drop($event, 'graveyard')"
+          @dragover.prevent
+          @dragenter="dragover = true"
+          @dragleave="dragover = false"
+        >
+          <div class="d-flex justify-content-center gap-3">
+            <Card :object="[factory.object()].concat(user.graveyard).pop()">
+              <h5 class="mb-0">Cards: {{user.graveyard_total}}</h5>
+            </Card>
+          </div>
+        </div>
+        <div class="d-grid">
+          <button class="btn btn-sm btn-outline-danger" data-bs-toggle="collapse" data-bs-target="#graveyard">Graveyard</button>
+        </div>
+      </div>
+      <div class="col-1">
+        <div
+          id="exile"
+          class="border border-danger-subtle rounded bg-danger collapse show"
+          :class="{
+            'bg-opacity-25': dragover,
+            'bg-opacity-10': !dragover,
+          }"
+          @drop="drop($event, 'exile')"
+          @dragover.prevent
+          @dragenter="dragover = true"
+          @dragleave="dragover = false"
+        >
+          <div class="d-flex justify-content-center gap-3">
+            <Card :object="[factory.object()].concat(user.exile).pop()" />
+          </div>
+        </div>
+        <div class="d-grid">
+          <button class="btn btn-sm btn-outline-danger" data-bs-toggle="collapse" data-bs-target="#exile">Exile</button>
+        </div>
+      </div>
+      <div class="col-1">
+        <div
+          id="removed"
+          class="border border-danger-subtle rounded bg-danger collapse show"
+          :class="{
+            'bg-opacity-25': dragover,
+            'bg-opacity-10': !dragover,
+          }"
+          @drop="drop($event, 'remove')"
+          @dragover.prevent
+          @dragenter="dragover = true"
+          @dragleave="dragover = false"
+        >
+          <div class="d-flex justify-content-center gap-3">
+            <Card :object="[factory.object()].concat(user.remove).pop()" />
+          </div>
+        </div>
+        <div class="d-grid">
+          <button class="btn btn-sm btn-outline-danger" data-bs-toggle="collapse" data-bs-target="#removed">Removed</button>
+        </div>
+      </div> -->
     </div>
   </div>
 
@@ -345,20 +406,27 @@
     </div>
   </div>
 
-  <div id="search" ref="searchModal" class="modal fade" tabindex="-1">
+  <div
+    v-for="zone in stackZones"
+    :id="`${zone}Search`"
+    :data-ref="`${zone}Modal`"
+    ref="modals"
+    class="modal fade"
+    tabindex="-1"
+  >
     <div class="modal-dialog modal-fullscreen modal-dialog-centered">
       <div class="modal-content bg-transparent">
-        <div class="modal-header bg-dark" @click="closeModal('searchModal')">
+        <div class="modal-header bg-dark" @click="closeModal(`${zone}Modal`)">
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
           <div class="row justify-content-center">
             <Card
-              v-for="object in user.library"
+              v-for="object in user[zone]"
               :object="object"
               :actions="factory.actions({
                 expand: false,
-                move: functions.removeByValue(zones, 'library'),
+                move: functions.removeByValue(zones, zone),
               })"
               class="col-3 mb-3"
               @move="move"
@@ -470,8 +538,10 @@
       },
     },
     data: () => ({
+      dragover: false,
       cardModal: null,
-      searchModal: null,
+      graveyardModal: null,
+      libraryModal: null,
       scryModal: null,
       gameOverModal: null,
       tokenModal: null,
@@ -484,6 +554,12 @@
       tokenObjects: [],
       counters: [],
       zones: [],
+      stackZones: [
+        'library',
+        'graveyard',
+        'exile',
+        'remove',
+      ],
       cardZones: {
         exile: [],
         field: [],
@@ -593,8 +669,8 @@
       this.object = this.factory.object()
     },
     mounted() {
+      this.$refs.modals.forEach((modal) => this[modal.dataset.ref] = new bootstrap.Modal(modal))
       this.cardModal = new bootstrap.Modal(this.$refs.cardModal)
-      this.searchModal = new bootstrap.Modal(this.$refs.searchModal)
       this.scryModal = new bootstrap.Modal(this.$refs.scryModal)
       this.tokenModal = new bootstrap.Modal(this.$refs.tokenModal)
       this.gameOverModal = new bootstrap.Modal(this.$refs.gameOverModal, {backdrop: 'static', keyboard: false})
@@ -683,6 +759,11 @@
       },
       draw() {
         this.fetch.put('/draw', {game_id: this.id, amount: this.drawAmount})
+      },
+      drop(event, zone) {
+        if (!this.isGameOver) {
+          this.move(event.dataTransfer.getData('text/plain'), zone)
+        }
       },
       expand(object) {
         this.object = this.functions.copy(object, {is_tapped: false})
