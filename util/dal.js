@@ -623,10 +623,11 @@ export const getGame = async (id) => {
     SELECT
       objects.user_id,
       SUM(CASE WHEN zone = 'library' THEN 1 ELSE 0 END)::integer AS library_total,
-      SUM(CASE WHEN zone = 'graveyard' THEN 1 ELSE 0 END)::integer AS graveyard_total
+      SUM(CASE WHEN zone = 'graveyard' THEN 1 ELSE 0 END)::integer AS graveyard_total,
+      SUM(CASE WHEN zone = 'exile' THEN 1 ELSE 0 END)::integer AS exile_total,
+      SUM(CASE WHEN zone = 'remove' THEN 1 ELSE 0 END)::integer AS remove_total
     FROM objects
     WHERE objects.game_id = $1
-      AND objects.zone IN ('library', 'graveyard')
     GROUP BY objects.user_id
   `, [id])
   return factory.game({id, users, objects, counts})

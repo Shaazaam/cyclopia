@@ -60,7 +60,7 @@
       </div>
     </div>
 
-    <div class="row px-5" :class="{'invisible': isGameOver}">
+    <div class="row px-3" :class="{'invisible': isGameOver}">
       <div v-if="!user.is_ready" class="col justify-content-center hstack gap-3">
         <button
           v-if="!user.is_ready && functions.isNotEmpty(user.hand)"
@@ -281,7 +281,7 @@
         >
           <div class="d-flex justify-content-center gap-3">
             <Card :object="zone === 'library' ? factory.object() : [factory.object()].concat(user[zone]).pop()">
-              <!-- <h5 class="mb-0">Cards: {{user.library_total}}</h5> -->
+              <h5 class="mb-0">Cards: {{user[`${zone}_total`]}}</h5>
             </Card>
           </div>
         </div>
@@ -291,101 +291,9 @@
             :class="zone === 'library' ? 'btn-outline-primary' : 'btn-outline-danger'"
             data-bs-toggle="collapse"
             :data-bs-target="`#${zone}`"
-          >{{functions.toUpperCasedWords(zone)}}</button>
+          >{{functions.toUpperCaseWords(zone)}}</button>
         </div>
       </div>
-      <!-- <div class="col-1">
-        <div
-          id="library"
-          class="border border-primary-subtle rounded bg-primary collapse show"
-          :class="{
-            'bg-opacity-25': dragover,
-            'bg-opacity-10': !dragover,
-          }"
-          data-bs-toggle="modal"
-          data-bs-target="#librarySearch"
-          @drop="drop($event, 'library')"
-          @dragover.prevent
-          @dragenter="dragover = true"
-          @dragleave="dragover = false"
-        >
-          <div class="d-flex justify-content-center gap-3">
-            <Card :object="factory.object()">
-              <h5 class="mb-0">Cards: {{user.library_total}}</h5>
-            </Card>
-          </div>
-        </div>
-        <div class="d-grid">
-          <button class="btn btn-sm btn-outline-primary" data-bs-toggle="collapse" data-bs-target="#library">Library</button>
-        </div>
-      </div>
-      <div class="col-1">
-        <div
-          id="graveyard"
-          class="border border-danger-subtle rounded bg-danger collapse show"
-          :class="{
-            'bg-opacity-25': dragover,
-            'bg-opacity-10': !dragover,
-          }"
-          data-bs-toggle="modal"
-          data-bs-target="#graveyardSearch"
-          @drop="drop($event, 'graveyard')"
-          @dragover.prevent
-          @dragenter="dragover = true"
-          @dragleave="dragover = false"
-        >
-          <div class="d-flex justify-content-center gap-3">
-            <Card :object="[factory.object()].concat(user.graveyard).pop()">
-              <h5 class="mb-0">Cards: {{user.graveyard_total}}</h5>
-            </Card>
-          </div>
-        </div>
-        <div class="d-grid">
-          <button class="btn btn-sm btn-outline-danger" data-bs-toggle="collapse" data-bs-target="#graveyard">Graveyard</button>
-        </div>
-      </div>
-      <div class="col-1">
-        <div
-          id="exile"
-          class="border border-danger-subtle rounded bg-danger collapse show"
-          :class="{
-            'bg-opacity-25': dragover,
-            'bg-opacity-10': !dragover,
-          }"
-          @drop="drop($event, 'exile')"
-          @dragover.prevent
-          @dragenter="dragover = true"
-          @dragleave="dragover = false"
-        >
-          <div class="d-flex justify-content-center gap-3">
-            <Card :object="[factory.object()].concat(user.exile).pop()" />
-          </div>
-        </div>
-        <div class="d-grid">
-          <button class="btn btn-sm btn-outline-danger" data-bs-toggle="collapse" data-bs-target="#exile">Exile</button>
-        </div>
-      </div>
-      <div class="col-1">
-        <div
-          id="removed"
-          class="border border-danger-subtle rounded bg-danger collapse show"
-          :class="{
-            'bg-opacity-25': dragover,
-            'bg-opacity-10': !dragover,
-          }"
-          @drop="drop($event, 'remove')"
-          @dragover.prevent
-          @dragenter="dragover = true"
-          @dragleave="dragover = false"
-        >
-          <div class="d-flex justify-content-center gap-3">
-            <Card :object="[factory.object()].concat(user.remove).pop()" />
-          </div>
-        </div>
-        <div class="d-grid">
-          <button class="btn btn-sm btn-outline-danger" data-bs-toggle="collapse" data-bs-target="#removed">Removed</button>
-        </div>
-      </div> -->
     </div>
   </div>
 
