@@ -90,7 +90,7 @@
     top: 2.5%;
   }
   .tapped {
-    transform: rotate(270deg);
+    transform: rotate(315deg);
   }
   .navbar-dark .navbar-nav .nav-link.router-link-active,
   .navbar-dark .navbar-nav .show>.nav-link {

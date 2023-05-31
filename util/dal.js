@@ -622,10 +622,11 @@ export const getGame = async (id) => {
   const {rows: counts} = await query(`
     SELECT
       objects.user_id,
-      COUNT(*)::integer AS library_total
+      SUM(CASE WHEN zone = 'library' THEN 1 ELSE 0 END)::integer AS library_total,
+      SUM(CASE WHEN zone = 'graveyard' THEN 1 ELSE 0 END)::integer AS graveyard_total
     FROM objects
     WHERE objects.game_id = $1
-      AND objects.zone = 'library'
+      AND objects.zone IN ('library', 'graveyard')
     GROUP BY objects.user_id
   `, [id])
   return factory.game({id, users, objects, counts})
