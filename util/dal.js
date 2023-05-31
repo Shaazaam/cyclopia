@@ -677,7 +677,7 @@ export const getEvents = async (entity_id) => {
     LEFT JOIN cards indirect ON objects.card_id = indirect.id
     LEFT JOIN users winner ON (events.data->>'winner')::uuid = winner.id
     WHERE events.entity_id = $1
-    ORDER BY events.created_on ASC
+    ORDER BY events.created_on DESC
   `, [entity_id])
   return rows
 }
@@ -921,6 +921,17 @@ export const tap = async (game_id, object_id, user_id, state) => {
       AND objects.zone = 'field'
     RETURNING *
   `, [object_id, game_id, user_id, state], 1)
+  return rows
+}
+export const untapAll = async (game_id, user_id) => {
+  const {rows} = await query(`
+    UPDATE objects
+    SET is_tapped = false
+    WHERE objects.game_id = $1
+      AND objects.user_id = $2
+      AND objects.zone = 'field'
+    RETURNING *
+  `, [game_id, user_id])
   return rows
 }
 export const insertTokens = async (game_id, card_id, user_id, amount) => {

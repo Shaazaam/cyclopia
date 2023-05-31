@@ -750,6 +750,21 @@ const routes = {
       sendEvents,
     ],
   },
+  'untap': {
+    middleware: [authenticate, authorize],
+    put: [
+      async (req, res, next) => {
+        const {user: {id: user_id}} = req.session
+        const {game_id} = req.body
+        const data = await dal.untapAll(game_id, user_id).catch((err) => next(err))
+        req.cyclopia.event = event(game_id, 'untap', data, user_id)
+        next()
+      },
+      log,
+      sendGame,
+      sendEvents,
+    ],
+  },
   'user': {
     middleware: [authenticate],
     put: [
