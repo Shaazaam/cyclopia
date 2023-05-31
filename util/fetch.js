@@ -1,5 +1,5 @@
 import {route} from './factory.js'
-import {copy, isNotNull} from './functions.js'
+import {copy, isArray, isNotNull} from './functions.js'
 import store from './store.js'
 
 const requests = {
@@ -19,16 +19,22 @@ const __fetch = (url, settings, params, callback) => {
   return fetch(route(url, params), copy({
     headers: {'Content-Type': 'application/json'},
   }, settings))
-    .then((response) => response.json())
+    .then(async (response) => {
+      const {status} = response
+      let json = await response.json()
+      if (isArray(json)) {
+        json = {data: json}
+      }
+      return copy({status}, json)
+    })
     .then((response) => handle(response, callback))
-    .then((response) => {
+    .then(() => {
       ({
         'GET': setGetRequests(requests.get.filter((x) => x.url !== url)),
         'POST': setPostRequests(requests.post.filter((x) => x.url !== url)),
         'PUT': setPutRequests(requests.put.filter((x) => x.url !== url)),
         'DELETE': setDeleteRequests(requests.del.filter((x) => x.url !== url)),
       })[settings.method]
-      return response
     })
 }
 
@@ -56,28 +62,35 @@ const del = (url, data, callback = () => false, isSaving = true) => {
   return __fetch(url, {body: JSON.stringify(data), method: 'DELETE'}, null, callback)
 }
 
+const messages = {
+  200: 'Success',
+  401: 'Unathorized',
+  422: 'Validation Error',
+  500: 'Error',
+}
+
 const handle = (response, callback) => {
-  switch (response.status) {
+  const {status, message = messages[status], data} = response
+  switch (status) {
     case 200:
-      success(response.message)
-      callback(response.data)
+      success(message)
+      callback(response)
       break;
     case 401:
-      fail(response.message)
+      fail(message)
       break;
     case 422:
-      fail(response.message)
-      store.set('inputErrors', response.data)
+      fail(message)
+      store.set('inputErrors', data)
       break;
     case 500:
-      fail(`Server Error: ${response.message}`)
+      fail(`Server Error: ${message}`)
       break;
     default:
       throw new Error('Unknown response code')
       break;
   }
   always()
-  return response
 }
 
 const success = (message) => {
@@ -94,7 +107,7 @@ const fail = (message) => {
 const always = () => {
   store.set('isSaving', false)
   store.set('isLoading', false)
-  window.setTimeout(() => store.set('message', null), 4 * 1000)
+  setTimeout(() => store.set('message', null), 4 * 1000)
 }
 
 export default {get, post, put, del}

@@ -30,7 +30,7 @@ export const isSymbol = (x) => isType(x, 'symbol')
 export const isUndefined = (x) => isType(x, 'undefined')
 export const isNotUndefined = (x) => !isUndefined(x)
 export const isObject = (x) => isType(x, 'object')
-export const isNotObject = () => !isObject(x)
+export const isNotObject = (x) => !isObject(x)
 export const isFunction = (x) => isType(x, 'function')
 export const isArray = (x) => Array.isArray(x)
 export const isNotArray = (x) => !isArray(x)
@@ -68,6 +68,14 @@ export const indexArray = (array, item, comparison) => {
   const index = array.findIndex((value) => comparison(value, item)) + 1
   return array[index === array.length ? 0 : index]
 }
+export const chunk = (array, size) => array.reduce((agg, _, i) => {
+  if (i % size === 0) {
+    agg.push(array.slice(i, i + size))
+  }
+  return agg
+}, [])
+// In "experimental" status with MDN, test later
+//export const group = (array, criteria) => array.group(isFunction(criteria) ? criteria : ({criteria}) => criteria)
 export const groupBy = (array, criteria) => {
   return array.reduce((object, item) => {
     const key = isFunction(criteria) ? criteria(item) : item[criteria]
@@ -182,7 +190,8 @@ export const toCamelCase = (string) => string.replace(/(?:^\w|[A-Z]|\b\w)/g, (ma
   index === 0 ? match.toLowerCase() : match.toUpperCase()
 ).replace(/\s+/g, '')
 export const camelCasedToUpperCasedWords = (string) => toUpperCaseWords(string.replace(/([A-Z])/g, ' $&'))
-export const snakeCasedToUpperCasedWord = (string) => toUpperCaseWords(string.replace(/_/g, ' '))
+export const snakeCasedToUpperCasedWords = (string) => toUpperCaseWords(string.replace(/\_/g, ' '))
+export const kebabCasedToUpperCasedWords = (string) => toUpperCaseWords(string.replace(/\-/g, ' '))
 
 // Strings with defined formats
 export const currency = (integer, decimals = 2) => Intl.NumberFormat('en-US', {
@@ -198,6 +207,7 @@ export const percentage = (number) => Intl.NumberFormat('en-US', {
   signDisplay: 'always',
 }).format(number)
 export const numberFormat = (number) => new Intl.NumberFormat().format(number)
+export const localeDateTime = (datetime) => new Date(datetime).toLocaleString()
 
 // Conversion functions
 export const toNumber = (string) => parseInt(string, 10)

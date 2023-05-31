@@ -19,12 +19,14 @@ const mount = ({
   PGHOST: host = 'postgres',
   PGPORT: port = 5432,
   NODE_ENV: NODE_ENV = 'development',
+  SCRYFALL_API_URL,
 }) => {
   config = copy(config, {
     app: {
       PORT,
       SESSION_KEY,
       WSS_URL,
+      SCRYFALL_API_URL,
     },
     db: {
       user,

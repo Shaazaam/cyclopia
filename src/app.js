@@ -2,6 +2,7 @@ import {createApp, reactive, nextTick} from 'vue'
 import {createRouter, createWebHashHistory} from 'vue-router'
 
 import App from './app.vue'
+import Admin from './components/admin.vue'
 import Decks from './components/decks.vue'
 import Game from './components/game.vue'
 import Home from './components/home.vue'
@@ -30,6 +31,20 @@ const routes = [
     meta: {
       requiresAuth: true,
       main: true,
+    },
+  },
+  {
+    path: '/admin',
+    name: 'admin',
+    component: Admin,
+    meta: {
+      requiresAuth: true,
+      main: isLoggedIn() && user().is_admin,
+    },
+    beforeEnter: (to, from) => {
+      if (!user().is_admin) {
+        return false
+      }
     },
   },
   {
@@ -121,16 +136,16 @@ const vstore = reactive({
   challenges: {},
   events: [],
 
-  set(key, value) {this[key] = value},
+  set: (key, value) => store.set(key, value),
   get(key) {return this[key]},
 
   setSuccessMessage(message) {
     this.set('message', {kind: 'success', message})
-    window.setTimeout(() => this.clearMessage(), 4 * 1000)
+    setTimeout(() => this.clearMessage(), 4 * 1000)
   },
   setErrorMessage(message) {
     this.set('message', {kind: 'error', message})
-    window.setTimeout(() => this.clearMessage(), 4 * 1000)
+    setTimeout(() => this.clearMessage(), 4 * 1000)
   },
   clearMessage() {this.set('message', null)},
 

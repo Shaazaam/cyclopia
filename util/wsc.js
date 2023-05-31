@@ -73,8 +73,8 @@ const onError = (event) => {
 }
 
 const onClose = (event) => {
-  window.clearInterval(heartbeat)
-  window.clearTimeout(timeout.event)
+  clearInterval(heartbeat)
+  clearTimeout(timeout.event)
 
   if (event.code === 1000 && event.reason === 'logout') {
     ({
@@ -90,18 +90,18 @@ const onClose = (event) => {
   if (isNotNull(socket) && reconnect && timeout.attempts >= timeout.attempted) {
     timeout.attempted = timeout.attempted + 1
     update('Disconnected. Reconnecting...', event)
-    timeout.event = window.setTimeout(connect, timeout.duration * timeout.attempted)
+    timeout.event = setTimeout(connect, timeout.duration * timeout.attempted)
   }
 }
 
 const onOpen = (event) => {
   connected = true
-  window.clearTimeout(timeout.event)
+  clearTimeout(timeout.event)
   timeout.attempted = 0
   update('Connected.', event)
-  heartbeat = window.setInterval(() => {
+  heartbeat = setInterval(() => {
     send({kind: '__ping__', data: ''})
-    timeout.event = window.setTimeout(() => close(), timeout.duration);
+    timeout.event = setTimeout(() => close(), timeout.duration);
   }, 1000 * 25);
 }
 
@@ -112,7 +112,7 @@ const onMessage = (event) => {
       reconnect = false
       update('Invalid authorization token. Try refreshing the page.', event)
     },
-    '__pong__': () => window.clearTimeout(timeout.event),
+    '__pong__': () => clearTimeout(timeout.event),
     'game': () => store.set('games', store.get('games').concat(data)),
     'challenge': () => store.set('challenges', data),
     'event': () => store.set('events', data),

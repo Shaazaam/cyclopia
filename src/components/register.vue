@@ -62,7 +62,7 @@
     },
     methods: {
       submit() {
-        this.fetch.post('/register', this.user, ([user]) => {
+        this.fetch.post('/register', this.user, ({data: [user]}) => {
           this.storage.set('user', user)
           this.store.setUser(user)
           this.$router.replace({name: 'home'})

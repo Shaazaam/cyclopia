@@ -2,7 +2,16 @@ import pg from 'pg'
 
 import config from './config.js'
 import * as factory from './factory.js'
-import {isNotEmpty, isNotNull, isNotUndefined, numericRange, toNumber} from './functions.js'
+import {
+  chunk,
+  copy,
+  isNotEmpty,
+  isNotNull,
+  isNotObject,
+  isNotUndefined,
+  numericRange,
+  toNumber,
+} from './functions.js'
 
 const pool = new pg.Pool(config.db)
 const query = (text, values, expectedCount = null) => pool.query(text, values)
@@ -12,19 +21,27 @@ const query = (text, values, expectedCount = null) => pool.query(text, values)
     }
     return res
   })
-  .catch(({message, cause}) => {
-    pool.query(`INSERT INTO errors (data) VALUES ($1)`, [{message, cause}])
+  .catch(async ({message, cause = 'no cause provided'}) => {
+    await query(`INSERT INTO errors (data) VALUES ($1)`, [{message, cause}])
     throw new Error(message, {cause})
   })
+const formatPlaceholders = (data, numValues) => data.reduce((agg, _, index) =>
+  agg.concat(`($${numericRange(1 + (numValues * index), numValues + (numValues * index)).join(', $')})`), []
+).join(', ')
+
+const MAX = 60000
 
 const allowedColumns = {
   deck_id: 'deck_id',
+  email: 'email',
   game_id: 'game_id',
   user_id: 'user_id',
 }
 const allowedTables = {
   decks: 'decks',
   game_invites: 'game_invites',
+  game_user: 'game_user',
+  users: 'users',
 }
 
 export const exists = async (table, columns, values) => {
@@ -35,104 +52,42 @@ export const exists = async (table, columns, values) => {
     SELECT ${allowedTables[table]}.*
     FROM ${allowedTables[table]}
     WHERE ${where}
-  `, values)
+  `, isNotObject(values) ? [values] : Object.values(values))
   return rowCount === 1
 }
 
-export const upsertCard = async ({
-  id,
-  oracle_id,
-  name,
-  released_at,
-  color_identity,
-  color_indicator,
-  colors,
-  produced_mana,
-  keywords,
-  type_line,
-  layout,
-  rarity,
-  cmc,
-  mana_cost,
-  power,
-  toughness,
-  oracle_text,
-  flavor_text,
-  set_id,
-  set,
-  set_name,
-  image_status,
-  image_uris,
-  rulings_uri,
-  scryfall_uri,
-  uri,
-  scryfall_set_uri,
-  set_uri,
-  card_faces,
-  card_parts,
-} = factory.card()) => {
-  const {rows: [row]} = await query(`
-    INSERT INTO cards (
-      id,
-      oracle_id,
-      name,
-      released_at,
-      color_identity,
-      color_indicator,
-      colors,
-      produced_mana,
-      keywords,
-      type_line,
-      layout,
-      rarity,
-      cmc,
-      mana_cost,
-      power,
-      toughness,
-      oracle_text,
-      flavor_text,
-      set_id,
-      set,
-      set_name,
-      image_status,
-      image_uris,
-      rulings_uri,
-      scryfall_uri,
-      uri,
-      scryfall_set_uri,
-      set_uri
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28)
-    ON CONFLICT ON CONSTRAINT cards_pkey
-    DO UPDATE SET
-      oracle_id = $2,
-      name = $3,
-      released_at = $4,
-      color_identity = $5,
-      color_indicator = $6,
-      colors = $7,
-      produced_mana = $8,
-      keywords = $9,
-      type_line = $10,
-      layout = $12,
-      rarity = $12,
-      cmc = $13,
-      mana_cost = $14,
-      power = $15,
-      toughness = $16,
-      oracle_text = $17,
-      flavor_text = $18,
-      set_id = $19,
-      set = $20,
-      set_name = $21,
-      image_status = $22,
-      image_uris = $23,
-      rulings_uri = $24,
-      scryfall_uri = $25,
-      uri = $26,
-      scryfall_set_uri = $27,
-      set_uri = $28
-    RETURNING *
-  `, [
+export const insertCatalog = async (kind, data) => {
+  const numPlaceholders = 2
+  const chunked = chunk(data, Math.floor(MAX / numPlaceholders))
+  for (const chunk of chunked) {
+    await query(`
+      INSERT INTO catalog (kind, value)
+      VALUES ${formatPlaceholders(chunk, numPlaceholders)}
+      ON CONFLICT ON CONSTRAINT catalog_pkey
+      DO NOTHING
+    `, chunk.reduce((agg, cur) => agg.concat([kind, cur]), []))
+  }
+  return true
+}
+
+export const insertRulings = async (data) => {
+  const numPlaceholders = Object.keys(data[0]).length
+  const chunked = chunk(data, Math.floor(MAX / numPlaceholders))
+  for (const chunk of chunked) {
+    await query(`
+      INSERT INTO rulings (oracle_id, published_at, comment)
+      VALUES ${formatPlaceholders(chunk, numPlaceholders)}
+    `, chunk.reduce((agg, cur) => agg.concat(Object.values(cur)), []))
+  }
+  return true
+}
+export const deleteRulings = async () => {
+  await query(`DELETE FROM rulings`)
+  return true
+}
+
+export const upsertCards = async (data) => {
+  const reduced = data.map(({
     id,
     oracle_id,
     name,
@@ -161,13 +116,108 @@ export const upsertCard = async ({
     uri,
     scryfall_set_uri,
     set_uri,
-  ])
-  if (isNotUndefined(card_faces) && isNotNull(card_faces)) {
-    for (const {
+    card_faces,
+  }) => ({
+    id,
+    oracle_id,
+    name,
+    released_at,
+    color_identity,
+    color_indicator,
+    colors,
+    produced_mana,
+    keywords,
+    type_line,
+    layout,
+    rarity,
+    cmc,
+    mana_cost,
+    power,
+    toughness,
+    oracle_text,
+    flavor_text,
+    set_id,
+    set,
+    set_name,
+    image_status,
+    image_uris,
+    rulings_uri,
+    scryfall_uri,
+    uri,
+    scryfall_set_uri,
+    set_uri,
+    card_faces,
+  }))
+  const numPlaceholders = Object.keys(reduced[0]).length - 1
+  for (const hunk of chunk(reduced, Math.floor(MAX / numPlaceholders))) {
+    await query(`
+      INSERT INTO cards (
+        id,
+        oracle_id,
+        name,
+        released_at,
+        color_identity,
+        color_indicator,
+        colors,
+        produced_mana,
+        keywords,
+        type_line,
+        layout,
+        rarity,
+        cmc,
+        mana_cost,
+        power,
+        toughness,
+        oracle_text,
+        flavor_text,
+        set_id,
+        set,
+        set_name,
+        image_status,
+        image_uris,
+        rulings_uri,
+        scryfall_uri,
+        uri,
+        scryfall_set_uri,
+        set_uri
+      ) VALUES ${formatPlaceholders(hunk, numPlaceholders)}
+      ON CONFLICT ON CONSTRAINT cards_pkey
+      DO UPDATE SET
+        oracle_id = $2,
+        name = $3,
+        released_at = $4,
+        color_identity = $5,
+        color_indicator = $6,
+        colors = $7,
+        produced_mana = $8,
+        keywords = $9,
+        type_line = $10,
+        layout = $12,
+        rarity = $12,
+        cmc = $13,
+        mana_cost = $14,
+        power = $15,
+        toughness = $16,
+        oracle_text = $17,
+        flavor_text = $18,
+        set_id = $19,
+        set = $20,
+        set_name = $21,
+        image_status = $22,
+        image_uris = $23,
+        rulings_uri = $24,
+        scryfall_uri = $25,
+        uri = $26,
+        scryfall_set_uri = $27,
+        set_uri = $28
+    `, hunk.reduce((agg, cur) => agg.concat(Object.values(cur).slice(0, numPlaceholders)), []))
+    const cardIds = hunk.map(({id}) => id)
+    await query(`UPDATE objects SET card_face_id = NULL WHERE card_id = ANY ($1)`, [cardIds])
+    await query(`DELETE FROM card_faces WHERE card_id = ANY ($1)`, [cardIds])
+    const faces = hunk.filter((row) => isNotUndefined(row.card_faces)).map(({id, card_faces}) => card_faces.map(({
       name,
       color_indicator,
       colors,
-      keywords,
       type_line,
       layout,
       cmc,
@@ -176,39 +226,9 @@ export const upsertCard = async ({
       toughness,
       oracle_text,
       image_uris,
-    } of card_faces) {
-      const {rows: [face]} = await query(`
-        INSERT INTO card_faces (
-          card_id,
-          name,
-          color_indicator,
-          colors,
-          type_line,
-          layout,
-          cmc,
-          mana_cost,
-          power,
-          toughness,
-          oracle_text,
-          image_uris
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-        ON CONFLICT ON CONSTRAINT card_faces_pkey
-        DO UPDATE SET
-          card_id = $1,
-          name = $2,
-          color_indicator = $3,
-          colors = $4,
-          type_line = $5,
-          layout = $6,
-          cmc = $7,
-          mana_cost = $8,
-          power = $9,
-          toughness = $10,
-          oracle_text = $11,
-          image_uris = $12
-        RETURNING *
-      `, [
-        row.id,
+    }) => copy(
+      {card_id: id},
+      {
         name,
         color_indicator,
         colors,
@@ -220,10 +240,52 @@ export const upsertCard = async ({
         toughness,
         oracle_text,
         image_uris,
-      ])
+      }
+    ))).flat()
+    if (isNotEmpty(faces)) {
+      const numPlaceholders2 = Object.keys(faces[0]).length
+      for (const hunk2 of chunk(faces, numPlaceholders2)) {
+        await query(`
+          INSERT INTO card_faces (
+            card_id,
+            name,
+            color_indicator,
+            colors,
+            type_line,
+            layout,
+            cmc,
+            mana_cost,
+            power,
+            toughness,
+            oracle_text,
+            image_uris
+          ) VALUES ${formatPlaceholders(hunk2, numPlaceholders2)}
+          RETURNING id
+        `, hunk2.reduce((agg, cur) => agg.concat(Object.values(cur)), []))
+      }
     }
+    await query(`
+      WITH card_face AS (
+        SELECT
+          card_faces.id AS card_face_id,
+          objects.id AS object_id
+        FROM objects
+        JOIN cards ON objects.card_id = cards.id
+        LEFT JOIN (
+          SELECT
+            id,
+            card_id,
+            ROW_NUMBER() OVER (PARTITION BY card_faces.card_id ORDER BY card_faces.card_id) AS rn
+          FROM card_faces
+        ) card_faces ON card_faces.card_id = cards.id AND rn = 1
+      )
+      UPDATE objects
+      SET card_face_id = card_face.card_face_id
+      FROM card_face
+      WHERE objects.id = object_id
+    `)
   }
-  return factory.card(row)
+  return true
 }
 export const getCard = async (name) => {
   const {rows: [row]} = await query(`SELECT cards.* FROM cards WHERE cards.name = $1 LIMIT 1`, [name])
@@ -312,7 +374,7 @@ export const insertIntoDeck = async ({card_id, deck_id, count}) => {
   return true
 }
 
-export const authorizeUser = async (email) => {
+export const authenticateUser = async (email) => {
   const {rows: [row]} = await query(`SELECT users.* FROM users WHERE users.email = $1`, [email])
   return factory.user(row)
 }
@@ -321,33 +383,35 @@ export const getUser = async (id) => {
     SELECT
       users.id,
       users.handle,
-      users.email
+      users.email,
+      users.is_admin
     FROM users
     WHERE users.id = $1
   `, [id])
   return factory.user(row)
 }
 export const getUsers = async (id) => {
-  const {rows} = await query(`SELECT users.id, users.handle FROM users`)
+  const {rows} = await query(`SELECT users.id, users.handle, users.is_admin FROM users`)
   return rows.map(factory.user)
 }
 export const insertUser = async ({email, handle, password} = factory.getUser()) => {
   const {rows: [row]} = await query(`
     INSERT INTO users (email, handle, password)
     VALUES ($1, $2, $3)
-    RETURNING *
+    RETURNING id, email, handle, is_admin
   `, [email, handle, password])
   return factory.user(row)
 }
 export const updateUser = async (id, email, handle) => {
-  await query(`
+  const {rows: [row]} = await query(`
     UPDATE users
     SET
       email = $2,
       handle = $3
     WHERE users.id = $1
+    RETURNING id, email, handle, is_admin
   `, [id, email, handle])
-  return true
+  return factory.user(row)
 }
 export const changePassword = async (id, password) => {
   await query(`UPDATE users SET password = $2 WHERE users.id = $1`, [id, password])
@@ -358,13 +422,13 @@ const deleteInvitation = async (game_id, user_id) => {
   await query(`DELETE FROM game_invites WHERE game_id = $1 AND user_id = $2`, [game_id, user_id])
   return true
 }
-export const insertGame = async (user_id) => {
+export const insertGame = async (deck_id, user_id) => {
   const {rows: [{id: game_id}]} = await query(`INSERT INTO games DEFAULT VALUES RETURNING id`)
-  await query(`INSERT INTO game_invites (game_id, user_id) VALUES ($1, $2)`, [game_id, user_id])
+  await query(`INSERT INTO game_invites (deck_id, game_id, user_id) VALUES ($1, $2, $3)`, [deck_id, game_id, user_id])
   return {game_id}
 }
 export const joinGame = async (deck_id, game_id, user_id) => {
-  await query(`INSERT INTO game_user (game_id, user_id) VALUES ($1, $2)`, [game_id, user_id])
+  await query(`INSERT INTO game_user (deck_id, game_id, user_id) VALUES ($1, $2, $3)`, [deck_id, game_id, user_id])
   await query(`
     INSERT INTO objects (
       card_id,
@@ -421,19 +485,23 @@ export const declineGame = async (game_id, user_id, opponent_id) => {
 const getGames = async (user_id) => {
   const {rows} = await query(`
     SELECT
+      decks.name AS deck_name,
       game_user.game_id,
       games.created_on,
       COALESCE(game_invites.user_id IS NOT NULL, FALSE) AS pending_invite,
       JSON_BUILD_OBJECT(
         'id', COALESCE(invited_user.id, accepted_user.id),
+        'deck', COALESCE(accepted_user_deck.name, 'No Deck'),
         'handle', COALESCE(invited_user.handle, accepted_user.handle)
       ) AS opponent,
       games.winner
     FROM game_user
     JOIN games ON games.id = game_user.game_id
+    JOIN decks ON decks.id = game_user.deck_id
     LEFT JOIN game_invites ON game_user.game_id = game_invites.game_id
     LEFT JOIN users invited_user ON game_invites.user_id = invited_user.id
     LEFT JOIN game_user self ON game_user.game_id = self.game_id AND self.user_id != $1
+    LEFT JOIN decks accepted_user_deck ON self.deck_id = accepted_user_deck.id
     LEFT JOIN users accepted_user ON self.user_id = accepted_user.id
     WHERE game_user.user_id = $1
   `, [user_id])
@@ -445,13 +513,15 @@ const getInvitations = async (user_id) => {
       game_invites.game_id,
       JSON_BUILD_OBJECT(
         'id', users.id,
+        'deck', decks.name,
         'handle', users.handle
       ) AS opponent,
       games.created_on
     FROM game_invites
     JOIN game_user ON game_user.game_id = game_invites.game_id
+    JOIN decks ON decks.id = game_user.deck_id
     JOIN games ON games.id = game_invites.game_id
-    JOIN users ON game_user.user_id = users.id
+    JOIN users ON users.id = game_user.user_id
     WHERE game_invites.user_id = $1
   `, [user_id])
   return rows
@@ -489,6 +559,7 @@ export const getGame = async (id) => {
   const {rows: objects} = await query(`
     SELECT
       objects.id,
+      objects.card_id,
       objects.user_id,
       objects.zone,
       objects.position,
@@ -516,11 +587,12 @@ export const getGame = async (id) => {
       FROM counter_object
       GROUP BY counter_object.object_id
     ) co ON objects.id = co.object_id
-    WHERE objects.zone IN ('exile', 'field', 'graveyard')
+    WHERE objects.zone IN ('exile', 'field', 'graveyard', 'remove')
       AND objects.game_id = $1
     UNION ALL
     SELECT
       objects.id,
+      objects.card_id,
       objects.user_id,
       objects.zone,
       CASE
@@ -550,10 +622,12 @@ export const getGame = async (id) => {
   const {rows: counts} = await query(`
     SELECT
       objects.user_id,
-      COUNT(*)::integer AS library_total
+      SUM(CASE WHEN zone = 'library' THEN 1 ELSE 0 END)::integer AS library_total,
+      SUM(CASE WHEN zone = 'graveyard' THEN 1 ELSE 0 END)::integer AS graveyard_total,
+      SUM(CASE WHEN zone = 'exile' THEN 1 ELSE 0 END)::integer AS exile_total,
+      SUM(CASE WHEN zone = 'remove' THEN 1 ELSE 0 END)::integer AS remove_total
     FROM objects
     WHERE objects.game_id = $1
-      AND objects.zone = 'library'
     GROUP BY objects.user_id
   `, [id])
   return factory.game({id, users, objects, counts})
@@ -603,15 +677,13 @@ export const getEvents = async (entity_id) => {
     LEFT JOIN cards indirect ON objects.card_id = indirect.id
     LEFT JOIN users winner ON (events.data->>'winner')::uuid = winner.id
     WHERE events.entity_id = $1
-    ORDER BY events.created_on ASC
+    ORDER BY events.created_on DESC
   `, [entity_id])
   return rows
 }
 
 export const insertEvents = async (entity_id, name, data, user_id) => {
-  const placeholders = data.reduce((agg, cur, index) =>
-    agg.concat(`($${numericRange(1 + (4 * index), 4 + (4 * index)).join(', $')})`), []
-  ).join(', ')
+  const placeholders = formatPlaceholders(data, 4)
   const values = data.reduce((agg, cur) => agg.concat([entity_id, name, cur, user_id]), [])
   const {rows} = await query(`
     INSERT INTO events (entity_id, name, data, created_by)
@@ -849,6 +921,17 @@ export const tap = async (game_id, object_id, user_id, state) => {
       AND objects.zone = 'field'
     RETURNING *
   `, [object_id, game_id, user_id, state], 1)
+  return rows
+}
+export const untapAll = async (game_id, user_id) => {
+  const {rows} = await query(`
+    UPDATE objects
+    SET is_tapped = false
+    WHERE objects.game_id = $1
+      AND objects.user_id = $2
+      AND objects.zone = 'field'
+    RETURNING *
+  `, [game_id, user_id])
   return rows
 }
 export const insertTokens = async (game_id, card_id, user_id, amount) => {
