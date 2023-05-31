@@ -30,7 +30,7 @@ export const isSymbol = (x) => isType(x, 'symbol')
 export const isUndefined = (x) => isType(x, 'undefined')
 export const isNotUndefined = (x) => !isUndefined(x)
 export const isObject = (x) => isType(x, 'object')
-export const isNotObject = () => !isObject(x)
+export const isNotObject = (x) => !isObject(x)
 export const isFunction = (x) => isType(x, 'function')
 export const isArray = (x) => Array.isArray(x)
 export const isNotArray = (x) => !isArray(x)
@@ -207,6 +207,7 @@ export const percentage = (number) => Intl.NumberFormat('en-US', {
   signDisplay: 'always',
 }).format(number)
 export const numberFormat = (number) => new Intl.NumberFormat().format(number)
+export const localeDateTime = (datetime) => new Date(datetime).toLocaleString()
 
 // Conversion functions
 export const toNumber = (string) => parseInt(string, 10)

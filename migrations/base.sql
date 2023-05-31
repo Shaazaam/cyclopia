@@ -95,17 +95,19 @@ CREATE TABLE IF NOT EXISTS games (
 );
 
 CREATE TABLE IF NOT EXISTS game_user (
+  deck_id UUID NOT NULL REFERENCES decks(id),
   game_id UUID NOT NULL REFERENCES games(id),
   user_id UUID NOT NULL REFERENCES users(id),
   life SMALLINT NOT NULL DEFAULT 20,
   is_ready BOOLEAN NOT NULL DEFAULT FALSE,
-  PRIMARY KEY (game_id, user_id)
+  PRIMARY KEY (deck_id, game_id, user_id)
 );
 
 CREATE TABLE IF NOT EXISTS game_invites (
+  deck_id UUID NOT NULL REFERENCES decks(id),
   game_id UUID NOT NULL REFERENCES games(id),
   user_id UUID NOT NULL REFERENCES users(id),
-  PRIMARY KEY (game_id, user_id)
+  PRIMARY KEY (deck_id, game_id, user_id)
 );
 
 CREATE TABLE IF NOT EXISTS zones (

@@ -12,6 +12,7 @@ export const route = (endpoint, params = null) => {
 
 export const actions = (x) => copy({
   counters: [],
+  drag: true,
   expand: true,
   move: [],
   stats: false,
@@ -43,7 +44,7 @@ export const card = (x) => copy({
   set: '',
   set_name: '',
   image_status: '',
-  image_uris: {},
+  image_uris: null,
   rulings_uri: '',
   scryfall_uri: '',
   uri: '',
@@ -88,6 +89,7 @@ export const game = (x) => copy({
 
 export const game_user = (x) => copy({
   game_id: null,
+  deck_id: null,
   user_id: null,
   life: 20,
   is_ready: false,

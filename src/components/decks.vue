@@ -32,7 +32,7 @@
         v-for="object in cards.filter((card) => card.deck_id === deck.id)"
         :object="object"
         :actions="factory.actions({expand: false})"
-        class="col-3"
+        class="col-3 mb-3"
       >
         <div class="card-body">
           <h5 class="text-center">Count: {{object.count}}</h5>

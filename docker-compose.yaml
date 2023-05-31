@@ -21,7 +21,6 @@ services:
       - ./migrations:/home/migrations:ro
       - ./public:/home/public:ro
       - ./dist:/home/dist:ro
-      - ./files:/home/files:ro
     ports:
       - 8080:8080
     expose:
