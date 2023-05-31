@@ -43,7 +43,7 @@ export const card = (x) => copy({
   set: '',
   set_name: '',
   image_status: '',
-  image_uris: {},
+  image_uris: null,
   rulings_uri: '',
   scryfall_uri: '',
   uri: '',

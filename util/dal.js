@@ -587,7 +587,7 @@ export const getGame = async (id) => {
       FROM counter_object
       GROUP BY counter_object.object_id
     ) co ON objects.id = co.object_id
-    WHERE objects.zone IN ('exile', 'field', 'graveyard')
+    WHERE objects.zone IN ('exile', 'field', 'graveyard', 'remove')
       AND objects.game_id = $1
     UNION ALL
     SELECT
