@@ -63,14 +63,14 @@
         return this.store.get('message')
       },
       routes() {
-        return this.$router.getRoutes().filter(({meta}) => meta.requiresAuth === this.isLoggedIn && meta.main)
+        return this.$router.getRoutes().filter(({meta}) => meta.requiresAuth === this.isLoggedIn && meta.main())
       },
     },
     watch: {
       isLoading(x) {
         if (x) {
-          window.setTimeout(() => this.icon1 = true, 200)
-          window.setTimeout(() => this.icon2 = true, 400)
+          setTimeout(() => this.icon1 = true, 200)
+          setTimeout(() => this.icon2 = true, 400)
         }
       },
     },

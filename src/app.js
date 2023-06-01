@@ -30,7 +30,8 @@ const routes = [
     component: Home,
     meta: {
       requiresAuth: true,
-      main: true,
+      requiresAdmin: false,
+      main: () => true,
     },
   },
   {
@@ -39,12 +40,8 @@ const routes = [
     component: Admin,
     meta: {
       requiresAuth: true,
-      main: isLoggedIn() && user().is_admin,
-    },
-    beforeEnter: (to, from) => {
-      if (!user().is_admin) {
-        return false
-      }
+      requiresAdmin: true,
+      main: () => isLoggedIn() && user().is_admin,
     },
   },
   {
@@ -53,7 +50,8 @@ const routes = [
     component: Decks,
     meta: {
       requiresAuth: true,
-      main: true,
+      requiresAdmin: false,
+      main: () => true,
     },
   },
   {
@@ -63,7 +61,8 @@ const routes = [
     props: true,
     meta: {
       requiresAuth: true,
-      main: false,
+      requiresAdmin: false,
+      main: () => false,
     },
   },
   {
@@ -72,7 +71,8 @@ const routes = [
     component: Import,
     meta: {
       requiresAuth: true,
-      main: true,
+      requiresAdmin: false,
+      main: () => true,
     },
   },
   {
@@ -81,7 +81,8 @@ const routes = [
     component: Login,
     meta: {
       requiresAuth: false,
-      main: true,
+      requiresAdmin: false,
+      main: () => true,
     },
   },
   {
@@ -90,7 +91,8 @@ const routes = [
     component: Profile,
     meta: {
       requiresAuth: true,
-      main: true,
+      requiresAdmin: false,
+      main: () => true,
     },
   },
   {
@@ -99,7 +101,8 @@ const routes = [
     component: Logout,
     meta: {
       requiresAuth: true,
-      main: true,
+      requiresAdmin: false,
+      main: () => true,
     },
   },
   {
@@ -108,7 +111,8 @@ const routes = [
     component: Register,
     meta: {
       requiresAuth: false,
-      main: true,
+      requiresAdmin: false,
+      main: () => true,
     },
   },
 ]
@@ -122,6 +126,10 @@ router.beforeEach(({meta}, from) => {
     return {
       name: 'login',
     }
+  }
+
+  if (meta.requiresAdmin && !user().is_admin) {
+    return false
   }
 })
 router.afterEach(({name}, from) => nextTick(() => document.title = `Cyclopia | ${functions.toUpperCaseWords(name)}`))

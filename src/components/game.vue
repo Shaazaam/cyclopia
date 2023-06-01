@@ -138,12 +138,6 @@
             >Mill</button>
           </template>
         </Input>
-        <!-- <button
-          type="button"
-          class="btn btn-info"
-          data-bs-toggle="modal"
-          data-bs-target="#librarySearch"
-        >Search</button> -->
         <Input
           v-model="scryAmount"
           type="number"
@@ -518,13 +512,6 @@
                     .filter((object) => object.user_id === this.authUser.id)
                     .filter((object) => object.zone === name)
                     .sort(({position: a}, {position: b}) => this.functions.sortNumber(a, b))
-                    /*.sort(({position: aPos, card_id: aId}, {position: bPos, card_id: bId}) => {
-                      if (aId > bId) return 1
-                      if (aId < bId) return -1
-                      if (aPos > bPos) return 1
-                      if (aPos < bPos) return -1
-                      //return this.functions.sortString(aId, bId) - this.functions.sortNumber(aPos, bPos)
-                    })*/
                 ),
               }
             ),
@@ -659,7 +646,7 @@
       endGame() {
         this.fetch.put('/end-game', {game_id: this.id})
         this.gameOverModal.show()
-        window.setTimeout(() => this.gameOverModal.hide(), 5 * 1000)
+        setTimeout(() => this.gameOverModal.hide(), 5 * 1000)
       },
       counterOnCard(object_id, name, amount) {
         this.fetch.put('/counter', {game_id: this.id, object_id, name, kind: 'card', amount})
