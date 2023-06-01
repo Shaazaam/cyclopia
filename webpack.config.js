@@ -1,3 +1,4 @@
+import Dotenv from 'dotenv-webpack'
 import path from 'path'
 import {VueLoaderPlugin} from 'vue-loader'
 
@@ -28,6 +29,7 @@ export default {
     ],
   },
   plugins: [
+    new Dotenv(),
     new VueLoaderPlugin(),
   ],
 }

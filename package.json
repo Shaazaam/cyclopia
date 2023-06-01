@@ -23,7 +23,7 @@
     "connect-pg-simple": "^8.0.0",
     "cookie-parser": "^1.4.6",
     "css-loader": "^6.7.3",
-    "dotenv": "^16.0.3",
+    "dotenv-webpack": "^8.0.1",
     "express": "^4.17.3",
     "express-session": "^1.17.3",
     "node-fetch": "^3.2.3",

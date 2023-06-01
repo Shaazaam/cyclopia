@@ -1,11 +1,4 @@
-import * as dotenv from 'dotenv'
-
 import {copy} from './functions.js'
-import magic from './path.js'
-
-const {__dirname} = magic(import.meta.url)
-
-dotenv.config({path: `${__dirname}/.env`})
 
 let config = {}
 

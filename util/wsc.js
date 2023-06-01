@@ -1,4 +1,4 @@
-//import config from './config.js'
+import config from './config.js'
 import {wsc} from './factory.js'
 import {copy, isNull, isNotNull} from './functions.js'
 import store from './store.js'
@@ -42,8 +42,7 @@ const connect = (message) => {
   }
 
   socket = new WebSocket(
-    'ws://localhost:8080',
-    //'wss://676c-174-54-100-114.ngrok-free.app',
+    config.app.WSS_URL,
     [
       'cyclopia-web',
       store.get('user').id
