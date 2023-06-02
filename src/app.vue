@@ -55,18 +55,22 @@
 <script>
   export default {
     data: () => ({
+      routes: null,
       icon1: false,
       icon2: false,
     }),
+    created() {
+      this.routes = this.$router.getRoutes().filter(({meta}) => meta.main())
+    },
     computed: {
       alert() {
         return this.store.get('message')
       },
-      routes() {
-        return this.$router.getRoutes().filter(({meta}) => meta.requiresAuth === this.isLoggedIn && meta.main())
-      },
     },
     watch: {
+      isLoggedIn() {
+        this.routes = this.$router.getRoutes().filter(({meta}) => meta.main())
+      },
       isLoading(x) {
         if (x) {
           setTimeout(() => this.icon1 = true, 200)

@@ -9,8 +9,8 @@ import Home from './components/home.vue'
 import Import from './components/import.vue'
 import Login from './components/login.vue'
 import Logout from './components/logout.vue'
-import Register from './components/register.vue'
 import Profile from './components/profile.vue'
+import Register from './components/register.vue'
 
 import * as factory from '../util/factory.js'
 import fetch from '../util/fetch.js'
@@ -29,9 +29,14 @@ const routes = [
     name: 'home',
     component: Home,
     meta: {
-      requiresAuth: true,
-      requiresAdmin: false,
-      main: () => true,
+      main: () => isLoggedIn(),
+      callback: () => {
+        if (!isLoggedIn()) {
+          return {
+            name: 'login',
+          }
+        }
+      },
     },
   },
   {
@@ -39,9 +44,17 @@ const routes = [
     name: 'admin',
     component: Admin,
     meta: {
-      requiresAuth: true,
-      requiresAdmin: true,
       main: () => isLoggedIn() && user().is_admin,
+      callback: () => {
+        if (!isLoggedIn()) {
+          return {
+            name: 'login',
+          }
+        }
+        if (!user().is_admin) {
+          return false
+        }
+      },
     },
   },
   {
@@ -49,9 +62,14 @@ const routes = [
     name: 'decks',
     component: Decks,
     meta: {
-      requiresAuth: true,
-      requiresAdmin: false,
-      main: () => true,
+      main: () => isLoggedIn(),
+      callback: () => {
+        if (!isLoggedIn()) {
+          return {
+            name: 'login',
+          }
+        }
+      },
     },
   },
   {
@@ -60,9 +78,14 @@ const routes = [
     component: Game,
     props: true,
     meta: {
-      requiresAuth: true,
-      requiresAdmin: false,
       main: () => false,
+      callback: async (to) => {
+        if (!isLoggedIn()) {
+          return {
+            name: 'login',
+          }
+        }
+      },
     },
   },
   {
@@ -70,9 +93,14 @@ const routes = [
     name: 'import',
     component: Import,
     meta: {
-      requiresAuth: true,
-      requiresAdmin: false,
-      main: () => true,
+      main: () => isLoggedIn(),
+      callback: () => {
+        if (!isLoggedIn()) {
+          return {
+            name: 'login',
+          }
+        }
+      },
     },
   },
   {
@@ -80,9 +108,8 @@ const routes = [
     name: 'login',
     component: Login,
     meta: {
-      requiresAuth: false,
-      requiresAdmin: false,
-      main: () => true,
+      main: () => !isLoggedIn(),
+      callback: () => true,
     },
   },
   {
@@ -90,9 +117,14 @@ const routes = [
     name: 'profile',
     component: Profile,
     meta: {
-      requiresAuth: true,
-      requiresAdmin: false,
-      main: () => true,
+      main: () => isLoggedIn(),
+      callback: () => {
+        if (!isLoggedIn()) {
+          return {
+            name: 'login',
+          }
+        }
+      },
     },
   },
   {
@@ -100,9 +132,14 @@ const routes = [
     name: 'logout',
     component: Logout,
     meta: {
-      requiresAuth: true,
-      requiresAdmin: false,
-      main: () => true,
+      main: () => isLoggedIn(),
+      callback: () => {
+        if (!isLoggedIn()) {
+          return {
+            name: 'login',
+          }
+        }
+      },
     },
   },
   {
@@ -110,9 +147,8 @@ const routes = [
     name: 'register',
     component: Register,
     meta: {
-      requiresAuth: false,
-      requiresAdmin: false,
-      main: () => true,
+      main: () => !isLoggedIn(),
+      callback: () => true,
     },
   },
 ]
@@ -120,17 +156,10 @@ const router = createRouter({
   history: createWebHashHistory(),
   routes,
 })
-router.beforeEach(({meta}, from) => {
+router.beforeEach(async (to, from) => {
   store.set('inputErrors', [])
-  if (meta.requiresAuth && !isLoggedIn()) {
-    return {
-      name: 'login',
-    }
-  }
-
-  if (meta.requiresAdmin && !user().is_admin) {
-    return false
-  }
+  const next = await to.meta.callback(to)
+  return next
 })
 router.afterEach(({name}, from) => nextTick(() => document.title = `Cyclopia | ${functions.toUpperCaseWords(name)}`))
 
