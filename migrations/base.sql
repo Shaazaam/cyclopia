@@ -197,3 +197,9 @@ CREATE TABLE IF NOT EXISTS errors (
   data JSONB,
   created_on TIMESTAMP WITHOUT TIME ZONE DEFAULT now()
 );
+
+CREATE TABLE IF NOT EXISTS game_spectator (
+  game_id UUID NOT NULL REFERENCES games(id),
+  user_id UUID NOT NULL REFERENCES users(id),
+  PRIMARY KEY (game_id, user_id)
+);
