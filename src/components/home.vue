@@ -17,19 +17,19 @@
     <div class="row">
       <div class="col-4">
         <h4>Received</h4>
-        <p v-if="functions.isEmpty(challenges.invitations)">You have no received challenges</p>
+        <p v-if="functions.isEmpty(received)">You have no received challenges</p>
 
-        <form v-for="invitation in challenges.invitations" @submit.prevent="() => accept(invitation)">
+        <form v-for="invitation in received" @submit.prevent="() => accept(invitation)">
           <Input
-            v-model="recieved_deck_id"
+            v-model="received_deck_id"
             type="select"
             id="deckRec"
-            name="recieved_deck_id"
+            name="received_deck_id"
             placeholder="Select a Deck"
           >
             <template #label>
               <span class="small text-warning">{{functions.localeDateTime(invitation.created_on)}}</span>
-              {{invitation.opponent.handle}} with {{invitation.opponent.deck}}
+              {{invitation.handle}} with {{invitation.deck_name}}
             </template>
             <template #options>
               <option v-for="{id, name} in decks" :value="id">{{name}}</option>
@@ -48,13 +48,13 @@
 
       <div class="col-4">
         <h4>Sent</h4>
-        <p v-if="functions.isEmpty(challenges.pending)">You have no pending challenges</p>
+        <p v-if="functions.isEmpty(sent)">You have no pending challenges</p>
 
-        <div v-for="game in challenges.pending" class="row">
+        <div v-for="invitation in sent" class="row">
           <div class="col">
             <p>
-              <span class="small text-warning">{{functions.localeDateTime(game.created_on)}}</span>
-              {{game.opponent.handle}} against {{game.deck_name}}
+              <span class="small text-warning">{{functions.localeDateTime(invitation.created_on)}}</span>
+              {{invitation.handle}} against {{invitation.deck_name}}
             </p>
           </div>
         </div>
@@ -102,33 +102,32 @@
     <div class="row">
       <div class="col-4">
         <h4>Ongoing</h4>
-        <p v-if="functions.isEmpty(challenges.active)">You have no onging games</p>
+        <p v-if="functions.isEmpty(ongoing)">You have no onging games</p>
 
-        <div v-for="game in challenges.active" class="mb-3">
+        <div v-for="game in ongoing" class="mb-3">
           <div class="row">
             <div class="col">
               <p>
-                <span class="small text-warning">{{functions.localeDateTime(game.created_on)}}: </span>
-                {{game.opponent.handle}} with {{game.opponent.deck}} vs You with {{game.deck_name}}
+                <span class="small text-warning">{{functions.localeDateTime(game.created_on)}}: </span>{{format(game.users)}}
               </p>
             </div>
           </div>
           <div class="d-flex justify-content-between">
-            <router-link class="btn btn-primary" :to="{name: 'game', params: {id: game.game_id}}">Join</router-link>
-            <button type="button" class="btn btn-primary" @click="copy(game.game_id)">Copy Link</button>
+            <router-link class="btn btn-primary" :to="{name: 'game', params: {id: game.id}}">Join</router-link>
+            <button type="button" class="btn btn-primary" @click="copy(game.id)">Copy Link</button>
           </div>
         </div>
       </div>
 
       <div class="col-4">
         <h4>Completed</h4>
-        <p v-if="functions.isEmpty(challenges.completed)">You have no completed games</p>
+        <p v-if="functions.isEmpty(completed)">You have no completed games</p>
 
-        <div v-for="game in challenges.completed" class="row">
+        <div v-for="game in completed" class="row">
           <div class="col">
             <p>
               <span class="small text-warning">{{functions.localeDateTime(game.created_on)}}: </span>
-              {{game.opponent.handle}} with {{game.opponent.deck}} vs You with {{game.deck_name}} <i v-if="game.winner === authUser.id" class="bi bi-trophy-fill text-warning"></i>
+              {{format(game.users)}} <i v-if="game.winner === authUser.id" class="bi bi-trophy-fill text-warning"></i>
             </p>
           </div>
         </div>
@@ -136,7 +135,21 @@
 
       <div class="col-4">
         <h4>Spectate</h4>
-        <p>Coming Soon (TM)</p>
+        <p v-if="functions.isEmpty(otherGames)">No ongoing games</p>
+
+        <div v-for="game in otherGames" class="mb-3">
+          <div class="row">
+            <div class="col">
+              <p>
+                <span class="small text-warning">{{functions.localeDateTime(game.created_on)}}: </span>{{format(game.users)}}
+              </p>
+            </div>
+          </div>
+          <div class="d-flex justify-content-between">
+            <router-link class="btn btn-primary" :to="{name: 'spectate', params: {id: game.id}}">Spectate</router-link>
+            <button type="button" class="btn btn-primary" @click="copy(game.id)">Copy Link</button>
+          </div>
+        </div>
       </div>
     </div>
   </template>
@@ -151,7 +164,7 @@
     },
     data: () => ({
       decks: [],
-      recieved_deck_id: null,
+      received_deck_id: null,
       send_deck_id: null,
       users: [],
       user_id: null,
@@ -159,25 +172,53 @@
     created() {
       this.fetch.get('/decks', {}, ({data}) => this.decks = data.map(this.factory.deck))
       this.fetch.get('/users', {}, ({data}) => this.users = data.filter(({id}) => id !== this.authUser.id))
-      this.fetch.get('/challenges')
+      this.fetch.get('/games')
+      this.fetch.get('/invitations')
     },
     computed: {
       challenges() {
         return this.store.get('challenges')
       },
+      games() {
+        return this.store.get('games')
+      },
+      invitations() {
+        return this.store.get('invitations')
+      },
+      otherGames() {
+        return this.games.filter(({users, winner}) => this.functions.isNull(winner) && users.every(({user_id}) => user_id !== this.authUser.id))
+      },
+      userGames() {
+        return this.games.filter(({users}) => users.some(({user_id}) => user_id === this.authUser.id))
+      },
+      ongoing() {
+        return this.userGames.filter(({winner}) => this.functions.isNull(winner))
+      },
+      completed() {
+        return this.userGames.filter(({winner}) => this.functions.isNotNull(winner))
+      },
+      received() {
+        return this.invitations.filter(({type}) => type === 'received')
+      },
+      sent() {
+        return this.invitations.filter(({type}) => type === 'sent')
+      },
     },
     methods: {
+      format([a, b]) {
+        return `${a.user_id === this.authUser.id ? 'You' : a.handle} with ${a.deck} vs ${b.user_id === this.authUser.id ? 'You' : b.handle} with ${b.deck}`
+      },
       create() {
-        this.fetch.post('/challenges', {deck_id: this.send_deck_id, user_id: this.user_id}, () => {
+        this.fetch.post('/invitations', {deck_id: this.send_deck_id, user_id: this.user_id}, () => {
           this.send_deck_id = null
           this.user_id = null
         })
       },
-      accept({game_id, opponent: {id: opponent_id}}) {
-        this.fetch.put('/challenges', {deck_id: this.recieved_deck_id, game_id, opponent_id}, () => this.recieved_deck_id = null)
+      accept({id, opponent_id}) {
+        this.fetch.put('/games', {deck_id: this.received_deck_id, id, opponent_id}, () => this.received_deck_id = null)
       },
-      decline({game_id, opponent: {id: opponent_id}}) {
-        this.fetch.del('/challenges', {game_id, opponent_id})
+      decline({id, opponent_id}) {
+        this.fetch.del('/invitations', {id, opponent_id})
       },
       copy(id) {
         navigator.clipboard.writeText(`${window.location.origin}/${this.$router.resolve({name: 'game', params: {id}}).href}`)

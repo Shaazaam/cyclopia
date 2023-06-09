@@ -482,54 +482,58 @@ export const declineGame = async (game_id, user_id, opponent_id) => {
   await query('DELETE FROM games WHERE id = $1', [game_id])
   return true
 }
-const getGames = async (user_id) => {
+export const getGames = async () => {
   const {rows} = await query(`
     SELECT
-      decks.name AS deck_name,
-      game_user.game_id,
-      games.created_on,
-      COALESCE(game_invites.user_id IS NOT NULL, FALSE) AS pending_invite,
-      JSON_BUILD_OBJECT(
-        'id', COALESCE(invited_user.id, accepted_user.id),
-        'deck', COALESCE(accepted_user_deck.name, 'No Deck'),
-        'handle', COALESCE(invited_user.handle, accepted_user.handle)
-      ) AS opponent,
-      games.winner
-    FROM game_user
-    JOIN games ON games.id = game_user.game_id
-    JOIN decks ON decks.id = game_user.deck_id
-    LEFT JOIN game_invites ON game_user.game_id = game_invites.game_id
-    LEFT JOIN users invited_user ON game_invites.user_id = invited_user.id
-    LEFT JOIN game_user self ON game_user.game_id = self.game_id AND self.user_id != $1
-    LEFT JOIN decks accepted_user_deck ON self.deck_id = accepted_user_deck.id
-    LEFT JOIN users accepted_user ON self.user_id = accepted_user.id
-    WHERE game_user.user_id = $1
-  `, [user_id])
-  return rows
-}
-const getInvitations = async (user_id) => {
-  const {rows} = await query(`
-    SELECT
-      game_invites.game_id,
-      JSON_BUILD_OBJECT(
-        'id', users.id,
+      games.id,
+      JSON_AGG(JSON_BUILD_OBJECT(
         'deck', decks.name,
+        'user_id', users.id,
         'handle', users.handle
-      ) AS opponent,
-      games.created_on
-    FROM game_invites
-    JOIN game_user ON game_user.game_id = game_invites.game_id
+      )) AS users,
+      games.created_on,
+      games.winner
+    FROM games
+    JOIN game_user ON game_user.game_id = games.id
     JOIN decks ON decks.id = game_user.deck_id
-    JOIN games ON games.id = game_invites.game_id
     JOIN users ON users.id = game_user.user_id
-    WHERE game_invites.user_id = $1
-  `, [user_id])
+    LEFT JOIN game_invites ON game_invites.game_id = games.id
+    WHERE game_invites.game_id IS NULL
+    GROUP BY games.id, games.created_on, games.winner
+  `)
   return rows
 }
-export const getChallenges = async (user_id) => {
-  const games = await getGames(user_id)
-  const invitations = await getInvitations(user_id)
-  return {games, invitations}
+export const getInvitations = async (user_id) => {
+  const {rows} = await query(`
+    SELECT
+      games.id,
+      CASE game_invites.user_id
+        WHEN $1 THEN 'received'
+        ELSE 'sent'
+      END AS type,
+      CASE
+        WHEN d1.name IS NOT NULL THEN d1.name
+        ELSE d2.name
+      END AS deck_name,
+      CASE game_invites.user_id
+        WHEN $1 THEN u2.handle
+        ELSE u1.handle
+      END AS handle,
+      CASE game_invites.user_id
+        WHEN $1 THEN u2.id
+        ELSE u1.id
+      END AS opponent_id,
+      games.created_on
+    FROM games
+    JOIN game_user ON game_user.game_id = games.id
+    JOIN game_invites ON game_invites.game_id = games.id
+    LEFT JOIN decks d1 ON d1.id = game_invites.deck_id
+    LEFT JOIN decks d2 ON d2.id = game_user.deck_id
+    LEFT JOIN users u1 ON u1.id = game_invites.user_id
+    LEFT JOIN users u2 ON u2.id = game_user.user_id
+    WHERE game_invites.user_id = $1 OR game_user.user_id = $1
+  `, [user_id])
+  return rows
 }
 
 export const getGame = async (id) => {

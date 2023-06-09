@@ -112,9 +112,10 @@ const onMessage = (event) => {
       update('Invalid authorization token. Try refreshing the page.', event)
     },
     '__pong__': () => clearTimeout(timeout.event),
-    'game': () => store.set('games', store.get('games').concat(data)),
-    'challenge': () => store.set('challenges', data),
     'event': () => store.set('events', data),
+    'game': () => store.set('games', store.get('games').concat(data)),
+    'games': () => store.set('games', data),
+    'invitations': () => store.set('invitations', data),
   }))()[kind]
   func()
 }

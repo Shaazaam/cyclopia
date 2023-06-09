@@ -6,7 +6,7 @@ import {createServer} from 'http'
 
 import config from './util/config.js'
 import mount from './util/routes.js'
-import {wss} from './util/wss.js'
+import {socket as wss} from './util/wss.js'
 
 const app = express()
 const sessionManager = dbSession(session)

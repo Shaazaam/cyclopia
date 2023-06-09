@@ -15,7 +15,7 @@ import {
   isNotUndefined,
 } from './functions.js'
 import * as val from './validate.js'
-import {wss, send, close} from './wss.js'
+import * as wss from './wss.js'
 
 const {SCRYFALL_API_URL} = config.app
 
@@ -51,7 +51,8 @@ const mutateReq = async (req, res, next) => {
     event_entity_id: null,
     users: [],
     event: {},
-    challenges: [],
+    games: [],
+    invitations: [],
     data: [],
     message: null,
   }
@@ -81,7 +82,7 @@ const isAdmin = async (req, res, next) => {
 }
 
 const event = (entity_id, name, data, user_id) => ({entity_id, name, data, user_id})
-const challenge = (user_id, games, invitations) => ({user_id, games, invitations})
+const invitation = (user_id, invitations) => ({user_id, invitations})
 
 const validate = async ([input, rules], req, res, next) => {
   const results = await val.validate(input, rules)
@@ -100,30 +101,33 @@ const log = async (req, res, next) => {
 const sendGame = async (req, res, next) => {
   const {game_id} = req.cyclopia
   const game = await dal.getGame(game_id)
-  const users = game.users.map((user) => user.user_id)
+  const users = game.users.map(({user_id}) => user_id).concat(game.spectators.map(({user_id}) => user_id))
   req.cyclopia = copy(req.cyclopia, {event_entity_id: game_id, users})
-  send(users, {kind: 'game', data: game})
+  wss.send(users, {kind: 'game', data: game})
   next()
 }
 const sendEvents = async (req, res, next) => {
   const {event_entity_id, users} = req.cyclopia
   const events = await dal.getEvents(event_entity_id)
-  send(users, {kind: 'event', data: events})
+  wss.send(users, {kind: 'event', data: events})
   next()
 }
-const sendChallenges = async (req, res, next) => {
-  const {challenges} = req.cyclopia
-  challenges.forEach(({user_id, games, invitations}) =>
-    send([user_id], {
-      kind: 'challenge',
-      data: {
-        active: games.filter(({pending_invite, winner}) => !pending_invite && isNull(winner)),
-        pending: games.filter(({pending_invite}) => pending_invite),
-        completed: games.filter(({pending_invite, winner}) => !pending_invite && isNotNull(winner)),
-        invitations
-      }
+const sendInvitations = async (req, res, next) => {
+  const {invitations} = req.cyclopia
+  invitations.forEach((game) =>
+    wss.send([game.user_id], {
+      kind: 'invitations',
+      data: game.invitations
     })
   )
+  next()
+}
+const sendGames = async (req, res, next) => {
+  const {games, users} = req.cyclopia
+  wss.send(users, {
+    kind: 'games',
+    data: games,
+  })
   next()
 }
 
@@ -155,97 +159,6 @@ const routes = {
           next()
         }).catch((err) => next(err))
       },
-    ],
-  },
-  'challenges': {
-    middleware: [authenticate],
-    get: [
-      async (req, res, next) => {
-        const {user: {id: user_id}} = req.session
-        const {games, invitations} = await dal.getChallenges(user_id)
-        req.cyclopia.challenges = [challenge(user_id, games, invitations)]
-        next()
-      },
-      sendChallenges,
-    ],
-    post: [
-      async (req, res, next) => {
-        const {deck_id: send_deck_id, user_id} = req.body
-        next([
-          {send_deck_id, user_id},
-          {
-            send_deck_id: [val.required()],
-            user_id: [
-              val.required(),
-              val.notExists(
-                'game_invites',
-                ['deck_id', 'user_id'],
-                async (input, [table, columns]) => ! (await dal.exists(table, columns, input)),
-                'Challange already sent to this user with this deck'
-              )
-            ],
-          }
-        ])
-      },
-      validate,
-      async (req, res, next) => {
-        const {user: {id: user_id}} = req.session
-        const {deck_id, user_id: invited_user_id} = req.body
-        const {game_id} = await dal.insertGame(deck_id, invited_user_id)
-        await dal.joinGame(deck_id, game_id, user_id)
-        const userChallanges = await dal.getChallenges(user_id)
-        const invitedUserChallenges = await dal.getChallenges(invited_user_id)
-        req.cyclopia.challenges = [
-          challenge(user_id, userChallanges.games, userChallanges.invitations),
-          challenge(invited_user_id, invitedUserChallenges.games, invitedUserChallenges.invitations),
-        ]
-        req.cyclopia.message = 'Challenge Sent'
-        next()
-      },
-      sendChallenges,
-    ],
-    put: [
-      async (req, res, next) => {
-        const {deck_id: recieved_deck_id, opponent_id} = req.body
-        next([
-          {recieved_deck_id, opponent_id},
-          {
-            recieved_deck_id: [val.required()],
-            opponent_id: [val.required()],
-          }
-        ])
-      },
-      validate,
-      async (req, res, next) => {
-        const {user: {id: user_id}} = req.session
-        const {deck_id, game_id, opponent_id} = req.body
-        await dal.joinGame(deck_id, game_id, user_id)
-        const userChallanges = await dal.getChallenges(user_id)
-        const opponentChallenges = await dal.getChallenges(opponent_id)
-        req.cyclopia.challenges = [
-          challenge(user_id, userChallanges.games, userChallanges.invitations),
-          challenge(opponent_id, opponentChallenges.games, opponentChallenges.invitations),
-        ]
-        req.cyclopia.message = 'Challenge Accepted'
-        next()
-      },
-      sendChallenges,
-    ],
-    del: [
-      async (req, res, next) => {
-        const {user: {id: user_id}} = req.session
-        const {game_id, opponent_id} = req.body
-        await dal.declineGame(game_id, user_id, opponent_id)
-        const userChallanges = await dal.getChallenges(user_id)
-        const opponentChallenges = await dal.getChallenges(opponent_id)
-        req.cyclopia.challenges = [
-          challenge(user_id, userChallanges.games, userChallanges.invitations),
-          challenge(opponent_id, opponentChallenges.games, opponentChallenges.invitations),
-        ]
-        req.cyclopia.message = 'Challenge Declined'
-        next()
-      },
-      sendChallenges,
     ],
   },
   'counter': {
@@ -376,6 +289,122 @@ const routes = {
       sendGame,
     ],
   },
+  'games': {
+    middleware: [authenticate],
+    get: [
+      async (req, res, next) => {
+        const {user: {id: user_id}} = req.session
+        const games = await dal.getGames()
+        req.cyclopia = copy(req.cyclopia, {
+          games,
+          users: [user_id],
+        })
+        next()
+      },
+      sendGames,
+    ],
+    put: [
+      async (req, res, next) => {
+        const {deck_id: recieved_deck_id, opponent_id} = req.body
+        next([
+          {recieved_deck_id, opponent_id},
+          {
+            recieved_deck_id: [val.required()],
+            opponent_id: [val.required()],
+          }
+        ])
+      },
+      validate,
+      async (req, res, next) => {
+        const {user: {id: user_id}} = req.session
+        const {deck_id, id, opponent_id} = req.body
+        await dal.joinGame(deck_id, id, user_id)
+        const games = await dal.getGames()
+        const userInvitations = await dal.getInvitations(user_id)
+        const opponentInvitations = await dal.getInvitations(opponent_id)
+        req.cyclopia = copy(req.cyclopia, {
+          games,
+          users: wss.users(),
+          invitations: [
+            invitation(user_id, userInvitations),
+            invitation(opponent_id, opponentInvitations),
+          ],
+          message: 'Challenge Accepted'
+        })
+        next()
+      },
+      sendInvitations,
+      sendGames,
+    ],
+  },
+  'invitations': {
+    middleware: [authenticate],
+    get: [
+      async (req, res, next) => {
+        const {user: {id: user_id}} = req.session
+        const invitations = await dal.getInvitations(user_id)
+        req.cyclopia.invitations = [invitation(user_id, invitations)]
+        next()
+      },
+      sendInvitations,
+    ],
+    post: [
+      async (req, res, next) => {
+        const {deck_id: send_deck_id, user_id} = req.body
+        next([
+          {send_deck_id, user_id},
+          {
+            send_deck_id: [val.required()],
+            user_id: [
+              val.required(),
+              val.notExists(
+                'game_invites',
+                ['deck_id', 'user_id'],
+                async (input, [table, columns]) => ! (await dal.exists(table, columns, input)),
+                'Challange already sent to this user with this deck'
+              )
+            ],
+          }
+        ])
+      },
+      validate,
+      async (req, res, next) => {
+        const {user: {id: user_id}} = req.session
+        const {deck_id, user_id: opponent_id} = req.body
+        const {game_id} = await dal.insertGame(deck_id, opponent_id)
+        await dal.joinGame(deck_id, game_id, user_id)
+        const userInvitations = await dal.getInvitations(user_id)
+        const opponentInvitations = await dal.getInvitations(opponent_id)
+        req.cyclopia = copy(req.cyclopia, {
+          invitations: [
+            invitation(user_id, userInvitations),
+            invitation(opponent_id, opponentInvitations),
+          ],
+          message: 'Challenge Sent'
+        })
+        next()
+      },
+      sendInvitations,
+    ],
+    del: [
+      async (req, res, next) => {
+        const {user: {id: user_id}} = req.session
+        const {id, opponent_id} = req.body
+        await dal.declineGame(id, user_id, opponent_id)
+        const userInvitations = await dal.getInvitations(user_id)
+        const opponentInvitations = await dal.getInvitations(opponent_id)
+        req.cyclopia = copy(req.cyclopia, {
+          invitations: [
+            invitation(user_id, userInvitations),
+            invitation(opponent_id, opponentInvitations),
+          ],
+          message: 'Challenge Declined'
+        })
+        next()
+      },
+      sendInvitations,
+    ],
+  },
   'import': {
     middleware: [authenticate],
     post: [
@@ -475,7 +504,7 @@ const routes = {
     middleware: [authenticate],
     del: [
       async (req, res, next) => {
-        close(req.session.user)
+        wss.close(req.session.user)
         req.session.destroy(() => next())
       },
     ],
