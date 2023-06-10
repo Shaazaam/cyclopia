@@ -337,6 +337,17 @@ const routes = {
       sendGames,
     ],
   },
+  'game-users': {
+    params: ['id'],
+    get: [
+      async (req, res, next) => {
+        const {id: game_id} = req.params
+        const users = await dal.getGameUsers(game_id)
+        req.cyclopia.data = users
+        next()
+      },
+    ],
+  },
   'invitations': {
     middleware: [authenticate],
     get: [
@@ -685,6 +696,26 @@ const routes = {
       log,
       sendGame,
       sendEvents,
+    ],
+  },
+  'spectators': {
+    middleware: [authenticate],
+    post: [
+      async (req, res, next) => {
+        const {id: game_id} = req.body
+        const {user: {id: user_id}} = req.session
+        const users = await dal.getGameUsers(game_id).catch((err) => next(err))
+        const spectators = await dal.getGameSpectators(game_id).catch((err) => next(err))
+        if (
+          !users.map(({user_id: id}) => id).includes(user_id)
+          && !spectators.map(({user_id: id}) => id).includes(user_id)
+        ) {
+          await dal.insertSpectator(game_id, user_id).catch((err) => next(err))
+        }
+        req.cyclopia.game_id = game_id
+        next()
+      },
+      sendGame,
     ],
   },
   'start': {

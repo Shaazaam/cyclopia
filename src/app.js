@@ -11,6 +11,7 @@ import Login from './components/login.vue'
 import Logout from './components/logout.vue'
 import Profile from './components/profile.vue'
 import Register from './components/register.vue'
+import Spectate from './components/spectate.vue'
 
 import * as factory from '../util/factory.js'
 import fetch from '../util/fetch.js'
@@ -85,6 +86,16 @@ const routes = [
             name: 'login',
           }
         }
+        let ret = true
+        await fetch.get('/game-users', [to.params.id], ({data}) => {
+          if (!data.some(({user_id}) => user_id === user().id)) {
+            ret = {
+              name: 'spectate',
+              params: {id: to.params.id},
+            }
+          }
+        })
+        return ret
       },
     },
   },
@@ -124,6 +135,32 @@ const routes = [
             name: 'login',
           }
         }
+      },
+    },
+  },
+  {
+    path: '/spectate/:id',
+    name: 'spectate',
+    component: Spectate,
+    props: true,
+    meta: {
+      main: () => false,
+      callback: async (to) => {
+        if (!isLoggedIn()) {
+          return {
+            name: 'login',
+          }
+        }
+        let ret = true
+        await fetch.get('/game-users', [to.params.id], ({data}) => {
+          if (data.some(({user_id}) => user_id === user().id)) {
+            ret = {
+              name: 'game',
+              params: {id: to.params.id},
+            }
+          }
+        })
+        return ret
       },
     },
   },

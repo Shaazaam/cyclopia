@@ -560,6 +560,7 @@ export const getGame = async (id) => {
       AND users.id = cu.user_id
     WHERE game_user.game_id = $1
   `, [id])
+  const spectators = await getGameSpectators(id)
   const {rows: objects} = await query(`
     SELECT
       objects.id,
@@ -634,7 +635,7 @@ export const getGame = async (id) => {
     WHERE objects.game_id = $1
     GROUP BY objects.user_id
   `, [id])
-  return factory.game({id, users, objects, counts})
+  return factory.game({id, users, spectators, objects, counts})
 }
 export const getGameUsers = async (game_id) => {
   const {rows} = await query(`
@@ -643,6 +644,21 @@ export const getGameUsers = async (game_id) => {
     WHERE game_user.game_id = $1
   `, [game_id], 2)
   return rows
+}
+export const getGameSpectators = async (game_id) => {
+  const {rows} = await query(`
+    SELECT
+      game_spectator.user_id,
+      users.handle
+    FROM game_spectator
+    JOIN users ON game_spectator.user_id = users.id
+    WHERE game_spectator.game_id = $1
+  `, [game_id])
+  return rows
+}
+export const insertSpectator = async (game_id, user_id) => {
+  await query(`INSERT INTO game_spectator (game_id, user_id) VALUES ($1, $2)`, [game_id, user_id], 1)
+  return true
 }
 export const getCounters = async () => {
   const {rows} = await query(`SELECT counters.* FROM counters ORDER BY name`)
