@@ -169,9 +169,10 @@ const vstore = reactive({
   isLoading: undefined,
   inputErrors: undefined,
   user: undefined,
-  games: [],
-  invitations: [],
-  events: [],
+  game: undefined,
+  games: undefined,
+  invitations: undefined,
+  events: undefined,
 
   set: (key, value) => store.set(key, value),
   get(key) {return this[key]},
@@ -195,6 +196,7 @@ store.set('isSaving', false, (key, value) => vstore[key] = value)
 store.set('isLoading', false, (key, value) => vstore[key] = value)
 store.set('inputErrors', [], (key, value) => vstore[key] = value)
 store.set('user', factory.user(user()), (key, value) => vstore[key] = value)
+store.set('game', {}, (key, value) => vstore[key] = value)
 store.set('games', [], (key, value) => vstore[key] = value)
 store.set('invitations', [], (key, value) => vstore[key] = value)
 store.set('events', [], (key, value) => vstore[key] = value)

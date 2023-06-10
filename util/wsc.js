@@ -113,7 +113,7 @@ const onMessage = (event) => {
     },
     '__pong__': () => clearTimeout(timeout.event),
     'event': () => store.set('events', data),
-    'game': () => store.set('games', store.get('games').concat(data)),
+    'game': () => store.set('game', copy(store.get('game'), {[data.id]: data})),
     'games': () => store.set('games', data),
     'invitations': () => store.set('invitations', data),
   }))()[kind]

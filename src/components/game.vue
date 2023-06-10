@@ -479,7 +479,7 @@
     },
     computed: {
       game() {
-        return this.store.games.filter((game) => game.id === this.id).pop()
+        return this.store.game[this.id]
       },
       users() {
         return this.game ? this.game.users.map((user) => this.functions.deepExtend({
