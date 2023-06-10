@@ -11,9 +11,9 @@
     @dragenter="dragover = true"
     @dragleave="dragover = false"
   >
-    <div class="row">
+    <div class="row" :style="height">
       <div class="col-8">
-        <div class="d-flex flex-wrap hstack" :style="height">
+        <div class="d-flex flex-wrap hstack">
           <template
             v-for="[id, cards] in Object.entries(creatures)"
           >
@@ -39,7 +39,7 @@
       </div>
 
       <div class="col-4">
-        <div class="d-flex flex-wrap hstack" :style="height">
+        <div class="d-flex flex-wrap hstack">
           <template
             v-for="[id, cards] in Object.entries(instantsAndSorceries)"
           >
@@ -59,9 +59,9 @@
       </div>
     </div>
 
-    <div class="row">
+    <div class="row" :style="height">
       <div class="col-8">
-        <div class="d-flex flex-wrap hstack" :style="height">
+        <div class="d-flex flex-wrap hstack">
           <template
             v-for="[id, cards] in Object.entries(lands)"
           >
@@ -84,7 +84,7 @@
         </div>
       </div>
       <div class="col-4">
-        <div class="d-flex flex-wrap hstack" :style="height">
+        <div class="d-flex flex-wrap hstack">
           <div
             v-for="[id, cards] in Object.entries(artifactsAndEnchantments)"
             class="card-group"
