@@ -602,7 +602,7 @@ const routes = {
             email: [
               val.required(),
               val.email(),
-              val.notExists('users', ['email']),
+              val.notExists('users', 'email'),
             ],
             handle: [val.required(), val.max(50)],
             password: [val.required()],
@@ -612,18 +612,15 @@ const routes = {
       validate,
       async (req, res, next) => {
         const {email, handle, password} = req.body
-        const user = factory.user({id, handle, email})
-        bcrypt.hash(password, 10).then((hash) =>
-          dal.insertUser({email, handle, password: hash}).then(({id}) => {
-            req.session.regenerate(() => {
-              req.session.user = user
-              req.session.save(() => {
-                req.cyclopia.data = user
-                next()
-              })
-            })
+        const hash = await bcrypt.hash(password, 10)
+        const user = await dal.insertUser({email, handle, password: hash})
+        req.session.regenerate(() => {
+          req.session.user = user
+          req.session.save(() => {
+            req.cyclopia.data = user
+            next()
           })
-        )
+        })
       },
     ],
   },
