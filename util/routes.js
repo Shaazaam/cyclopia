@@ -1,5 +1,4 @@
 import bcrypt from 'bcrypt'
-import {readFile} from 'fs/promises'
 
 import config from './config.js'
 import * as dal from './dal.js'
@@ -69,7 +68,7 @@ const authorize = async (req, res, next) => {
   const {user: {id}} = req.session
   const {game_id} = req.method === 'GET' ? req.params : req.body
   const users = await dal.getGameUsers(game_id)
-  if (!users.map(({user_id}) => user_id).includes(id)) {
+  if (!users.some(({user_id}) => user_id === id)) {
     return res401(req, res)
   }
   next()
@@ -480,34 +479,21 @@ const routes = {
     post: [
       async (req, res, next) => {
         const {email, password} = req.body
+        const {id, handle, password: hash, is_admin} = await dal.authenticateUser(email)
+        req.cyclopia.data = {id, handle, email, is_admin}
         next([
-          {email, password},
+          {email, password: {password, hash}},
           {
-            email: [val.required(), val.email()],
-            password: [val.required()],
+            email: [val.exists('users', 'email'), val.required(), val.email()],
+            password: [val.password()],
           }
         ])
       },
       validate,
       async (req, res, next) => {
-        const {email, password} = req.body
-        const {id, handle, password: hash, is_admin} = await dal.authenticateUser(email)
-        if (isNull(id)) {
-          req.cyclopia.message = 'User Not Found'
-          return res422(req, res)
-        }
-        bcrypt.compare(password, hash).then((result) => {
-          if (!result) {
-            req.cyclopia.message = 'Password Invalid'
-            return res422(req, res)
-          }
-          req.session.regenerate(() => {
-            req.session.user = {id, handle, email, is_admin}
-            req.session.save(() => {
-              req.cyclopia.data = {id, handle, email, is_admin}
-              next()
-            })
-          })
+        req.session.regenerate(() => {
+          req.session.user = req.cyclopia.data
+          req.session.save(() => next())
         })
       },
     ],
