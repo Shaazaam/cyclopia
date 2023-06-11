@@ -3,6 +3,7 @@ import {readFile} from 'fs/promises'
 
 import config from './config.js'
 import * as dal from './dal.js'
+import * as factory from './factory.js'
 import fetch from './fetch.js'
 import {
   copy,
@@ -625,12 +626,13 @@ const routes = {
       validate,
       async (req, res, next) => {
         const {email, handle, password} = req.body
+        const user = factory.user({id, handle, email})
         bcrypt.hash(password, 10).then((hash) =>
           dal.insertUser({email, handle, password: hash}).then(({id}) => {
             req.session.regenerate(() => {
-              req.session.user = {id, handle, email, is_admin: false}
+              req.session.user = user
               req.session.save(() => {
-                req.cyclopia.data = {id, handle, email, is_admin: false}
+                req.cyclopia.data = user
                 next()
               })
             })
