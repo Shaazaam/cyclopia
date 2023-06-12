@@ -107,10 +107,6 @@
   .card img {
     border-radius: 11px;
   }
-  .contain-height {
-    object-fit: contain;
-    height: 25vh;
-  }
   .card .dropdown-center {
     display: inline-grid;
   }
@@ -129,14 +125,6 @@
   }
   .tab-content .card img {
     border-radius: 22px;
-  }
-  .col-15 {
-    flex: 0 0 auto;
-    width: 12.499%;
-  }
-  .col-105 {
-    flex: 0 0 auto;
-    width: 87.499%;
   }
   .dropdown-menu {
     --bs-dropdown-padding-x: unset;

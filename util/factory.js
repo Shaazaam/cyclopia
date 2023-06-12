@@ -15,7 +15,6 @@ export const actions = (x) => copy({
   drag: true,
   expand: true,
   move: [],
-  stats: false,
   tap: false,
   transform: true,
   create: false,

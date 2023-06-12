@@ -241,6 +241,19 @@ store.set('events', [], (key, value) => vstore[key] = value)
 app.config.unwrapInjectedRef = true
 
 app.use(router)
+  .directive('click-outside', {
+    beforeMount: (el, binding) => {
+      el.clickOutsideEvent = (event) => {
+        if (!el.contains(event.target)) {
+          binding.value()
+        }
+      }
+      document.addEventListener('click', el.clickOutsideEvent)
+    },
+    unmounted: (el) => {
+      document.removeEventListener('click', el.clickOutsideEvent)
+    },
+  })
   .mixin({
     data: () => ({
       factory,

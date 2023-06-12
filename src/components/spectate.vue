@@ -55,127 +55,75 @@
         </div>
       </div>
     </div>
-
-    <!-- <div class="row mb-3">
-      <div class="col justify-content-center hstack gap-3">
-        <button
-          type="button"
-          class="btn btn-primary"
-          data-bs-toggle="offcanvas"
-          data-bs-target="#eventLog"
-        >Log</button>
-      </div>
-    </div> -->
   </div>
 
-  <div class="row mb-3">
-    <div class="col-8" :class="{'invisible': functions.isEmpty(user0.hand)}">
-      <div
-        id="hand"
-        class="border border-info-subtle rounded bg-info bg-opacity-10 collapse show"
-      >
-        <div class="d-flex justify-content-center gap-3">
-          <Card
-            v-for="object in user0.hand"
-            :object="object"
-            :actions="factory.actions({drag: false})"
-            :contain-height="user0.hand.length <= 5"
-            @expand="expand"
-          />
-        </div>
-      </div>
-      <div class="d-grid">
-        <button class="btn btn-sm btn-outline-info" data-bs-toggle="collapse" data-bs-target="#hand">Hand</button>
-      </div>
+  <div class="row">
+    <div class="col-9 border border-warning rounded bg-warning bg-opacity-10 reverse-columns">
+      <Field
+        :objects="user0.field"
+        :actions="factory.actions({drag: false})"
+        @details="details"
+        @expand="expand"
+      />
     </div>
-    <div v-for="zone in stackZones" class="col-1">
-      <div
-        :id="zone"
-        class="border bg-opacity-10 rounded collapse show"
-        :class="[zone === 'library' ? 'border-primary-subtle bg-primary' : 'border-danger-subtle bg-danger']"
-      >
-        <div class="d-flex justify-content-center gap-3">
-          <Card
-            :object="zone === 'library' ? factory.object() : [factory.object()].concat(user0[zone]).pop()"
-            :actions="factory.actions({drag: false})"
-          >
-            <h5 class="mb-0">Cards: {{user0[`${zone}_total`]}}</h5>
-          </Card>
+    <div class="col-3">
+      <div v-if="functions.isNotNull(detailObject.id)" class="card-group">
+        <Card :object="detailObject" height="30vh" />
+        <div class="card text-light bg-transparent">
+          <div class="card-body">
+            <div class="d-flex justify-content-between mb-2">
+              <div class="input-group">
+                <input
+                  type="text"
+                  :value="detailObject.power"
+                  class="form-control bg-dark text-light"
+                  disabled
+                />
+                <span class="input-group-text bg-dark text-light">/</span>
+                <input
+                  type="text"
+                  :value="detailObject.toughness"
+                  class="form-control bg-dark text-light"
+                  disabled
+                />
+              </div>
+            </div>
+            <template v-for="{name, amount} in detailObject.counters">
+              <div v-if="amount > 0" class="d-flex justify-content-between mb-2">
+                <div class="input-group">
+                  <span class="input-group-text bg-dark text-light">{{functions.toUpperCaseWords(name)}}</span>
+                  <input
+                    type="text"
+                    class="form-control bg-dark text-light"
+                    :value="amount"
+                    disabled
+                  />
+                </div>
+              </div>
+            </template>
+          </div>
         </div>
-      </div>
-      <div class="d-grid">
-        <button
-          class="btn btn-sm"
-          :class="zone === 'library' ? 'btn-outline-primary' : 'btn-outline-danger'"
-          data-bs-toggle="collapse"
-          :data-bs-target="`#${zone}`"
-        >{{functions.toUpperCaseWords(zone)}}</button>
       </div>
     </div>
   </div>
-
-  <Field
-    :objects="user0.field"
-    :actions="factory.actions({stats: true, drag: false})"
-    reversed
-    @expand="expand"
-  />
 
   <hr />
 
-  <Field
-    :objects="user1.field"
-    :actions="factory.actions({stats: true, drag: false})"
-    @expand="expand"
-  />
-
-  <!-- <div class="sticky-bottom mt-3"> -->
-    <div class="row mt-3">
-      <div class="col-8" :class="{'invisible': functions.isEmpty(user1.hand)}">
-        <div class="d-grid">
-          <button class="btn btn-sm btn-outline-info" data-bs-toggle="collapse" data-bs-target="#hand">Hand</button>
-        </div>
-        <div
-          id="hand"
-          class="border border-info-subtle rounded bg-info bg-opacity-10 collapse show"
-        >
-          <div class="d-flex justify-content-center gap-3">
-            <Card
-              v-for="object in user1.hand"
-              :object="object"
-              :actions="factory.actions({drag: false})"
-              :contain-height="user1.hand.length <= 5"
-              @expand="expand"
-            />
-          </div>
-        </div>
-      </div>
-      <div v-for="zone in stackZones" class="col-1">
-        <div class="d-grid">
-          <button
-            class="btn btn-sm"
-            :class="zone === 'library' ? 'btn-outline-primary' : 'btn-outline-danger'"
-            data-bs-toggle="collapse"
-            :data-bs-target="`#${zone}`"
-          >{{functions.toUpperCaseWords(zone)}}</button>
-        </div>
-        <div
-          :id="zone"
-          class="border bg-opacity-10 rounded collapse show"
-          :class="[zone === 'library' ? 'border-primary-subtle bg-primary' : 'border-danger-subtle bg-danger']"
-        >
-          <div class="d-flex justify-content-center gap-3">
-            <Card
-              :object="zone === 'library' ? factory.object() : [factory.object()].concat(user1[zone]).pop()"
-              :actions="factory.actions({drag: false})"
-            >
-              <h5 class="mb-0">Cards: {{user1[`${zone}_total`]}}</h5>
-            </Card>
-          </div>
-        </div>
-      </div>
+  <div class="row">
+    <div class="col-9 border border-success rounded bg-success bg-opacity-10">
+      <Field
+        :objects="user1.field"
+        :actions="factory.actions({drag: false})"
+        @details="details"
+        @expand="expand"
+      />
     </div>
-  <!-- </div> -->
+    <div class="col-3" style="max-height:30vh; overflow: auto;">
+      <p class="small mb-2" v-for="event in events">
+        <span class="text-warning">{{functions.localeDateTime(event.created_on)}}</span>: {{getEventText(event)}}
+      </p>
+    </div>
+  </div>
 
   <div id="card" ref="cardModal" class="modal fade" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
@@ -183,7 +131,7 @@
         <div class="modal-body">
           <div class="row justify-content-center">
             <Card
-              :object="object"
+              :object="modalObject"
               :actions="factory.actions({expand: false})"
               class="col"
               data-bs-dismiss="modal"
@@ -191,22 +139,6 @@
           </div>
         </div>
       </div>
-    </div>
-  </div>
-
-  <div id="eventLog" class="offcanvas offcanvas-start text-bg-dark" data-bs-scroll="true" data-bs-backdrop="false" tabindex="-1">
-    <div class="offcanvas-header">
-      <h5 class="offcanvas-title">Game Log</h5>
-      <button
-        type="button"
-        class="btn-close btn-close-white"
-        data-bs-dismiss="offcanvas"
-      ></button>
-    </div>
-    <div class="offcanvas-body">
-      <p v-for="event in events">
-        <span class="small text-warning">{{functions.localeDateTime(event.created_on)}}</span>: {{getEventText(event)}}
-      </p>
     </div>
   </div>
 </template>
@@ -230,7 +162,8 @@
     },
     data: () => ({
       cardModal: null,
-      object: {},
+      detailObject: {},
+      modalObject: {},
       counters: [],
       zones: [],
       stackZones: [
@@ -330,15 +263,20 @@
         return this.store.events
       },
     },
+    watch: {
+      game() {
+        if (this.functions.isNotNull(this.detailObject.id)) {
+          this.detailObject = this.objects.find((object) => object.id === this.detailObject.id)
+        }
+      },
+    },
     created() {
       this.fetch.get('/counters', {}, ({data}) => this.counters = data)
-      this.fetch.get('/zones', {}, ({data}) => {
-        this.zones = data.map(({name}) => name)
-        //this.cardZones = this.zones.reduce((agg, name) => agg = this.functions.copy(agg, {[name]: []}), {})
-      })
+      this.fetch.get('/zones', {}, ({data}) => this.zones = data.map(({name}) => name))
       this.fetch.post('/spectators', {id: this.id})
       this.fetch.get('/events', [this.id])
-      this.object = this.factory.object()
+      this.detailObject = this.factory.object()
+      this.modalObject = this.factory.object()
     },
     mounted() {
       this.cardModal = new bootstrap.Modal(this.$refs.cardModal)
@@ -375,8 +313,11 @@
       closeModal(modal) {
         this[modal].hide()
       },
+      details(object) {
+        this.detailObject = object
+      },
       expand(object) {
-        this.object = this.functions.copy(object, {is_tapped: false})
+        this.modalObject = this.functions.copy(object, {is_tapped: false})
         this.cardModal.show()
       },
     },

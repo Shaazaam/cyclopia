@@ -2,22 +2,21 @@
   <div
     class="card text-light bg-transparent"
     :draggable="_actions.drag && functions.isNotNull(object.id) && !isGameOver"
-    @mouseenter="hover = true"
-    @mouseleave="hover = false"
-    @click="click"
+    @mouseenter="details(true)"
+    @mouseleave="details(false)"
+    @click.left="clickLeft"
+    @click.right="clickRight"
+    @contextmenu.prevent
     @dragstart="drag"
   >
     <img
       :src="image"
       class="card-img"
-      :class="{
-        'tapped': object.is_tapped,
-        'contain-height': containHeight,
-      }"
+      :class="{'tapped': object.is_tapped}"
+      :style="{'height': height}"
     />
     <div
       class="card-img-overlay"
-      :class="{'invisible': !hover}"
     >
       <div class="d-flex justify-content-between mb-2">
         <div v-if="functions.isNotEmpty(_actions.move) && !isGameOver" class="dropdown-center">
@@ -51,29 +50,6 @@
             v-model="createAmount"
             class="form-control"
             min="1"
-          />
-        </div>
-      </div>
-      <div class="d-flex justify-content-between mb-2">
-        <div v-if="_actions.stats" class="input-group">
-          <input
-            :type="isMine && !isGameOver ? 'number' : 'text'"
-            :value="object.power"
-            class="form-control"
-            :class="!isMine || isGameOver ? ['bg-dark', 'text-light'] : []"
-            :disabled="!isMine || isGameOver"
-            @change="(e) => power(e.target.value)"
-            @click.stop
-          />
-          <span class="input-group-text bg-dark text-light">/</span>
-          <input
-            :type="isMine && !isGameOver ? 'number' : 'text'"
-            :value="object.toughness"
-            class="form-control"
-            :class="!isMine || isGameOver ? ['bg-dark', 'text-light'] : []"
-            :disabled="!isMine || isGameOver"
-            @change="(e) => toughness(e.target.value)"
-            @click.stop
           />
         </div>
       </div>
@@ -128,9 +104,9 @@
         type: Object,
         required: true,
       },
-      containHeight: {
-        type: Boolean,
-        default: false,
+      height: {
+        type: String,
+        default: '15vh',
       },
     },
     inject: {
@@ -141,12 +117,11 @@
     emits: [
       'create',
       'counter',
+      'details',
       'drag',
       'expand',
       'move',
-      'power',
       'tap',
-      'toughness',
       'transform',
     ],
     data: () => ({
@@ -157,9 +132,6 @@
       timeout: null,
     }),
     computed: {
-      isMine() {
-        return this.object.user_id === this.authUser.id
-      },
       image() {
         let image = '/images/card-back.jpg'
         if (this.functions.isNotNull(this.object.card.image_uris)) {
@@ -175,22 +147,15 @@
       },
     },
     created() {
-      this._actions = this.functions.isNull(this.actions)
-        ? this.factory.actions()
-        : this.actions
-      if (['exile', 'field', 'graveyard'].includes(this.object.zone) && this.object.card.type_line.includes('Token')) {
-        this._actions = this.functions.copy(this._actions, {
-          move: this.functions.removeByValue(this._actions.move, 'graveyard')
-        })
-      }
+      this._actions = this.functions.isNull(this.actions) ? this.factory.actions() : this.actions
     },
     methods: {
       drag(event) {
         event.dataTransfer.dropEffect = 'move'
         event.dataTransfer.effectAllowed = 'move'
-        event.dataTransfer.setData('text/plain', this.object.id)
+        event.dataTransfer.setData('application/json', JSON.stringify(this.object))
       },
-      click() {
+      clickLeft() {
         if (this.functions.isNull(this.timeout) && this._actions.tap && !this.isGameOver) {
           this.timeout = setTimeout(() => {
             this.tap(!this.object.is_tapped)
@@ -204,26 +169,26 @@
           }
         }
       },
+      clickRight() {
+        this.details(true, true)
+      },
       create() {
         this.$emit('create', this.object.card.id, this.createAmount)
       },
       counter(amount) {
         this.$emit('counter', this.object.id, this.selectedCounter, amount)
       },
+      details(state, sticky) {
+        this.$emit('details', state ? this.functions.copy(this.object, {is_tapped: false}) : this.factory.object(), sticky)
+      },
       expand() {
         this.$emit('expand', this.object)
       },
       move(zone) {
-        this.$emit('move', this.object.id, zone)
-      },
-      power(value) {
-        this.$emit('power', this.object.id, value)
+        this.$emit('move', this.object, zone)
       },
       tap(state) {
         this.$emit('tap', this.object.id, state)
-      },
-      toughness(value) {
-        this.$emit('toughness', this.object.id, value)
       },
       transform() {
         this.$emit('transform', this.object.id, this.object.card_faces.find((face) => face.id !== this.object.active_face.id).id)
