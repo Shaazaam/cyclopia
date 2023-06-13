@@ -9,8 +9,9 @@ import Home from './components/home.vue'
 import Import from './components/import.vue'
 import Login from './components/login.vue'
 import Logout from './components/logout.vue'
-import Register from './components/register.vue'
 import Profile from './components/profile.vue'
+import Register from './components/register.vue'
+import Spectate from './components/spectate.vue'
 
 import * as factory from '../util/factory.js'
 import fetch from '../util/fetch.js'
@@ -29,8 +30,14 @@ const routes = [
     name: 'home',
     component: Home,
     meta: {
-      requiresAuth: true,
-      main: true,
+      main: () => isLoggedIn(),
+      callback: () => {
+        if (!isLoggedIn()) {
+          return {
+            name: 'login',
+          }
+        }
+      },
     },
   },
   {
@@ -38,13 +45,17 @@ const routes = [
     name: 'admin',
     component: Admin,
     meta: {
-      requiresAuth: true,
-      main: isLoggedIn() && user().is_admin,
-    },
-    beforeEnter: (to, from) => {
-      if (!user().is_admin) {
-        return false
-      }
+      main: () => isLoggedIn() && user().is_admin,
+      callback: () => {
+        if (!isLoggedIn()) {
+          return {
+            name: 'login',
+          }
+        }
+        if (!user().is_admin) {
+          return false
+        }
+      },
     },
   },
   {
@@ -52,8 +63,14 @@ const routes = [
     name: 'decks',
     component: Decks,
     meta: {
-      requiresAuth: true,
-      main: true,
+      main: () => isLoggedIn(),
+      callback: () => {
+        if (!isLoggedIn()) {
+          return {
+            name: 'login',
+          }
+        }
+      },
     },
   },
   {
@@ -62,8 +79,24 @@ const routes = [
     component: Game,
     props: true,
     meta: {
-      requiresAuth: true,
-      main: false,
+      main: () => false,
+      callback: async (to) => {
+        if (!isLoggedIn()) {
+          return {
+            name: 'login',
+          }
+        }
+        let ret = true
+        await fetch.get('/game-users', [to.params.id], ({data}) => {
+          if (!data.some(({user_id}) => user_id === user().id)) {
+            ret = {
+              name: 'spectate',
+              params: {id: to.params.id},
+            }
+          }
+        })
+        return ret
+      },
     },
   },
   {
@@ -71,8 +104,14 @@ const routes = [
     name: 'import',
     component: Import,
     meta: {
-      requiresAuth: true,
-      main: true,
+      main: () => isLoggedIn(),
+      callback: () => {
+        if (!isLoggedIn()) {
+          return {
+            name: 'login',
+          }
+        }
+      },
     },
   },
   {
@@ -80,8 +119,8 @@ const routes = [
     name: 'login',
     component: Login,
     meta: {
-      requiresAuth: false,
-      main: true,
+      main: () => !isLoggedIn(),
+      callback: () => true,
     },
   },
   {
@@ -89,8 +128,40 @@ const routes = [
     name: 'profile',
     component: Profile,
     meta: {
-      requiresAuth: true,
-      main: true,
+      main: () => isLoggedIn(),
+      callback: () => {
+        if (!isLoggedIn()) {
+          return {
+            name: 'login',
+          }
+        }
+      },
+    },
+  },
+  {
+    path: '/spectate/:id',
+    name: 'spectate',
+    component: Spectate,
+    props: true,
+    meta: {
+      main: () => false,
+      callback: async (to) => {
+        if (!isLoggedIn()) {
+          return {
+            name: 'login',
+          }
+        }
+        let ret = true
+        await fetch.get('/game-users', [to.params.id], ({data}) => {
+          if (data.some(({user_id}) => user_id === user().id)) {
+            ret = {
+              name: 'game',
+              params: {id: to.params.id},
+            }
+          }
+        })
+        return ret
+      },
     },
   },
   {
@@ -98,8 +169,14 @@ const routes = [
     name: 'logout',
     component: Logout,
     meta: {
-      requiresAuth: true,
-      main: true,
+      main: () => isLoggedIn(),
+      callback: () => {
+        if (!isLoggedIn()) {
+          return {
+            name: 'login',
+          }
+        }
+      },
     },
   },
   {
@@ -107,8 +184,8 @@ const routes = [
     name: 'register',
     component: Register,
     meta: {
-      requiresAuth: false,
-      main: true,
+      main: () => !isLoggedIn(),
+      callback: () => true,
     },
   },
 ]
@@ -116,13 +193,10 @@ const router = createRouter({
   history: createWebHashHistory(),
   routes,
 })
-router.beforeEach(({meta}, from) => {
+router.beforeEach(async (to, from) => {
   store.set('inputErrors', [])
-  if (meta.requiresAuth && !isLoggedIn()) {
-    return {
-      name: 'login',
-    }
-  }
+  const next = await to.meta.callback(to)
+  return next
 })
 router.afterEach(({name}, from) => nextTick(() => document.title = `Cyclopia | ${functions.toUpperCaseWords(name)}`))
 
@@ -132,9 +206,10 @@ const vstore = reactive({
   isLoading: undefined,
   inputErrors: undefined,
   user: undefined,
-  games: [],
-  challenges: {},
-  events: [],
+  game: undefined,
+  games: undefined,
+  invitations: undefined,
+  events: undefined,
 
   set: (key, value) => store.set(key, value),
   get(key) {return this[key]},
@@ -158,13 +233,27 @@ store.set('isSaving', false, (key, value) => vstore[key] = value)
 store.set('isLoading', false, (key, value) => vstore[key] = value)
 store.set('inputErrors', [], (key, value) => vstore[key] = value)
 store.set('user', factory.user(user()), (key, value) => vstore[key] = value)
+store.set('game', {}, (key, value) => vstore[key] = value)
 store.set('games', [], (key, value) => vstore[key] = value)
-store.set('challenges', {}, (key, value) => vstore[key] = value)
+store.set('invitations', [], (key, value) => vstore[key] = value)
 store.set('events', [], (key, value) => vstore[key] = value)
 
 app.config.unwrapInjectedRef = true
 
 app.use(router)
+  .directive('click-outside', {
+    beforeMount: (el, binding) => {
+      el.clickOutsideEvent = (event) => {
+        if (!el.contains(event.target)) {
+          binding.value()
+        }
+      }
+      document.addEventListener('click', el.clickOutsideEvent)
+    },
+    unmounted: (el) => {
+      document.removeEventListener('click', el.clickOutsideEvent)
+    },
+  })
   .mixin({
     data: () => ({
       factory,

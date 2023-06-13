@@ -15,7 +15,6 @@ export const actions = (x) => copy({
   drag: true,
   expand: true,
   move: [],
-  stats: false,
   tap: false,
   transform: true,
   create: false,
@@ -84,7 +83,9 @@ export const deck = (x) => copy({
 export const game = (x) => copy({
   id: null,
   users: [game_user(), game_user()],
+  spectators: [],
   objects: [],
+  counts: [],
 }, x)
 
 export const game_user = (x) => copy({

@@ -482,54 +482,58 @@ export const declineGame = async (game_id, user_id, opponent_id) => {
   await query('DELETE FROM games WHERE id = $1', [game_id])
   return true
 }
-const getGames = async (user_id) => {
+export const getGames = async () => {
   const {rows} = await query(`
     SELECT
-      decks.name AS deck_name,
-      game_user.game_id,
-      games.created_on,
-      COALESCE(game_invites.user_id IS NOT NULL, FALSE) AS pending_invite,
-      JSON_BUILD_OBJECT(
-        'id', COALESCE(invited_user.id, accepted_user.id),
-        'deck', COALESCE(accepted_user_deck.name, 'No Deck'),
-        'handle', COALESCE(invited_user.handle, accepted_user.handle)
-      ) AS opponent,
-      games.winner
-    FROM game_user
-    JOIN games ON games.id = game_user.game_id
-    JOIN decks ON decks.id = game_user.deck_id
-    LEFT JOIN game_invites ON game_user.game_id = game_invites.game_id
-    LEFT JOIN users invited_user ON game_invites.user_id = invited_user.id
-    LEFT JOIN game_user self ON game_user.game_id = self.game_id AND self.user_id != $1
-    LEFT JOIN decks accepted_user_deck ON self.deck_id = accepted_user_deck.id
-    LEFT JOIN users accepted_user ON self.user_id = accepted_user.id
-    WHERE game_user.user_id = $1
-  `, [user_id])
-  return rows
-}
-const getInvitations = async (user_id) => {
-  const {rows} = await query(`
-    SELECT
-      game_invites.game_id,
-      JSON_BUILD_OBJECT(
-        'id', users.id,
+      games.id,
+      JSON_AGG(JSON_BUILD_OBJECT(
         'deck', decks.name,
+        'user_id', users.id,
         'handle', users.handle
-      ) AS opponent,
-      games.created_on
-    FROM game_invites
-    JOIN game_user ON game_user.game_id = game_invites.game_id
+      )) AS users,
+      games.created_on,
+      games.winner
+    FROM games
+    JOIN game_user ON game_user.game_id = games.id
     JOIN decks ON decks.id = game_user.deck_id
-    JOIN games ON games.id = game_invites.game_id
     JOIN users ON users.id = game_user.user_id
-    WHERE game_invites.user_id = $1
-  `, [user_id])
+    LEFT JOIN game_invites ON game_invites.game_id = games.id
+    WHERE game_invites.game_id IS NULL
+    GROUP BY games.id, games.created_on, games.winner
+  `)
   return rows
 }
-export const getChallenges = async (user_id) => {
-  const games = await getGames(user_id)
-  const invitations = await getInvitations(user_id)
-  return {games, invitations}
+export const getInvitations = async (user_id) => {
+  const {rows} = await query(`
+    SELECT
+      games.id,
+      CASE game_invites.user_id
+        WHEN $1 THEN 'received'
+        ELSE 'sent'
+      END AS type,
+      CASE
+        WHEN d1.name IS NOT NULL THEN d1.name
+        ELSE d2.name
+      END AS deck_name,
+      CASE game_invites.user_id
+        WHEN $1 THEN u2.handle
+        ELSE u1.handle
+      END AS handle,
+      CASE game_invites.user_id
+        WHEN $1 THEN u2.id
+        ELSE u1.id
+      END AS opponent_id,
+      games.created_on
+    FROM games
+    JOIN game_user ON game_user.game_id = games.id
+    JOIN game_invites ON game_invites.game_id = games.id
+    LEFT JOIN decks d1 ON d1.id = game_invites.deck_id
+    LEFT JOIN decks d2 ON d2.id = game_user.deck_id
+    LEFT JOIN users u1 ON u1.id = game_invites.user_id
+    LEFT JOIN users u2 ON u2.id = game_user.user_id
+    WHERE game_invites.user_id = $1 OR game_user.user_id = $1
+  `, [user_id])
+  return rows
 }
 
 export const getGame = async (id) => {
@@ -556,6 +560,7 @@ export const getGame = async (id) => {
       AND users.id = cu.user_id
     WHERE game_user.game_id = $1
   `, [id])
+  const spectators = await getGameSpectators(id)
   const {rows: objects} = await query(`
     SELECT
       objects.id,
@@ -622,6 +627,7 @@ export const getGame = async (id) => {
   const {rows: counts} = await query(`
     SELECT
       objects.user_id,
+      SUM(CASE WHEN zone = 'hand' THEN 1 ELSE 0 END)::integer AS hand_total,
       SUM(CASE WHEN zone = 'library' THEN 1 ELSE 0 END)::integer AS library_total,
       SUM(CASE WHEN zone = 'graveyard' THEN 1 ELSE 0 END)::integer AS graveyard_total,
       SUM(CASE WHEN zone = 'exile' THEN 1 ELSE 0 END)::integer AS exile_total,
@@ -630,7 +636,7 @@ export const getGame = async (id) => {
     WHERE objects.game_id = $1
     GROUP BY objects.user_id
   `, [id])
-  return factory.game({id, users, objects, counts})
+  return factory.game({id, users, spectators, objects, counts})
 }
 export const getGameUsers = async (game_id) => {
   const {rows} = await query(`
@@ -639,6 +645,21 @@ export const getGameUsers = async (game_id) => {
     WHERE game_user.game_id = $1
   `, [game_id], 2)
   return rows
+}
+export const getGameSpectators = async (game_id) => {
+  const {rows} = await query(`
+    SELECT
+      game_spectator.user_id,
+      users.handle
+    FROM game_spectator
+    JOIN users ON game_spectator.user_id = users.id
+    WHERE game_spectator.game_id = $1
+  `, [game_id])
+  return rows
+}
+export const insertSpectator = async (game_id, user_id) => {
+  await query(`INSERT INTO game_spectator (game_id, user_id) VALUES ($1, $2)`, [game_id, user_id], 1)
+  return true
 }
 export const getCounters = async () => {
   const {rows} = await query(`SELECT counters.* FROM counters ORDER BY name`)
