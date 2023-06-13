@@ -32,6 +32,7 @@
         v-for="object in cards.filter((card) => card.deck_id === deck.id)"
         :object="object"
         :actions="factory.actions({expand: false})"
+        height="unset"
         class="col-3 mb-3"
       >
         <div class="card-body">

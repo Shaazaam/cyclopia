@@ -1,6 +1,6 @@
 <template>
   <div
-    class="card text-light bg-transparent"
+    class="card text-light bg-transparent pointer"
     :draggable="_actions.drag && functions.isNotNull(object.id) && !isGameOver"
     @mouseenter="details(true)"
     @mouseleave="details(false)"
@@ -53,18 +53,20 @@
           />
         </div>
       </div>
-      <template v-for="{name, amount} in object.counters">
-        <div v-if="amount > 0" class="d-flex justify-content-between mb-2">
-          <div class="input-group">
-            <span class="input-group-text bg-dark text-light">{{functions.toUpperCaseWords(name)}}</span>
-            <input
-              type="text"
-              class="form-control bg-dark text-light"
-              :value="amount"
-              disabled
-            />
+      <template v-if="functions.isNotEmpty(_actions.counters)">
+        <template v-for="{name, amount} in object.counters">
+          <div v-if="amount > 0" class="d-flex justify-content-between mb-2">
+            <div class="input-group">
+              <span class="input-group-text bg-dark text-light">{{functions.toUpperCaseWords(name)}}</span>
+              <input
+                type="text"
+                class="form-control bg-dark text-light"
+                :value="amount"
+                disabled
+              />
+            </div>
           </div>
-        </div>
+        </template>
       </template>
       <div v-if="!isGameOver" class="d-flex justify-content-between" @click.stop>
         <div v-if="functions.isNotEmpty(_actions.counters)" class="dropdown-center" style="width: 100%;">
