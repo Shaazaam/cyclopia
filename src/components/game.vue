@@ -1,204 +1,39 @@
 <template>
-  <div class="sticky-top mb-3">
-    <div v-if="functions.isNotEmpty(users)" class="row">
-      <div
-        class="col-4 hstack gap-3"
-        :class="{'invisible': !opponent.is_ready}"
-      >
-        <div class="input-group">
-          <span class="input-group-text bg-dark text-light">Life</span>
-          <input
-            type="text"
-            class="form-control bg-dark text-light"
-            :value="opponent.life"
-            disabled
-          />
-        </div>
-        <div v-for="{name} in userCounters.toReversed()" class="input-group">
-          <span class="input-group-text bg-dark text-light">{{functions.toUpperCaseWords(name)}}</span>
-          <input
-            type="text"
-            class="form-control bg-dark text-light"
-            :value="opponent.counters[name]"
-            disabled
-          />
-        </div>
-      </div>
-      <h4 class="col text-center">
-        <i v-if="opponent.is_winner" class="bi bi-trophy-fill text-warning"></i>
-        <i v-if="opponent.is_active_turn && !isGameOver" class="bi bi-caret-right-fill text-danger"></i>
-          {{opponent.handle}} vs {{user.handle}}
-        <i v-if="user.is_active_turn && !isGameOver" class="bi bi-caret-left-fill text-success"></i>
-        <i v-if="user.is_winner" class="bi bi-trophy-fill text-warning"></i>
-      </h4>
-      <div
-        class="col-4 hstack gap-3 text-nowrap"
-        :class="{'invisible': !user.is_ready}"
-      >
-        <div v-for="{name} in userCounters" class="input-group">
-          <span class="input-group-text bg-dark text-light">{{functions.toUpperCaseWords(name)}}</span>
-          <input
-            :type="!isGameOver ? 'number' : 'text'"
-            class="form-control"
-            :class="!isGameOver ? [] : ['bg-dark', 'text-light']"
-            :value="user.counters[name]"
-            :disabled="isGameOver"
-              @change="(e) => counterOnUser(name, e.target.value)"
-          />
-        </div>
-        <div class="input-group">
-          <span class="input-group-text bg-dark text-light">Life</span>
-          <input
-            :type="!isGameOver ? 'number' : 'text'"
-            class="form-control"
-            :class="!isGameOver ? [] : ['bg-dark', 'text-light']"
-            :disabled="isGameOver"
-            :value="user.life"
-            @change="(e) => life(e.target.value)"
-          />
-        </div>
-      </div>
-    </div>
-  </div>
+  <GameInfo
+    v-if="functions.isNotEmpty(users)"
+    :counters="userCounters"
+    :user0="opponent"
+    :user1="user"
+    @counter="counterOnUser"
+    @life="life"
+  />
 
   <div class="row">
-    <div class="col-9 border border-warning rounded bg-warning bg-opacity-10 reverse-columns">
+    <div class="col-9">
       <Field
-        :objects="opponent.field"
         :actions="factory.actions({drag: false})"
+        :objects="opponent.field"
+        reversed
         @details="details"
         @expand="expand"
       />
     </div>
     <div class="col-3" v-click-outside="() => stickyObject = factory.object()">
-      <div v-if="functions.isNotNull(detailObject.id)" class="card-group">
-        <Card :object="detailObject" height="30vh" />
-        <div class="card text-light bg-transparent">
-          <div class="card-body">
-            <div class="d-flex justify-content-between mb-2">
-              <div class="input-group">
-                <input
-                  :type="isMine && !isGameOver && detailObject.zone !== 'hand' ? 'number' : 'text'"
-                  :value="detailObject.power"
-                  class="form-control"
-                  :class="!isMine || isGameOver || detailObject.zone === 'hand' ? ['bg-dark', 'text-light'] : []"
-                  :disabled="!isMine || isGameOver || detailObject.zone === 'hand'"
-                  @change="(e) => power(detailObject.id, e.target.value)"
-                />
-                <span class="input-group-text bg-dark text-light">/</span>
-                <input
-                  :type="isMine && !isGameOver && detailObject.zone !== 'hand' ? 'number' : 'text'"
-                  :value="detailObject.toughness"
-                  class="form-control"
-                  :class="!isMine || isGameOver || detailObject.zone === 'hand' ? ['bg-dark', 'text-light'] : []"
-                  :disabled="!isMine || isGameOver || detailObject.zone === 'hand'"
-                  @change="(e) => toughness(detailObject.id, e.target.value)"
-                />
-              </div>
-            </div>
-            <template v-for="{name, amount} in detailObject.counters">
-              <div v-if="amount > 0" class="d-flex justify-content-between mb-2">
-                <div class="input-group">
-                  <span class="input-group-text bg-dark text-light">{{functions.toUpperCaseWords(name)}}</span>
-                  <input
-                    type="text"
-                    class="form-control bg-dark text-light"
-                    :value="amount"
-                    disabled
-                  />
-                </div>
-              </div>
-            </template>
-            <div v-if="!isGameOver" class="d-flex justify-content-between">
-              <div class="dropdown-center" style="width: 100%;">
-                <button type="button" class="btn btn-info dropdown-toggle" data-bs-toggle="dropdown">Counters</button>
-                <ul class="dropdown-menu bg-transparent">
-                  <li class="py-1">
-                    <div class="input-group">
-                      <select v-model="selectedCounter" class="form-control">
-                        <option value="" disabled></option>
-                        <option v-for="{name} in cardCounters" :value="name">{{functions.toUpperCaseWords(name)}}</option>
-                      </select>
-                      <input
-                        type="number"
-                        class="form-control"
-                        :value="selectedCounterAmount"
-                        min="0"
-                        @change="(e) => counterOnCard(detailObject.id, selectedCounter, e.target.value)"
-                      />
-                    </div>
-                  </li>
-                </ul>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div v-else-if="functions.isNotNull(stickyObject.id)" class="card-group">
-        <Card :object="stickyObject" height="30vh" />
-        <div class="card text-light bg-transparent">
-          <div class="card-body">
-            <div class="d-flex justify-content-between mb-2">
-              <div class="input-group">
-                <input
-                  :type="isMine && !isGameOver && stickyObject.zone !== 'hand' ? 'number' : 'text'"
-                  :value="stickyObject.power"
-                  class="form-control"
-                  :class="!isMine || isGameOver || stickyObject.zone === 'hand' ? ['bg-dark', 'text-light'] : []"
-                  :disabled="!isMine || isGameOver || stickyObject.zone === 'hand'"
-                  @change="(e) => power(stickyObject.id, e.target.value)"
-                />
-                <span class="input-group-text bg-dark text-light">/</span>
-                <input
-                  :type="isMine && !isGameOver && stickyObject.zone !== 'hand' ? 'number' : 'text'"
-                  :value="stickyObject.toughness"
-                  class="form-control"
-                  :class="!isMine || isGameOver || stickyObject.zone === 'hand' ? ['bg-dark', 'text-light'] : []"
-                  :disabled="!isMine || isGameOver || stickyObject.zone === 'hand'"
-                  @change="(e) => toughness(stickyObject.id, e.target.value)"
-                />
-              </div>
-            </div>
-            <template v-for="{name, amount} in stickyObject.counters">
-              <div v-if="amount > 0" class="d-flex justify-content-between mb-2">
-                <div class="input-group">
-                  <span class="input-group-text bg-dark text-light">{{functions.toUpperCaseWords(name)}}</span>
-                  <input
-                    type="text"
-                    class="form-control bg-dark text-light"
-                    :value="amount"
-                    disabled
-                  />
-                </div>
-              </div>
-            </template>
-            <div v-if="!isGameOver" class="d-flex justify-content-between">
-              <div class="dropdown-center" style="width: 100%;">
-                <button type="button" class="btn btn-info dropdown-toggle" data-bs-toggle="dropdown">Counters</button>
-                <ul class="dropdown-menu bg-transparent">
-                  <li class="py-1">
-                    <div class="input-group">
-                      <select v-model="selectedCounter" class="form-control">
-                        <option value="" disabled></option>
-                        <option v-for="{name} in cardCounters" :value="name">{{functions.toUpperCaseWords(name)}}</option>
-                      </select>
-                      <input
-                        type="number"
-                        class="form-control"
-                        :value="selectedCounterAmount"
-                        min="0"
-                        @change="(e) => counterOnCard(stickyObject.id, selectedCounter, e.target.value)"
-                      />
-                    </div>
-                  </li>
-                </ul>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <Details
+        v-if="functions.isNotNull(detailObject.id)"
+        :object="detailObject"
+        readonly
+      />
+      <Details
+        v-else-if="functions.isNotNull(stickyObject.id)"
+        :counters="cardCounters"
+        :object="stickyObject"
+        @counter="counterOnCard"
+        @power="power"
+        @toughness="toughness"
+      />
       <div v-else class="row" :class="{'invisible': isGameOver}">
-        <div v-if="!user.is_ready" class="col justify-content-center hstack gap-3">
+        <div v-if="!user.is_ready" class="col justify-content-center hstack gap-2">
           <button
             v-if="!user.is_ready && functions.isNotEmpty(user.hand)"
             type="button"
@@ -219,8 +54,8 @@
           >Mulligan</button>
         </div>
         <div v-else :class="{'invisible': isGameOver}">
-          <div class="row mb-3">
-            <div class="col justify-content-center hstack gap-3">
+          <div class="row mb-2">
+            <div class="col justify-content-center hstack gap-2">
               <button
                 type="button"
                 class="btn btn-danger"
@@ -254,8 +89,8 @@
               </Input>
             </div>
           </div>
-          <div class="row mb-3">
-            <div class="col justify-content-center hstack gap-3">
+          <div class="row mb-2">
+            <div class="col justify-content-center hstack gap-2">
               <button
                 type="button"
                 class="btn btn-warning"
@@ -300,7 +135,7 @@
             </div>
           </div>
           <div class="row">
-            <div class="col justify-content-center hstack gap-3">
+            <div class="col justify-content-center hstack gap-2">
               <div class="dropdown-center">
                 <button
                   type="button"
@@ -349,17 +184,11 @@
 
   <hr />
 
-  <div class="row">
+  <div class="row mb-2">
     <div
-      class="col-9 border border-success rounded bg-success"
-      :class="{
-        'bg-opacity-25': dragover,
-        'bg-opacity-10': !dragover,
-      }"
+      class="col-9"
       @drop="drop($event, 'field')"
       @dragover.prevent
-      @dragenter="dragover = true"
-      @dragleave="dragover = false"
     >
       <Field
         :objects="user.field"
@@ -370,70 +199,55 @@
         @transform="transform"
       />
     </div>
-    <div class="col-3" style="max-height:30vh; overflow: auto;">
-      <p class="small mb-2" v-for="event in events">
-        <span class="text-warning">{{functions.localeDateTime(event.created_on)}}</span>: {{getEventText(event)}}
-      </p>
+    <div class="col-3" style="max-height: 31.5vh; overflow: auto;">
+      <Events :events="events" />
     </div>
   </div>
 
-  <div class="sticky-bottom mt-3">
-    <div class="row">
-      <div class="col-8" :class="{'invisible': functions.isEmpty(user.hand)}">
-        <div class="d-grid">
-          <button class="btn btn-sm btn-outline-info" data-bs-toggle="collapse" data-bs-target="#hand">Hand</button>
-        </div>
-        <div
-          id="hand"
-          class="border border-info-subtle rounded bg-info collapse show"
-          :class="{
-            'bg-opacity-25': dragover,
-            'bg-opacity-10': !dragover,
-          }"
-          @drop="drop($event, 'hand')"
-          @dragover.prevent
-          @dragenter="dragover = true"
-          @dragleave="dragover = false"
-        >
-          <div class="d-flex justify-content-center gap-3">
-            <Card
-              v-for="object in user.hand"
-              :object="object"
-              @details="details"
-              @expand="expand"
-              @transform="transform"
-            />
-          </div>
+  <div class="row">
+    <div class="col-8" :class="{'invisible': functions.isEmpty(user.hand)}">
+      <div
+        class="border border-info rounded bg-info collapse show p-1"
+        :class="{
+          'bg-opacity-25': dragover,
+          'bg-opacity-10': !dragover,
+        }"
+        @drop="drop($event, 'hand')"
+        @dragover.prevent
+        @dragenter="dragover = true"
+        @dragleave="dragover = false"
+      >
+        <p class="text-center small mb-1">Hand: {{user.hand_total}}</p>
+        <div class="d-flex justify-content-center gap-2">
+          <Card
+            v-for="object in user.hand"
+            :object="object"
+            @details="details"
+            @expand="expand"
+            @transform="transform"
+          />
         </div>
       </div>
-      <div v-for="zone in stackZones" class="col-1">
-        <div class="d-grid">
-          <button
-            class="btn btn-sm"
-            :class="zone === 'library' ? 'btn-outline-primary' : 'btn-outline-danger'"
-            data-bs-toggle="collapse"
-            :data-bs-target="`#${zone}`"
-          >{{functions.toUpperCaseWords(zone)}}</button>
-        </div>
-        <div
-          :id="zone"
-          class="border rounded collapse show"
-          :class="[{
-            'bg-opacity-25': dragover,
-            'bg-opacity-10': !dragover,
-          }, zone === 'library' ? 'border-primary-subtle bg-primary' : 'border-danger-subtle bg-danger']"
-          data-bs-toggle="modal"
-          :data-bs-target="`#${zone}Search`"
-          @drop="drop($event, zone)"
-          @dragover.prevent
-          @dragenter="dragover = true"
-          @dragleave="dragover = false"
-        >
-          <div class="d-flex justify-content-center gap-3">
-            <Card :object="zone === 'library' ? factory.object() : [factory.object()].concat(user[zone]).pop()">
-              <h5 class="mb-0">Cards: {{user[`${zone}_total`]}}</h5>
-            </Card>
-          </div>
+    </div>
+    <div v-for="zone in stackZones" class="col-1">
+      <div
+        class="border rounded collapse show p-1"
+        :class="[{
+          'bg-opacity-25': dragover,
+          'bg-opacity-10': !dragover,
+        }, zone === 'library' ? 'border-primary bg-primary' : 'border-danger bg-danger']"
+        @drop="drop($event, zone)"
+        @dragover.prevent
+        @dragenter="dragover = true"
+        @dragleave="dragover = false"
+      >
+        <p class="text-center small mb-1">{{functions.toUpperCaseWords(zone)}}: {{user[`${zone}_total`]}}</p>
+        <div class="d-flex justify-content-center">
+          <Card
+            :object="zone === 'library' ? factory.object() : [factory.object()].concat(user[zone]).pop()"
+            data-bs-toggle="modal"
+            :data-bs-target="`#${zone}Search`"
+          />
         </div>
       </div>
     </div>
@@ -488,7 +302,7 @@
                     move: functions.removeByValue(zones, zone),
                   })
               "
-              class="col-3 mb-3"
+              class="col-3 mb-2"
               height="unset"
               @counter="counterOnCard"
               @move="move"
@@ -512,10 +326,10 @@
               v-for="object in scryObjects"
               :object="object"
               :actions="factory.actions({drag: false, expand: false})"
-              class="col-3 mb-3"
+              class="col-3 mb-2"
               height="unset"
             >
-              <div class="d-flex justify-content-center hstack gap-3">
+              <div class="d-flex justify-content-center hstack gap-2">
                 <button type="button" class="btn btn-success" @click="scryTop(object.id)">Top</button>
                 <button type="button" class="btn btn-danger" @click="scryBottom(object.id)">Bottom</button>
               </div>
@@ -542,7 +356,7 @@
                 expand: false,
                 create: true,
               })"
-              class="col-3 mb-3"
+              class="col-3 mb-2"
               height="unset"
               @create="tokenCreate"
             />
@@ -571,13 +385,19 @@
   import {computed} from 'vue'
 
   import Card from './card.vue'
+  import Details from './details.vue'
+  import Events from './events.vue'
   import Field from './field.vue'
+  import GameInfo from './game-info.vue'
   import Input from './input.vue'
 
   export default {
     components: {
       Card,
+      Details,
+      Events,
       Field,
+      GameInfo,
       Input,
     },
     props: {
@@ -597,7 +417,6 @@
       detailObject: {},
       stickyObject: {},
       modalObject: {},
-      selectedCounter: null,
       drawAmount: 7,
       millAmount: null,
       scryAmount: null,
@@ -702,12 +521,6 @@
       events() {
         return this.store.events
       },
-      isMine() {
-        return this.detailObject.user_id === this.authUser.id || this.stickyObject.user_id === this.authUser.id
-      },
-      selectedCounterAmount() {
-        return this.functions.isNotNull(this.selectedCounter) ? this.stickyObject.counters.find(({name}) => name === this.selectedCounter).amount : 0
-      },
     },
     created() {
       this.fetch.get('/counters', {}, ({data}) => this.counters = data)
@@ -755,34 +568,6 @@
       },
     },
     methods: {
-      getEventText(event) {
-        const text = (() => ({
-          'counter-card': (event) => `Placed ${event.data.amount} ${this.functions.toUpperCaseWords(event.data.counter)} Counters on ${event.card_name}`,
-          'counter-user': (event) => `Received ${event.data.amount} ${this.functions.toUpperCaseWords(event.data.counter)} Counters`,
-          'draw': (event) => `Drew a Card`,
-          'end-game': (event) => `Lost the Game, ${event.winner} is the Winner`,
-          'end-turn': (event) => `Ended Their Turn`,
-          'life': (event) => `Changed Their Life to ${event.data.life}`,
-          'mill': (event) => `Milled a Card`,
-          'move': (event) => {
-            let message = `Moved ${event.card_name} to the ${this.functions.toUpperCaseWords(event.data.zone)}`
-            if (event.data.zone === 'remove') {
-              message = `Removed ${event.card_name} from the Game`
-            }
-            return message
-          },
-          'mulligan': (event) => `Performed a Mulligan`,
-          'power': (event) => `Changed the Power of ${event.card_name} to ${event.data.power}`,
-          'scry': (event) => `Scried for ${event.data.amount}`,
-          'shuffle': (event) => `Shuffled Their Deck`,
-          'tap': (event) => `${event.data.is_tapped ? 'Tapped' : 'Untapped'} ${event.card_name}`,
-          'token': (event) => `Created a ${event.card_name} Token`,
-          'toughness': (event) => `Changed the Toughness of ${event.card_name} to ${event.data.toughness}`,
-          'transform': () => `Transformed a Card`,
-          'untap': () => `Untapped Their Cards`,
-        }))()[event.name]
-        return `${event.handle} ${text(event)}`
-      },
       closeModal(modal) {
         this[modal].hide()
       },

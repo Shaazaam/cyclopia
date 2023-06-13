@@ -627,6 +627,7 @@ export const getGame = async (id) => {
   const {rows: counts} = await query(`
     SELECT
       objects.user_id,
+      SUM(CASE WHEN zone = 'hand' THEN 1 ELSE 0 END)::integer AS hand_total,
       SUM(CASE WHEN zone = 'library' THEN 1 ELSE 0 END)::integer AS library_total,
       SUM(CASE WHEN zone = 'graveyard' THEN 1 ELSE 0 END)::integer AS graveyard_total,
       SUM(CASE WHEN zone = 'exile' THEN 1 ELSE 0 END)::integer AS exile_total,
