@@ -21,12 +21,15 @@ const sessionParser = session({
 
 app.use([
   bodyParser.json(),
-  express.static('./dist'),
-  express.static('./public'),
   sessionParser,
 ])
 
 mount(app)
+
+app.use([
+  express.static('./dist'),
+  express.static('./public'),
+])
 
 const server = createServer(app)
 
