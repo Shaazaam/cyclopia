@@ -1,89 +1,104 @@
 <template>
-  <div class="row" :style="height">
-    <div class="col-9">
-      <div class="d-flex flex-wrap hstack">
-        <template
-          v-for="[id, cards] in Object.entries(creatures)"
-        >
-          <Card
-            v-for="(object, i) in cards"
-            :object="object"
-            :actions="actions"
-            :style="applyStyle(id, i, cards.length)"
-            class="me-3"
-            @details="details"
-            @expand="expand"
-            @tap="tap"
-            @transform="transform"
-            @mouseenter="hoverGroups[id] = i"
-            @mouseleave="delete hoverGroups[id]"
-          />
-        </template>
+  <div
+    class="border rounded p-1"
+    :class="{
+      'border-warning': reversed,
+      'bg-warning': reversed,
+      'reverse-columns': reversed,
+      'border-success': !reversed,
+      'bg-success': !reversed,
+      'bg-opacity-25': !reversed && dragover,
+      'bg-opacity-10': !dragover,
+    }"
+    @dragenter="dragover = true"
+    @dragleave="dragover = false"
+  >
+    <div class="row" :class="{'mb-2': !reversed}" :style="height">
+      <div class="col-9">
+        <div class="d-flex flex-wrap hstack">
+          <template
+            v-for="[id, cards] in Object.entries(creatures)"
+          >
+            <Card
+              v-for="(object, i) in cards"
+              :object="object"
+              :actions="actions"
+              :style="applyStyle(id, i, cards.length)"
+              class="me-3"
+              @details="details"
+              @expand="expand"
+              @tap="tap"
+              @transform="transform"
+              @mouseenter="hoverGroups[id] = i"
+              @mouseleave="delete hoverGroups[id]"
+            />
+          </template>
+        </div>
+      </div>
+
+      <div class="col-3">
+        <div class="d-flex flex-wrap hstack">
+          <template
+            v-for="[id, cards] in Object.entries(instantsAndSorceries)"
+          >
+            <Card
+              v-for="(object, i) in cards"
+              :object="object"
+              :style="applyStyle(id, i, cards.length)"
+              class="me-3"
+              @details="details"
+              @expand="expand"
+              @mouseenter="hoverGroups[id] = i"
+              @mouseleave="delete hoverGroups[id]"
+            />
+          </template>
+        </div>
       </div>
     </div>
 
-    <div class="col-3">
-      <div class="d-flex flex-wrap hstack">
-        <template
-          v-for="[id, cards] in Object.entries(instantsAndSorceries)"
-        >
-          <Card
-            v-for="(object, i) in cards"
-            :object="object"
-            :style="applyStyle(id, i, cards.length)"
-            class="me-3"
-            @details="details"
-            @expand="expand"
-            @mouseenter="hoverGroups[id] = i"
-            @mouseleave="delete hoverGroups[id]"
-          />
-        </template>
+    <div class="row" :class="{'mb-2': reversed}" :style="height">
+      <div class="col-9">
+        <div class="d-flex flex-wrap hstack">
+          <template
+            v-for="[id, cards] in Object.entries(lands)"
+          >
+            <Card
+              v-for="(object, i) in cards"
+              :object="object"
+              :actions="actions"
+              :style="applyStyle(id, i, cards.length)"
+              class="me-3"
+              @details="details"
+              @expand="expand"
+              @tap="tap"
+              @transform="transform"
+              @mouseenter="hoverGroups[id] = i"
+              @mouseleave="delete hoverGroups[id]"
+            />
+          </template>
+        </div>
       </div>
-    </div>
-  </div>
-
-  <div class="row" :style="height">
-    <div class="col-9">
-      <div class="d-flex flex-wrap hstack">
-        <template
-          v-for="[id, cards] in Object.entries(lands)"
-        >
-          <Card
-            v-for="(object, i) in cards"
-            :object="object"
-            :actions="actions"
-            :style="applyStyle(id, i, cards.length)"
-            class="me-3"
-            @details="details"
-            @expand="expand"
-            @tap="tap"
-            @transform="transform"
-            @mouseenter="hoverGroups[id] = i"
-            @mouseleave="delete hoverGroups[id]"
-          />
-        </template>
-      </div>
-    </div>
-    <div class="col-3">
-      <div class="d-flex flex-wrap hstack">
-        <div
-          v-for="[id, cards] in Object.entries(artifactsAndEnchantments)"
-          class="card-group"
-          :class="id"
-        >
-          <Card
-            v-for="(object, i) in cards"
-            :object="object"
-            :actions="actions"
-            :style="applyStyle(id, i, cards.length)"
-            class="me-3"
-            @details="details"
-            @expand="expand"
-            @tap="tap"
-            @transform="transform"
-            @mouseenter="hoverGroups[id] = i"
-            @mouseleave="delete hoverGroups[id]"
-          />
+      <div class="col-3">
+        <div class="d-flex flex-wrap hstack">
+          <div
+            v-for="[id, cards] in Object.entries(artifactsAndEnchantments)"
+            class="card-group"
+            :class="id"
+          >
+            <Card
+              v-for="(object, i) in cards"
+              :object="object"
+              :actions="actions"
+              :style="applyStyle(id, i, cards.length)"
+              class="me-3"
+              @details="details"
+              @expand="expand"
+              @tap="tap"
+              @transform="transform"
+              @mouseenter="hoverGroups[id] = i"
+              @mouseleave="delete hoverGroups[id]"
+            />
+          </div>
         </div>
       </div>
     </div>
@@ -106,6 +121,10 @@
         type: Array,
         required: true,
       },
+      reversed: {
+        type: Boolean,
+        default: false,
+      },
     },
     inject: {
       isGameOver: {
@@ -123,6 +142,7 @@
       'transform',
     ],
     data: () => ({
+      dragover: false,
       hoverGroups: {},
       group: {
         'margin-left': '-6rem',
