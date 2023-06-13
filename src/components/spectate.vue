@@ -1,6 +1,6 @@
 <template>
   <div class="sticky-top mb-3">
-    <div v-if="functions.isNotEmpty(users)" class="row mb-3">
+    <div v-if="functions.isNotEmpty(users)" class="row">
       <div
         class="col-4 hstack gap-3"
         :class="{'invisible': !user0.is_ready}"
