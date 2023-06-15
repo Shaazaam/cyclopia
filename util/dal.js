@@ -826,23 +826,35 @@ export const draw = async (game_id, user_id, amount = 1) => moveAmountFromLibrar
 export const mill = async (game_id, user_id, amount = 1) => moveAmountFromLibrary(game_id, user_id, amount, 'graveyard')
 export const move = async (game_id, object_id, user_id, zone, location) => {
   const {rows} = await query(`
-    WITH count AS (
+    WITH card AS (
+      SELECT cards.type_line
+      FROM cards
+      JOIN objects ON cards.id = objects.card_id
+      WHERE objects.id = $1
+    ), zone AS (
+      SELECT
+        CASE
+          WHEN $4 IN('graveyard', 'hand', 'exile') AND strpos(card.type_line, 'Token') > 0 THEN 'remove'
+          ELSE $4
+        END AS zone
+      FROM card
+    ), count AS (
       SELECT
         CASE $5
           WHEN 'bottom' THEN COALESCE(MIN(objects.position) - 1, 1)
           WHEN 'top' THEN COALESCE(MAX(objects.position) + 1, 1)
         END AS position
-      FROM objects
+      FROM objects, zone
       WHERE game_id = $2
         AND user_id = $3
-        AND zone = $4
+        AND objects.zone = zone.zone
     )
     UPDATE objects
     SET
-      zone = $4,
+      zone = zone.zone,
       position = count.position,
       is_tapped = FALSE
-    FROM count
+    FROM count, zone
     WHERE objects.id = $1
       AND objects.game_id = $2
       AND objects.user_id = $3

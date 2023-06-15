@@ -624,7 +624,7 @@
         this.fetch.put('/move', {
           game_id: this.id,
           object_id: object.id,
-          zone: !['field', 'remove'].includes(zone) && object.card.type_line.includes('Token') ? 'remove' : zone,
+          zone,
           location,
         })
       },
