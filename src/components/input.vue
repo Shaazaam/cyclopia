@@ -1,5 +1,5 @@
 <template>
-  <div :class="{'mb-3': hasMargin}">
+  <div :class="{'mb-2': hasMargin}">
     <div v-if="hasLabel" class="hstack gap-3">
       <label class="form-label" :class="{'is-invalid': hasErrors}" :for="id">
         <slot name="label">{{functions.snakeCasedToUpperCasedWords(name)}}</slot>
