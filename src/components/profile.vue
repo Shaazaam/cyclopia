@@ -1,68 +1,66 @@
 <template>
   <div class="row justify-content-center">
-    <div class="col-6">
+    <div class="col-4">
       <h2 class="text-center">Profile</h2>
-      <form @submit.prevent="profile">
-        <div class="row mb-3">
-          <label for="email" class="col-2 col-form-label">Email</label>
-          <div class="col-10">
-            <input
-              v-model="user.email"
-              id="email"
-              type="email"
-              name="email"
-              class="form-control"
-              placeholder="Email Address"
-              required
-            />
-          </div>
-        </div>
-        <div class="row mb-3">
-          <label for="handle" class="col-2 col-form-label">Handle</label>
-          <div class="col-10">
-            <input
-              v-model="user.handle"
-              id="handle"
-              type="text"
-              name="handle"
-              class="form-control"
-              placeholder="User Handle"
-              required
-            />
-          </div>
-        </div>
-        <button type="submit" class="btn btn-primary">Submit</button>
+      <form @submit.prevent="profile" novalidate>
+        <Input
+          v-model="user.email"
+          id="email"
+          type="email"
+          name="email"
+          placeholder="Email Address"
+        />
+        <Input
+          v-model="user.handle"
+          id="handle"
+          type="text"
+          name="handle"
+          placeholder="User Handle"
+        >
+          <template #helpText>
+            <div class="form-text text-light">
+              Maximum of 50 characters.
+            </div>
+          </template>
+        </Input>
+        <button
+          type="submit"
+          class="btn btn-primary float-end"
+          :disabled="isSaving"
+        >Submit</button>
       </form>
     </div>
   </div>
 
   <div class="row justify-content-center">
-    <div class="col-6">
+    <div class="col-4">
       <h2 class="text-center">Change Password</h2>
-      <form @submit.prevent="password">
-        <div class="row mb-3">
-          <label for="password" class="col-2 col-form-label">Password</label>
-          <div class="col-10">
-            <input
-              v-model="password"
-              id="password"
-              type="password"
-              name="pass"
-              class="form-control"
-              placeholder="Password"
-              autocomplete="off"
-              required
-            />
-          </div>
-        </div>
-        <button type="submit" class="btn btn-primary">Submit</button>
+      <form @submit.prevent="password" novalidate>
+        <Input
+          v-model="user.password"
+          id="password"
+          type="password"
+          name="password"
+          placeholder="Password"
+          autocomplete="off"
+        />
+        <button
+          type="submit"
+          class="btn btn-primary float-end"
+          :disabled="isSaving"
+        >Submit</button>
       </form>
     </div>
   </div>
 </template>
 
 <script>
+  import Input from './input.vue'
+
   export default {
+    components: {
+      Input,
+    },
     data: () => ({
       user: null,
       password: '',
