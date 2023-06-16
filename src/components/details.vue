@@ -7,30 +7,28 @@
           <div class="input-group">
             <input
               v-if="isMine && !isGameOver && !readonly"
+              v-model="power"
               type="number"
-              :value="object.power"
               class="form-control"
-              @change="(e) => power(e.target.value)"
             />
             <input
               v-else
               type="text"
-              :value="object.power"
+              :value="power"
               class="form-control bg-dark text-light"
               disabled
             />
             <span class="input-group-text bg-dark text-light">/</span>
             <input
               v-if="isMine && !isGameOver && !readonly"
+              v-model="toughness"
               type="number"
-              :value="object.toughness"
               class="form-control"
-              @change="(e) => toughness(e.target.value)"
             />
             <input
               v-else
               type="text"
-              :value="object.toughness"
+              :value="toughness"
               class="form-control bg-dark text-light"
               disabled
             />
@@ -55,16 +53,15 @@
             <ul class="dropdown-menu bg-transparent">
               <li class="py-1">
                 <div class="input-group">
-                  <select v-model="selectedCounter" class="form-control">
-                    <option value="" disabled></option>
+                  <select v-model="selectedCounter" class="form-control" placeholder="Select...">
+                    <option value="" disabled>Select...</option>
                     <option v-for="{name} in counters" :value="name">{{functions.toUpperCaseWords(name)}}</option>
                   </select>
                   <input
+                    v-model="selectedCounterAmount"
                     type="number"
                     class="form-control"
-                    :value="selectedCounterAmount"
                     min="0"
-                    @change="(e) => counter(e.target.value)"
                   />
                 </div>
               </li>
@@ -78,10 +75,12 @@
 
 <script>
   import Card from './card.vue'
+  import Input from './input.vue'
 
   export default {
     components: {
       Card,
+      Input,
     },
     props: {
       counters: {
@@ -110,25 +109,42 @@
       selectedCounter: null,
     }),
     computed: {
+      power: {
+        get() {
+          return this.functions.isNotNull(this.object.power) ? this.sumPTCounters(this.object.power) : null
+        },
+        set(x) {
+          this.$emit('power', this.object.id, x)
+        },
+      },
+      toughness: {
+        get() {
+          return this.functions.isNotNull(this.object.toughness) ? this.sumPTCounters(this.object.toughness) : null
+        },
+        set(x) {
+          this.$emit('toughness', this.object.id, x)
+        },
+      },
+      selectedCounterAmount: {
+        get() {
+          return this.functions.isNotNull(this.selectedCounter) ? this.object.counters.find(({name}) => name === this.selectedCounter).amount : 0
+        },
+        set(x) {
+          this.$emit('counter', this.object.id, this.selectedCounter, x)
+        },
+      },
       inHand() {
         return this.object.zone === 'hand'
       },
       isMine() {
         return this.object.user_id === this.authUser.id
       },
-      selectedCounterAmount() {
-        return this.functions.isNotNull(this.selectedCounter) ? this.object.counters.find(({name}) => name === this.selectedCounter).amount : 0
-      },
     },
     methods: {
-      counter(amount) {
-        this.$emit('counter', this.object.id, this.selectedCounter, amount)
-      },
-      power(value) {
-        this.$emit('power', this.object.id, value)
-      },
-      toughness(value) {
-        this.$emit('toughness', this.object.id, value)
+      sumPTCounters(value) {
+        return this.functions.toNumber(value)
+          + this.object.counters.reduce((agg, {name, amount}) => name === '+1/+1' ? agg + amount : agg, 0)
+          - this.object.counters.reduce((agg, {name, amount}) => name === '-1/-1' ? agg + amount : agg, 0)
       },
     },
   }
