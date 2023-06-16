@@ -500,6 +500,7 @@ export const getGames = async () => {
     LEFT JOIN game_invites ON game_invites.game_id = games.id
     WHERE game_invites.game_id IS NULL
     GROUP BY games.id, games.created_on, games.winner
+    ORDER BY games.created_on DESC
   `)
   return rows
 }
@@ -532,6 +533,7 @@ export const getInvitations = async (user_id) => {
     LEFT JOIN users u1 ON u1.id = game_invites.user_id
     LEFT JOIN users u2 ON u2.id = game_user.user_id
     WHERE game_invites.user_id = $1 OR game_user.user_id = $1
+    ORDER BY games.created_on DESC
   `, [user_id])
   return rows
 }
