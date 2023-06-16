@@ -1,7 +1,7 @@
 <template>
   <div class="row">
-    <div class="col">
-      <h2 class="text-center">Your Decks</h2>
+    <div class="col text-center">
+      <h2>Your Decks</h2>
       <p>Build a deck here: <a href="https://deckstats.net/" target="_blank">Deckstats</a></p>
     </div>
   </div>
