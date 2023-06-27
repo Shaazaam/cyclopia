@@ -3,7 +3,7 @@ version: "1"
 services:
   postgres:
     image: postgres:alpine
-    env_file: ./.env
+    env_file: ./.env.dev
     restart: unless-stopped
     volumes:
       - ./migrations:/docker-entrypoint-initdb.d
@@ -14,7 +14,7 @@ services:
 
   node:
     image: node:18-alpine
-    env_file: ./.env
+    env_file: ./.env.dev
     volumes:
       - ./:/home
       - ./util:/home/util:ro
@@ -35,4 +35,4 @@ services:
     volumes:
       - ./:/home
     working_dir: /home
-    command: [sh, -c, "npm install && npm run build"]
+    command: [sh, -c, "npm install && npm run dev-build"]

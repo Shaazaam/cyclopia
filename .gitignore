@@ -1,5 +1,4 @@
-.env
-app.yaml
+.env.*
 node_modules
 *.sublime-project
 *.sublime-workspace
