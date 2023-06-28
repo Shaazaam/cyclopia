@@ -61,7 +61,7 @@ const formatField = (field) => ({
 const test = ({
   bt: async (value, [table, column, user_id]) => true,
   em: async (value) => isEmail(value),
-  et: async (value, [param]) => (isNumber(value) && value === param) || (isString(value) && value.lenth === param),
+  et: async (value, [param]) => (isNumber(value) && value === param) || (isString(value) && value === param),
   ex: async (values, [table, columns]) => (await dal.exists(table, isNotArray(columns) ? [columns] : columns, values)),
   exn: async (values, [table, columns]) => ! (await test.ex(values, [table, columns])),
   gt: async (value, [param]) => isNumber(value) && value > param,

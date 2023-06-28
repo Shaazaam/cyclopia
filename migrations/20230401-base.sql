@@ -121,7 +121,7 @@ INSERT INTO zones (name) VALUES
   ('hand'),
   ('library'),
   ('remove')
-ON CONFLICT zones_pkey DO NOTHING;
+ON CONFLICT ON CONSTRAINT zones_pkey DO NOTHING;
 
 CREATE TABLE IF NOT EXISTS objects (
   id UUID NOT NULL PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -193,7 +193,7 @@ CREATE TABLE IF NOT EXISTS events (
 );
 
 CREATE TABLE IF NOT EXISTS errors (
-  id UUID NOT NULL PRIMARY KEY gen_random_uuid(),
+  id UUID NOT NULL PRIMARY KEY DEFAULT gen_random_uuid(),
   data JSONB,
   created_on TIMESTAMP WITHOUT TIME ZONE DEFAULT now()
 );

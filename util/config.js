@@ -2,16 +2,32 @@ import {copy} from './functions.js'
 
 let config = {}
 
-const mount = ({
-  PORT: PORT = 8080,
+config = copy(config, {
+  app: {
+    PORT: process.env.PORT,
+    SESSION_KEY: process.env.SESSION_KEY,
+    WSS_URL: process.env.WSS_URL,
+    SCRYFALL_API_URL: process.env.SCRYFALL_API_URL,
+  },
+  db: {
+    user: process.env.POSTGRES_USER,
+    password: process.env.POSTGRES_PASSWORD,
+    database: process.env.POSTGRES_DB,
+    host: process.env.PGHOST,
+    port: process.env.PGPORT,
+  },
+})
+
+/*const mount = ({
+  PORT,
   SESSION_KEY,
-  WSS_URL: WSS_URL = 'ws://localhost:8080',
-  POSTGRES_USER: user = 'postgres',
-  POSTGRES_PASSWORD: password = null,
-  POSTGRES_DB: database = 'postgres',
-  PGHOST: host = 'postgres',
-  PGPORT: port = 5432,
-  NODE_ENV: NODE_ENV = 'development',
+  WSS_URL,
+  POSTGRES_USER: user,
+  POSTGRES_PASSWORD: password,
+  POSTGRES_DB: database,
+  PGHOST: host,
+  PGPORT: port,
+  NODE_ENV,
   SCRYFALL_API_URL,
 }) => {
   config = copy(config, {
@@ -30,6 +46,6 @@ const mount = ({
     },
   })
 }
-mount(process.env)
+mount(process.env)*/
 
 export default config

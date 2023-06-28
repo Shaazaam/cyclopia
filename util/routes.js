@@ -420,18 +420,19 @@ const routes = {
     middleware: [authenticate],
     post: [
       async (req, res, next) => {
+        const {type, size} = req.body
+        next([
+          {type, size},
+          {
+            type: [val.equalTo('text/plain', null, 'Must be text file')],
+            size: [val.lessThanEqualTo(2048, null, 'Must be smaller than 2kb')],
+          }
+        ])
+      },
+      validate,
+      async (req, res, next) => {
         const {user: {id: user_id}} = req.session
-        const {name, type, base64, size} = req.body
-
-        if (type !== 'text/plain') {
-          req.cyclopia.message = 'Must be text file'
-          return res422(req, res)
-        }
-        if (size > 2048) {
-          req.cyclopia.message = 'Must be smaller than 2kb'
-          return res422(req, res)
-        }
-
+        const {name, base64} = req.body
         const content = Buffer.from(base64, 'base64').toString()
 
         Promise.all([
