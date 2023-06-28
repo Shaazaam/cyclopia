@@ -187,7 +187,10 @@
         this.$emit('expand', object)
       },
       move(object_id, zone) {
-        this.$emit('move', object_id, zone)
+        this.dragover = false
+        if (zone !== 'field') {
+          this.$emit('move', object_id, zone)
+        }
       },
       power(object_id, value) {
         this.$emit('power', object_id, value)

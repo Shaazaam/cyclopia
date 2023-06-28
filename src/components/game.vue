@@ -606,8 +606,10 @@
         this.fetch.put('/draw', {game_id: this.id, amount: this.drawAmount})
       },
       drop(event, zone) {
-        if (!this.isGameOver) {
-          this.move(JSON.parse(event.dataTransfer.getData('application/json')), zone)
+        this.dragover = false
+        const object = JSON.parse(event.dataTransfer.getData('application/json'))
+        if (!this.isGameOver && object.zone !== zone) {
+          this.move(object, zone)
         }
       },
       expand(object) {
