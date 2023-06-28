@@ -71,6 +71,7 @@ export const insertCatalog = async (kind, data) => {
 }
 
 export const insertRulings = async (data) => {
+  data = data.map(({object, source, ...keep}) => keep)
   const numPlaceholders = Object.keys(data[0]).length
   const chunked = chunk(data, Math.floor(MAX / numPlaceholders))
   for (const chunk of chunked) {
