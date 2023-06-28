@@ -11,6 +11,7 @@
   <div class="row">
     <div class="col-9">
       <Field
+        class="border border-warning rounded bg-warning bg-opacity-10 p-1 reverse-columns"
         :actions="factory.actions({drag: false})"
         :objects="opponent.field"
         reversed
@@ -189,8 +190,15 @@
       class="col-9"
       @drop="drop($event, 'field')"
       @dragover.prevent
+      @dragenter="dragover = 'field'"
+      @dragleave.self="dragover = false"
     >
       <Field
+        class="border border-success rounded bg-success p-1"
+        :class="{
+          'bg-opacity-25': dragover === 'field',
+          'bg-opacity-10': dragover !== 'field',
+        }"
         :objects="user.field"
         :actions="factory.actions({tap: true})"
         @details="details"
@@ -205,17 +213,19 @@
   </div>
 
   <div class="row">
-    <div class="col-8" :class="{'invisible': functions.isEmpty(user.hand)}">
+    <div
+      class="col-8"
+      @drop="drop($event, 'hand')"
+      @dragover.prevent
+      @dragenter="dragover = 'hand'"
+      @dragleave.self="dragover = false"
+    >
       <div
         class="border border-info rounded bg-info collapse show p-1"
         :class="{
-          'bg-opacity-25': dragover,
-          'bg-opacity-10': !dragover,
+          'bg-opacity-25': dragover === 'hand',
+          'bg-opacity-10': dragover !== 'hand',
         }"
-        @drop="drop($event, 'hand')"
-        @dragover.prevent
-        @dragenter="dragover = true"
-        @dragleave="dragover = false"
       >
         <p class="text-center small mb-1">Hand: {{user.hand_total}}</p>
         <div class="d-flex justify-content-center gap-2">
@@ -229,17 +239,20 @@
         </div>
       </div>
     </div>
-    <div v-for="zone in stackZones" class="col-1">
+    <div
+      v-for="zone in stackZones"
+      class="col-1"
+      @drop="drop($event, zone)"
+      @dragover.prevent
+      @dragenter="dragover = zone"
+      @dragleave.self="dragover = false"
+    >
       <div
         class="border rounded collapse show p-1"
         :class="[{
-          'bg-opacity-25': dragover,
-          'bg-opacity-10': !dragover,
+          'bg-opacity-25': dragover === zone,
+          'bg-opacity-10': dragover !== zone,
         }, zone === 'library' ? 'border-primary bg-primary' : 'border-danger bg-danger']"
-        @drop="drop($event, zone)"
-        @dragover.prevent
-        @dragenter="dragover = true"
-        @dragleave="dragover = false"
       >
         <p class="text-center small mb-1">{{functions.toUpperCaseWords(zone)}}: {{user[`${zone}_total`]}}</p>
         <div class="d-flex justify-content-center">
