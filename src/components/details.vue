@@ -1,10 +1,12 @@
 <template>
-  <div class="card-group">
-    <Card :object="object" height="31.5vh" />
-    <div class="card text-light bg-transparent">
-      <div class="card-body">
-        <div class="d-flex justify-content-between mb-2">
-          <div class="input-group">
+  <div class="row">
+    <div class="col-5">
+      <Card :object="object" height="31.5vh" />
+    </div>
+    <div class="col-7">
+      <div class="row">
+        <div class="col-6">
+          <div class="input-group mb-2">
             <input
               v-if="isMine && !isGameOver && !readonly"
               v-model="power"
@@ -33,10 +35,13 @@
               disabled
             />
           </div>
+          <div class="d-grid">
+            <button type="button" class="btn btn-info">Rules</button>
+          </div>
         </div>
-        <template v-for="{name, amount} in object.counters">
-          <div v-if="amount > 0" class="d-flex justify-content-between mb-2">
-            <div class="input-group">
+        <div class="col-6">
+          <template v-for="{name, amount} in object.counters">
+            <div v-if="amount > 0" class="input-group mb-2">
               <span class="input-group-text bg-dark text-light">{{functions.toUpperCaseWords(name)}}</span>
               <input
                 type="text"
@@ -45,10 +50,8 @@
                 disabled
               />
             </div>
-          </div>
-        </template>
-        <div v-if="isMine && !isGameOver" class="d-flex justify-content-between">
-          <div class="dropdown-center" style="width: 100%;">
+          </template>
+          <div v-if="isMine && !isGameOver" class="d-grid dropdown">
             <button type="button" class="btn btn-info dropdown-toggle" data-bs-toggle="dropdown">Counters</button>
             <ul class="dropdown-menu bg-transparent">
               <li class="py-1">

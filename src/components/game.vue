@@ -9,7 +9,7 @@
   />
 
   <div class="row">
-    <div class="col-9">
+    <div class="col-8">
       <Field
         class="border border-warning rounded bg-warning bg-opacity-10 p-1 reverse-columns"
         :actions="factory.actions({drag: false})"
@@ -19,7 +19,7 @@
         @expand="expand"
       />
     </div>
-    <div class="col-3" v-click-outside="() => stickyObject = factory.object()">
+    <div class="col-4" v-click-outside="() => stickyObject = factory.object()">
       <Details
         v-if="functions.isNotNull(detailObject.id)"
         :object="detailObject"
@@ -187,7 +187,7 @@
 
   <div class="row mb-2">
     <div
-      class="col-9"
+      class="col-8"
       @drop="drop($event, 'field')"
       @dragover.prevent
       @dragenter="dragover = 'field'"
@@ -207,7 +207,7 @@
         @transform="transform"
       />
     </div>
-    <div class="col-3" style="max-height: 31.5vh; overflow: auto;">
+    <div class="col-4" style="max-height: 31.5vh; overflow: auto;">
       <Events :events="events" />
     </div>
   </div>
