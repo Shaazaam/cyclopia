@@ -1,6 +1,6 @@
 <template>
   <div
-    class="card text-light bg-transparent pointer"
+    class="card text-light bg-transparent"
     :draggable="_actions.drag && functions.isNotNull(object.id) && !isGameOver"
     @mouseenter="details(true)"
     @mouseleave="details(false)"

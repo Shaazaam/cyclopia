@@ -231,6 +231,7 @@
         <div class="d-flex justify-content-center gap-2">
           <Card
             v-for="object in user.hand"
+            class="pointer"
             :object="object"
             @details="details"
             @expand="expand"
@@ -257,6 +258,7 @@
         <p class="text-center small mb-1">{{functions.toUpperCaseWords(zone)}}: {{user[`${zone}_total`]}}</p>
         <div class="d-flex justify-content-center">
           <Card
+            class="pointer"
             :object="zone === 'library' ? factory.object() : [factory.object()].concat(user[zone]).pop()"
             data-bs-toggle="modal"
             :data-bs-target="`#${zone}Search`"
