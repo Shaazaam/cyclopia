@@ -86,6 +86,7 @@ export const game = (x) => copy({
   spectators: [],
   objects: [],
   counts: [],
+  rulings: [],
 }, x)
 
 export const game_user = (x) => copy({

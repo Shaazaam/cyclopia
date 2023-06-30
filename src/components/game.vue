@@ -19,7 +19,7 @@
         @expand="expand"
       />
     </div>
-    <div class="col-4" v-click-outside="() => stickyObject = factory.object()">
+    <div class="col-4" v-click-outside="() => stickyObject = factory.object({rulings: []})">
       <Details
         v-if="functions.isNotNull(detailObject.id)"
         :object="detailObject"
@@ -484,6 +484,9 @@
       counts() {
         return this.game ? this.game.counts : []
       },
+      rulings() {
+        return this.game ? this.game.rulings: []
+      },
       user() {
         return this.functions.deepExtend(
           this.zones.reduce((agg, name) =>
@@ -543,7 +546,7 @@
       this.fetch.get('/game', [this.id])
       this.fetch.get('/events', [this.id])
       this.detailObject = this.factory.object()
-      this.stickyObject = this.factory.object()
+      this.stickyObject = this.factory.object({rulings: []})
       this.modalObject = this.factory.object()
     },
     mounted() {
@@ -614,7 +617,9 @@
       details(object, sticky) {
         this.detailObject = object
         if (sticky) {
-          this.stickyObject = object
+          this.stickyObject = this.functions.copy(object, {
+            rulings: this.rulings.filter(({oracle_id}) => oracle_id === object.card.oracle_id)
+          })
         }
       },
       draw() {

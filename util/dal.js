@@ -595,7 +595,7 @@ export const getGame = async (id) => {
       FROM counter_object
       GROUP BY counter_object.object_id
     ) co ON objects.id = co.object_id
-    WHERE objects.zone IN ('exile', 'field', 'graveyard', 'remove')
+    WHERE objects.zone IN ('exile', 'field')
       AND objects.game_id = $1
     UNION ALL
     SELECT
@@ -610,7 +610,7 @@ export const getGame = async (id) => {
       objects.power,
       objects.toughness,
       objects.is_tapped,
-      JSON_BUILD_OBJECT('image_uris', cards.image_uris) AS card,
+      JSON_BUILD_OBJECT('oracle_id', cards.oracle_id, 'image_uris', cards.image_uris) AS card,
       '[]' AS counters,
       cf.card_faces,
       TO_JSON(card_faces.*) AS active_face
@@ -624,7 +624,7 @@ export const getGame = async (id) => {
       FROM card_faces
       GROUP BY card_faces.card_id
     ) cf ON objects.card_id = cf.card_id
-    WHERE objects.zone IN ('hand', 'library')
+    WHERE objects.zone IN ('hand', 'library', 'graveyard', 'remove')
       AND objects.game_id = $1
   `, [id])
   const {rows: counts} = await query(`
@@ -639,7 +639,19 @@ export const getGame = async (id) => {
     WHERE objects.game_id = $1
     GROUP BY objects.user_id
   `, [id])
-  return factory.game({id, users, spectators, objects, counts})
+  const {rows: rulings} = await query(`
+    SELECT rulings.*
+    FROM rulings
+    JOIN (
+      SELECT cards.oracle_id
+      FROM objects
+      JOIN cards ON cards.id = objects.card_id
+      WHERE objects.zone IN ('field', 'hand')
+        AND objects.game_id = $1
+      GROUP BY cards.oracle_id
+    ) cards ON cards.oracle_id = rulings.oracle_id
+  `, [id])
+  return factory.game({id, users, spectators, objects, counts, rulings})
 }
 export const getGameUsers = async (game_id) => {
   const {rows} = await query(`
