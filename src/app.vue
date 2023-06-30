@@ -37,17 +37,6 @@
     </div>
   </div>
   <div class="container-fluid" :class="{'invisible': isLoading}" v-cloak>
-    <!-- <div v-if="isLoading" class="d-flex justify-content-center hstack gap-3">
-      <div class="spinner-lg spinner-grow text-danger" role="status">
-        <span class="visually-hidden">Loading...</span>
-      </div>
-      <div v-if="icon1" class="spinner-lg spinner-grow text-danger" role="status">
-        <span class="visually-hidden">Loading...</span>
-      </div>
-      <div v-if="icon2" class="spinner-lg spinner-grow text-danger" role="status">
-        <span class="visually-hidden">Loading...</span>
-      </div>
-    </div> -->
     <router-view />
   </div>
 </template>
@@ -56,8 +45,6 @@
   export default {
     data: () => ({
       routes: null,
-      icon1: false,
-      icon2: false,
     }),
     created() {
       this.routes = this.$router.getRoutes().filter(({meta}) => meta.main())
@@ -70,12 +57,6 @@
     watch: {
       isLoggedIn() {
         this.routes = this.$router.getRoutes().filter(({meta}) => meta.main())
-      },
-      isLoading(x) {
-        if (x) {
-          setTimeout(() => this.icon1 = true, 200)
-          setTimeout(() => this.icon2 = true, 400)
-        }
       },
     },
     mounted() {

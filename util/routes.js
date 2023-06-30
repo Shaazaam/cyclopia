@@ -494,7 +494,7 @@ const routes = {
       async (req, res, next) => {
         req.session.regenerate(() => {
           req.session.user = req.cyclopia.data
-          req.session.save(() => next())
+          next()
         })
       },
     ],
@@ -617,10 +617,8 @@ const routes = {
         const user = await dal.insertUser({email, handle, password: hash})
         req.session.regenerate(() => {
           req.session.user = user
-          req.session.save(() => {
-            req.cyclopia.data = user
-            next()
-          })
+          req.cyclopia.data = user
+          next()
         })
       },
     ],
@@ -867,18 +865,10 @@ export default (app) => {
   Object.entries(routes).forEach(([route, {middleware, params, get, post, put, del}]) => {
     ({get, post, del, put} = copy(
       routes[route],
-      isUndefined(get)
-        ? {get: res404}
-        : {},
-      isUndefined(post)
-        ? {post: res404}
-        : {},
-      isUndefined(put)
-        ? {put: res404}
-        : {},
-      isUndefined(del)
-        ? {del: res404}
-        : {},
+      isUndefined(get) ? {get: res404} : {},
+      isUndefined(post) ? {post: res404} : {},
+      isUndefined(put) ? {put: res404} : {},
+      isUndefined(del) ? {del: res404} : {},
     ))
 
     const beforeMiddleware = [mutateReq].concat(isUndefined(middleware) ? [] : middleware)

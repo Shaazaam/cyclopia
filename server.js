@@ -11,6 +11,7 @@ import {socket as wss} from './util/wss.js'
 const app = express()
 const sessionManager = dbSession(session)
 const sessionParser = session({
+  cookie: {maxAge: 365 * 24 * 60 * 60 * 1000},
   resave: false,
   saveUninitialized: false,
   secret: config.app.SESSION_KEY,
