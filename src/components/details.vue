@@ -8,7 +8,7 @@
         <div class="col-6">
           <div class="input-group mb-2">
             <input
-              v-if="isMine && !isGameOver && !readonly"
+              v-if="isMine && !isGameOver && !readonly && object.zone !== 'hand'"
               v-model="power"
               type="number"
               class="form-control"
@@ -22,7 +22,7 @@
             />
             <span class="input-group-text bg-dark text-light">/</span>
             <input
-              v-if="isMine && !isGameOver && !readonly"
+              v-if="isMine && !isGameOver && !readonly && object.zone !== 'hand'"
               v-model="toughness"
               type="number"
               class="form-control"
