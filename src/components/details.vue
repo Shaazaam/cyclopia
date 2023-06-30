@@ -36,7 +36,13 @@
             />
           </div>
           <div class="d-grid">
-            <button v-if="functions.isNotEmpty(object.rulings)" type="button" class="btn btn-info">Rules</button>
+            <button
+              v-if="functions.isNotEmpty(object.rulings)"
+              type="button"
+              class="btn btn-info"
+              data-bs-toggle="modal"
+              data-bs-target="#cardRules"
+            >Rules</button>
           </div>
         </div>
         <div class="col-6">
@@ -70,6 +76,18 @@
               </li>
             </ul>
           </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="cardRules" ref="cardRulesModal" class="modal fade" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content bg-dark">
+        <div class="modal-body">
+          <p v-for="ruling in object.rulings">
+            <span class="text-warning">{{functions.localeDate(ruling.published_at)}}</span>: {{ruling.comment}}
+          </p>
         </div>
       </div>
     </div>
@@ -110,6 +128,7 @@
     ],
     data: () => ({
       selectedCounter: null,
+      cardRulesModal: null,
     }),
     computed: {
       power: {
@@ -148,6 +167,9 @@
       isMine() {
         return this.object.user_id === this.authUser.id
       },
+    },
+    mounted() {
+      this.cardRulesModal = new bootstrap.Modal(this.$refs.cardRulesModal)
     },
     methods: {
       sumPTCounters(value) {
