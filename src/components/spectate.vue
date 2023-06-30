@@ -7,7 +7,7 @@
   />
 
   <div class="row">
-    <div class="col-9">
+    <div class="col-8">
       <Field
         :actions="factory.actions({drag: false})"
         :objects="user0.field"
@@ -16,7 +16,7 @@
         @expand="expand"
       />
     </div>
-    <div class="col-3">
+    <div class="col-4">
       <Details v-if="functions.isNotNull(detailObject.id)" :object="detailObject" readonly />
     </div>
   </div>
@@ -24,7 +24,7 @@
   <hr />
 
   <div class="row">
-    <div class="col-9">
+    <div class="col-8">
       <Field
         :actions="factory.actions({drag: false})"
         :objects="user1.field"
@@ -32,7 +32,7 @@
         @expand="expand"
       />
     </div>
-    <div class="col-3" style="max-height:31.5vh; overflow: auto;">
+    <div class="col-4" style="max-height:31.5vh; overflow: auto;">
       <Events :events="events" />
     </div>
   </div>
