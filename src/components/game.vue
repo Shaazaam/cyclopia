@@ -545,7 +545,7 @@
       this.fetch.get('/zones', {}, ({data}) => this.zones = data.map(({name}) => name))
       this.fetch.get('/game', [this.id])
       this.fetch.get('/events', [this.id])
-      this.detailObject = this.factory.object()
+      this.detailObject = this.factory.object({rulings: []})
       this.stickyObject = this.factory.object({rulings: []})
       this.modalObject = this.factory.object()
     },
@@ -615,11 +615,12 @@
         this.fetch.put('/counter', {game_id: this.id, name, kind: 'user', amount})
       },
       details(object, sticky) {
+        object = this.functions.copy(object, {
+          rulings: this.rulings.filter(({oracle_id}) => oracle_id === object.card.oracle_id)
+        })
         this.detailObject = object
         if (sticky) {
-          this.stickyObject = this.functions.copy(object, {
-            rulings: this.rulings.filter(({oracle_id}) => oracle_id === object.card.oracle_id)
-          })
+          this.stickyObject = object
         }
       },
       draw() {
