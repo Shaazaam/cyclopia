@@ -36,7 +36,7 @@
             />
           </div>
           <div class="d-grid">
-            <button type="button" class="btn btn-info">Rules</button>
+            <button v-if="functions.isNotEmpty(object.rulings)" type="button" class="btn btn-info">Rules</button>
           </div>
         </div>
         <div class="col-6">
