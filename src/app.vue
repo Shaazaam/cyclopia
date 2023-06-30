@@ -86,6 +86,9 @@
     border-radius: unset;
   }
   .card img {
+    border-radius: 7px;
+  }
+  .details .card img {
     border-radius: 11px;
   }
   .card .dropdown-center {

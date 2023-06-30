@@ -1,5 +1,5 @@
 <template>
-  <div class="row">
+  <div class="row details">
     <div class="col-5">
       <Card :object="object" height="31.5vh" />
     </div>
