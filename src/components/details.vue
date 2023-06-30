@@ -8,7 +8,7 @@
         <div class="col-6">
           <div class="input-group mb-2">
             <input
-              v-if="isMine && !isGameOver && !readonly && object.zone !== 'hand'"
+              v-if="isMine && !isGameOver && !readonly && !inHand"
               v-model="power"
               type="number"
               class="form-control"
@@ -22,7 +22,7 @@
             />
             <span class="input-group-text bg-dark text-light">/</span>
             <input
-              v-if="isMine && !isGameOver && !readonly && object.zone !== 'hand'"
+              v-if="isMine && !isGameOver && !readonly && !inHand"
               v-model="toughness"
               type="number"
               class="form-control"
@@ -117,7 +117,9 @@
           return this.functions.isNotNull(this.object.power) ? this.sumPTCounters(this.object.power) : null
         },
         set(x) {
-          this.$emit('power', this.object.id, x)
+          if (this.functions.isNotEmpty(x)) {
+            this.$emit('power', this.object.id, x)
+          }
         },
       },
       toughness: {
@@ -125,7 +127,9 @@
           return this.functions.isNotNull(this.object.toughness) ? this.sumPTCounters(this.object.toughness) : null
         },
         set(x) {
-          this.$emit('toughness', this.object.id, x)
+          if (this.functions.isNotEmpty(x)) {
+            this.$emit('toughness', this.object.id, x)
+          }
         },
       },
       selectedCounterAmount: {
@@ -133,7 +137,9 @@
           return this.functions.isNotNull(this.selectedCounter) ? this.object.counters.find(({name}) => name === this.selectedCounter).amount : 0
         },
         set(x) {
-          this.$emit('counter', this.object.id, this.selectedCounter, x)
+          if (this.functions.isNotEmpty(x)) {
+            this.$emit('counter', this.object.id, this.selectedCounter, x)
+          }
         },
       },
       inHand() {
