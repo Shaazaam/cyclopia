@@ -16,6 +16,7 @@
         class="form-control"
         :class="{'is-invalid': hasErrors}"
         :placeholder="placeholder"
+        :disabled="disabled"
         :autocomplete="autocomplete"
         @input="$emit('update:modelValue', $event.target.value)"
         @keyup.enter="$emit('keyupEnter')"
@@ -32,6 +33,7 @@
         class="form-control"
         :class="{'is-invalid': hasErrors}"
         :placeholder="placeholder"
+        :disabled="disabled"
         :autocomplete="autocomplete"
         :min="min"
         :max="max"
@@ -69,6 +71,10 @@
       },
       placeholder: {
         type: String,
+      },
+      disabled: {
+        type: Boolean,
+        default: false,
       },
       autocomplete: {
         type: String,

@@ -130,38 +130,28 @@
             </div>
             <div class="row mb-2">
               <div class="col justify-content-center hstack gap-2">
-                <div class="dropdown-center">
-                  <button
-                    type="button"
-                    class="btn btn-info dropdown-toggle"
-                    :class="{'invisible': isGameOver}"
-                    data-bs-toggle="dropdown"
-                    :disabled="isGameOver"
-                  >Tokens</button>
-                  <ul class="dropdown-menu bg-dark">
-                    <li class="py-1">
-                      <Input
-                        v-model="token"
-                        name="token"
-                        type="text"
-                        placeholder="Search"
-                        :has-margin="false"
-                        :has-label="false"
-                        @keyup-enter="tokenSearch"
-                      >
-                        <template #inputGroupAfter>
-                          <button
-                            type="button"
-                            class="btn btn-success"
-                            @click="tokenSearch"
-                          >
-                            <i class="bi bi-search"></i>
-                          </button>
-                        </template>
-                      </Input>
-                    </li>
-                  </ul>
-                </div>
+                <Input
+                  v-model="token"
+                  name="token"
+                  type="text"
+                  :class="{'invisible': isGameOver}"
+                  placeholder="Search for Token"
+                  :disabled="isGameOver"
+                  :has-margin="false"
+                  :has-label="false"
+                  @keyup-enter="tokenSearch"
+                >
+                  <template #inputGroupAfter>
+                    <button
+                      type="button"
+                      class="btn btn-info"
+                      :disabled="isGameOver"
+                      @click="tokenSearch"
+                    >
+                      <i class="bi bi-search"></i>
+                    </button>
+                  </template>
+                </Input>
                 <button
                   type="button"
                   class="btn btn-danger"
