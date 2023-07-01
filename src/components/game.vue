@@ -54,128 +54,138 @@
             @click="mulligan"
           >Mulligan</button>
         </div>
-        <div v-else :class="{'invisible': isGameOver}">
-          <div class="row mb-2">
-            <div class="col justify-content-center hstack gap-2">
-              <button
-                type="button"
-                class="btn btn-danger"
-                :class="{'invisible': !user.is_active_turn}"
-                @click="endTurn"
-              >End Turn</button>
-              <button
-                type="button"
-                class="btn btn-success"
-                :class="{'invisible': !user.is_active_turn}"
-                @click="untap"
-              >Untap</button>
-              <Input
-                v-model="drawAmount"
-                :class="{'invisible': isGameOver}"
-                type="number"
-                name="draw_amount"
-                :min="1"
-                :max="user.library_total"
-                :has-margin="false"
-                :has-label="false"
-              >
-                <template #inputGroupBefore>
-                  <button
-                    type="button"
-                    class="btn btn-success"
-                    :disabled="functions.isNull(drawAmount)"
-                    @click="draw"
-                  >Draw</button>
-                </template>
-              </Input>
-            </div>
-          </div>
-          <div class="row mb-2">
-            <div class="col justify-content-center hstack gap-2">
-              <button
-                type="button"
-                class="btn btn-warning"
-                @click="shuffle"
-              >Shuffle</button>
-              <Input
-                v-model="millAmount"
-                type="number"
-                name="mill_amount"
-                :min="1"
-                :max="user.library_total"
-                :has-margin="false"
-                :has-label="false"
-              >
-                <template #inputGroupBefore>
-                  <button
-                    type="button"
-                    class="btn btn-danger"
-                    :disabled="functions.isNull(millAmount)"
-                    @click="mill"
-                  >Mill</button>
-                </template>
-              </Input>
-              <Input
-                v-model="scryAmount"
-                type="number"
-                name="scry_amount"
-                :min="1"
-                :max="user.library_total"
-                :has-margin="false"
-                :has-label="false"
-              >
-                <template #inputGroupBefore>
-                  <button
-                    type="button"
-                    class="btn btn-info"
-                    :disabled="functions.isNull(scryAmount)"
-                    @click="scry"
-                  >Scry</button>
-                </template>
-              </Input>
-            </div>
-          </div>
+        <div v-else class="col">
           <div class="row">
-            <div class="col justify-content-center hstack gap-2">
-              <div class="dropdown-center">
+            <div class="col">
+              <ul class="list-inline">
+                <li class="list-inline-item">Hand: {{opponent.hand_total}}</li>
+                <li v-for="zone in stackZones" class="list-inline-item">{{functions.toUpperCaseWords(zone)}}: {{opponent[`${zone}_total`]}}</li>
+              </ul>
+            </div>
+          </div>
+          <div :class="{'invisible': isGameOver}">
+            <div class="row mb-2">
+              <div class="col justify-content-center hstack gap-2">
+                <Input
+                  v-model="drawAmount"
+                  :class="{'invisible': isGameOver}"
+                  type="number"
+                  name="draw_amount"
+                  :min="1"
+                  :max="user.library_total"
+                  :has-margin="false"
+                  :has-label="false"
+                >
+                  <template #inputGroupBefore>
+                    <button
+                      type="button"
+                      class="btn btn-success"
+                      :disabled="functions.isNull(drawAmount)"
+                      @click="draw"
+                    >Draw</button>
+                  </template>
+                </Input>
+                <Input
+                  v-model="millAmount"
+                  type="number"
+                  name="mill_amount"
+                  :min="1"
+                  :max="user.library_total"
+                  :has-margin="false"
+                  :has-label="false"
+                >
+                  <template #inputGroupBefore>
+                    <button
+                      type="button"
+                      class="btn btn-danger"
+                      :disabled="functions.isNull(millAmount)"
+                      @click="mill"
+                    >Mill</button>
+                  </template>
+                </Input>
+                <Input
+                  v-model="scryAmount"
+                  type="number"
+                  name="scry_amount"
+                  :min="1"
+                  :max="user.library_total"
+                  :has-margin="false"
+                  :has-label="false"
+                >
+                  <template #inputGroupBefore>
+                    <button
+                      type="button"
+                      class="btn btn-info"
+                      :disabled="functions.isNull(scryAmount)"
+                      @click="scry"
+                    >Scry</button>
+                  </template>
+                </Input>
                 <button
                   type="button"
-                  class="btn btn-info dropdown-toggle"
-                  :class="{'invisible': isGameOver}"
-                  data-bs-toggle="dropdown"
-                  :disabled="isGameOver"
-                >Tokens</button>
-                <ul class="dropdown-menu bg-dark">
-                  <li class="py-1">
-                    <Input
-                      v-model="token"
-                      name="token"
-                      type="text"
-                      placeholder="Search"
-                      :has-margin="false"
-                      :has-label="false"
-                      @keyup-enter="tokenSearch"
-                    >
-                      <template #inputGroupAfter>
-                        <button
-                          type="button"
-                          class="btn btn-success"
-                          @click="tokenSearch"
-                        >
-                          <i class="bi bi-search"></i>
-                        </button>
-                      </template>
-                    </Input>
-                  </li>
-                </ul>
+                  class="btn btn-warning"
+                  @click="shuffle"
+                >Shuffle</button>
               </div>
-              <button
-                type="button"
-                class="btn btn-danger"
-                :class="{'invisible': isGameOver}"
-                @click="endGame"
-                :disabled="isGameOver"
-              >Concede</button>
+            </div>
+            <div class="row mb-2">
+              <div class="col justify-content-center hstack gap-2">
+                <div class="dropdown-center">
+                  <button
+                    type="button"
+                    class="btn btn-info dropdown-toggle"
+                    :class="{'invisible': isGameOver}"
+                    data-bs-toggle="dropdown"
+                    :disabled="isGameOver"
+                  >Tokens</button>
+                  <ul class="dropdown-menu bg-dark">
+                    <li class="py-1">
+                      <Input
+                        v-model="token"
+                        name="token"
+                        type="text"
+                        placeholder="Search"
+                        :has-margin="false"
+                        :has-label="false"
+                        @keyup-enter="tokenSearch"
+                      >
+                        <template #inputGroupAfter>
+                          <button
+                            type="button"
+                            class="btn btn-success"
+                            @click="tokenSearch"
+                          >
+                            <i class="bi bi-search"></i>
+                          </button>
+                        </template>
+                      </Input>
+                    </li>
+                  </ul>
+                </div>
+                <button
+                  type="button"
+                  class="btn btn-danger"
+                  :class="{'invisible': isGameOver}"
+                  @click="endGame"
+                  :disabled="isGameOver"
+                >Concede</button>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col justify-content-center hstack gap-2">
+                <button
+                  type="button"
+                  class="btn btn-danger"
+                  :class="{'invisible': !user.is_active_turn}"
+                  @click="endTurn"
+                >End Turn</button>
+                <button
+                  type="button"
+                  class="btn btn-success"
+                  :class="{'invisible': !user.is_active_turn}"
+                  @click="untap"
+                >Untap</button>
+              </div>
             </div>
           </div>
         </div>
