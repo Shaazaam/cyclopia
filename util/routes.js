@@ -103,7 +103,15 @@ const sendGame = async (req, res, next) => {
   const game = await dal.getGame(game_id)
   const users = game.users.map(({user_id}) => user_id).concat(game.spectators.map(({user_id}) => user_id))
   req.cyclopia = copy(req.cyclopia, {event_entity_id: game_id, users})
-  wss.send(users, {kind: 'game', data: game})
+  users.forEach((user) => wss.send(
+    [user],
+    {
+      kind: 'game',
+      data: copy(game, {
+        objects: game.objects.filter(({user_id, zone}) => user_id === user || (zone !== 'hand' && user_id !== user))
+      })
+    }
+  ))
   next()
 }
 const sendEvents = async (req, res, next) => {
