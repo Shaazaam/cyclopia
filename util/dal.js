@@ -672,6 +672,14 @@ export const getGameSpectators = async (game_id) => {
   `, [game_id])
   return rows
 }
+export const getGameWinner = async (game_id) => {
+  const {rows: [{winner}]} = await query(`
+    SELECT games.winner
+    FROM games
+    WHERE games.id = $1
+  `, [game_id], 1)
+  return winner
+}
 export const insertSpectator = async (game_id, user_id) => {
   await query(`INSERT INTO game_spectator (game_id, user_id) VALUES ($1, $2)`, [game_id, user_id], 1)
   return true

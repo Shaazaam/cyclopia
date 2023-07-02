@@ -73,6 +73,13 @@ const authorize = async (req, res, next) => {
   }
   next()
 }
+const gameOngoing = async (req, res, next) => {
+  const {game_id} = req.method === 'GET' ? req.params : req.body
+  if (isNotNull(await dal.getGameWinner(game_id))) {
+    return res401(req, res)
+  }
+  next()
+}
 const isAdmin = async (req, res, next) => {
   const {user: {is_admin}} = req.session
   if (!is_admin) {
@@ -170,7 +177,7 @@ const routes = {
     ],
   },
   'counter': {
-    middleware: [authenticate, authorize],
+    middleware: [authenticate, authorize, gameOngoing],
     put: [
       async (req, res, next) => {
         const {user: {id: user_id}} = req.session
@@ -219,7 +226,7 @@ const routes = {
     ],*/
   },
   'draw': {
-    middleware: [authenticate, authorize],
+    middleware: [authenticate, authorize, gameOngoing],
     put: [
       async (req, res, next) => {
         const {amount: draw_amount} = req.body
@@ -244,7 +251,7 @@ const routes = {
     ],
   },
   'end-game': {
-    middleware: [authenticate, authorize],
+    middleware: [authenticate, authorize, gameOngoing],
     put: [
       async (req, res, next) => {
         const {user: {id: user_id}} = req.session
@@ -259,7 +266,7 @@ const routes = {
     ],
   },
   'end-turn': {
-    middleware: [authenticate, authorize],
+    middleware: [authenticate, authorize, gameOngoing],
     put: [
       async (req, res, next) => {
         const {user: {id: user_id}} = req.session
@@ -470,7 +477,7 @@ const routes = {
     ],
   },
   'life': {
-    middleware: [authenticate, authorize],
+    middleware: [authenticate, authorize, gameOngoing],
     put: [
       async (req, res, next) => {
         const {user: {id: user_id}} = req.session
@@ -517,7 +524,7 @@ const routes = {
     ],
   },
   'mill': {
-    middleware: [authenticate, authorize],
+    middleware: [authenticate, authorize, gameOngoing],
     put: [
       async (req, res, next) => {
         const {amount: mill_amount} = req.body
@@ -542,7 +549,7 @@ const routes = {
     ],
   },
   'move': {
-    middleware: [authenticate, authorize],
+    middleware: [authenticate, authorize, gameOngoing],
     put: [
       async (req, res, next) => {
         const {user: {id: user_id}} = req.session
@@ -557,7 +564,7 @@ const routes = {
     ],
   },
   'mulligan': {
-    middleware: [authenticate, authorize],
+    middleware: [authenticate, authorize, gameOngoing],
     put: [
       async (req, res, next) => {
         const {user: {id: user_id}} = req.session
@@ -587,7 +594,7 @@ const routes = {
     ],
   },
   'power': {
-    middleware: [authenticate, authorize],
+    middleware: [authenticate, authorize, gameOngoing],
     put: [
       async (req, res, next) => {
         const {user: {id: user_id}} = req.session
@@ -651,7 +658,7 @@ const routes = {
     ],
   },
   'scry': {
-    middleware: [authenticate, authorize],
+    middleware: [authenticate, authorize, gameOngoing],
     params: ['game_id', 'amount'],
     get: [
       async (req, res, next) => {
@@ -676,7 +683,7 @@ const routes = {
     ],
   },
   'shuffle': {
-    middleware: [authenticate, authorize],
+    middleware: [authenticate, authorize, gameOngoing],
     put: [
       async (req, res, next) => {
         const {user: {id: user_id}} = req.session
@@ -711,7 +718,7 @@ const routes = {
     ],
   },
   'start': {
-    middleware: [authenticate, authorize],
+    middleware: [authenticate, authorize, gameOngoing],
     put: [
       async (req, res, next) => {
         const {user: {id: user_id}} = req.session
@@ -724,7 +731,7 @@ const routes = {
     ],
   },
   'tap': {
-    middleware: [authenticate, authorize],
+    middleware: [authenticate, authorize, gameOngoing],
     put: [
       async (req, res, next) => {
         const {user: {id: user_id}} = req.session
@@ -760,6 +767,7 @@ const routes = {
     ],
     put: [
       authorize,
+      gameOngoing,
       async (req, res, next) => {
         const {user: {id: user_id}} = req.session
         const {game_id, card_id, amount} = req.body
@@ -773,7 +781,7 @@ const routes = {
     ],
   },
   'toughness': {
-    middleware: [authenticate, authorize],
+    middleware: [authenticate, authorize, gameOngoing],
     put: [
       async (req, res, next) => {
         const {user: {id: user_id}} = req.session
@@ -788,7 +796,7 @@ const routes = {
     ],
   },
   'transform': {
-    middleware: [authenticate, authorize],
+    middleware: [authenticate, authorize, gameOngoing],
     put: [
       async (req, res, next) => {
         const {user: {id: user_id}} = req.session
@@ -803,7 +811,7 @@ const routes = {
     ],
   },
   'untap': {
-    middleware: [authenticate, authorize],
+    middleware: [authenticate, authorize, gameOngoing],
     put: [
       async (req, res, next) => {
         const {user: {id: user_id}} = req.session
