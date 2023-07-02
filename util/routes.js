@@ -796,6 +796,21 @@ const routes = {
       sendEvents,
     ],
   },
+  'transfer': {
+    middleware: [authenticate, authorize, gameOngoing],
+    put: [
+      async (req, res, next) => {
+        const {user: {id: user_id}} = req.session
+        const {game_id, object_id, new_user_id, zone} = req.body
+        const data = await dal.transfer(game_id, object_id, user_id, new_user_id, zone).catch((err) => next(err))
+        req.cyclopia.event = event(game_id, 'transfer', data, user_id)
+        next()
+      },
+      log,
+      sendGame,
+      sendEvents,
+    ],
+  },
   'transform': {
     middleware: [authenticate, authorize, gameOngoing],
     put: [

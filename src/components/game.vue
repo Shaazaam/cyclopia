@@ -9,9 +9,19 @@
   />
 
   <div class="row">
-    <div class="col-8">
+    <div
+      class="col-8"
+      @drop="drop($event, 'field', opponent.user_id)"
+      @dragover.prevent
+      @dragenter="dragover = 'opponentField'"
+      @dragleave.self="dragover = false"
+    >
       <Field
-        class="border border-warning rounded bg-warning bg-opacity-10 p-1 reverse-columns"
+        class="border border-warning rounded bg-warning p-1 reverse-columns"
+        :class="{
+          'bg-opacity-25': dragover === 'opponentField',
+          'bg-opacity-10': dragover !== 'opponentField',
+        }"
         :actions="factory.actions({drag: false})"
         :objects="opponent.field"
         reversed
@@ -199,8 +209,8 @@
           'bg-opacity-25': dragover === 'field',
           'bg-opacity-10': dragover !== 'field',
         }"
-        :objects="user.field"
         :actions="factory.actions({tap: true})"
+        :objects="user.field"
         @details="details"
         @expand="expand"
         @tap="tap"
@@ -626,10 +636,13 @@
       draw() {
         this.fetch.put('/draw', {game_id: this.id, amount: this.drawAmount})
       },
-      drop(event, zone) {
+      drop(event, zone, opponent_id = null) {
         this.dragover = false
         const object = JSON.parse(event.dataTransfer.getData('application/json'))
-        if (!this.isGameOver && object.zone !== zone) {
+        if (this.functions.isNotNull(opponent_id)) {
+          this.transfer(object, opponent_id, zone)
+        }
+        if (object.zone !== zone && this.functions.isNull(opponent_id)) {
           this.move(object, zone)
         }
       },
@@ -644,12 +657,7 @@
         this.fetch.put('/mill', {game_id: this.id, amount: this.millAmount})
       },
       move(object, zone, location = 'top') {
-        this.fetch.put('/move', {
-          game_id: this.id,
-          object_id: object.id,
-          zone,
-          location,
-        })
+        this.fetch.put('/move', {game_id: this.id, object_id: object.id, zone, location})
       },
       mulligan() {
         this.fetch.put('/mulligan', {game_id: this.id})
@@ -703,6 +711,9 @@
       },
       toughness(object_id, value) {
         this.fetch.put('/toughness', {game_id: this.id, object_id, value})
+      },
+      transfer(object, new_user_id, zone) {
+        this.fetch.put('/transfer', {game_id: this.id, object_id: object.id, new_user_id, zone})
       },
       transform(object_id, card_face_id) {
         this.fetch.put('/transform', {game_id: this.id, object_id, card_face_id})
