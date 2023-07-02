@@ -83,14 +83,10 @@ const gameOngoing = async (req, res, next) => {
 const isAdmin = async (req, res, next) => {
   const {user: {is_admin}} = req.session
   if (!is_admin) {
-    return res422(req, res)
+    return res401(req, res)
   }
   next()
 }
-
-const event = (entity_id, name, data, user_id) => ({entity_id, name, data, user_id})
-const invitation = (user_id, invitations) => ({user_id, invitations})
-
 const validate = async ([input, rules], req, res, next) => {
   const results = await val.validate(input, rules)
   if (!val.isValid(results)) {
@@ -99,6 +95,10 @@ const validate = async ([input, rules], req, res, next) => {
   }
   next()
 }
+
+const event = (entity_id, name, data, user_id) => ({entity_id, name, data, user_id})
+const invitation = (user_id, invitations) => ({user_id, invitations})
+
 const log = async (req, res, next) => {
   const {entity_id, name, data, user_id} = req.cyclopia.event
   const events = await dal.insertEvents(entity_id, name, data, user_id)
@@ -353,6 +353,7 @@ const routes = {
     ],
   },
   'game-users': {
+    middleware: [authenticate],
     params: ['id'],
     get: [
       async (req, res, next) => {
