@@ -648,7 +648,7 @@
         this.dragover = false
         const object = JSON.parse(event.dataTransfer.getData('application/json'))
         if (this.functions.isNotNull(opponent_id)) {
-          this.transfer(object, opponent_id, zone)
+          this.transfer(object, zone)
         }
         if (object.zone !== zone && this.functions.isNull(opponent_id)) {
           this.move(object, zone)
@@ -723,8 +723,8 @@
       toughness(object_id, value) {
         this.fetch.put('/toughness', {game_id: this.id, object_id, value})
       },
-      transfer(object, new_user_id, zone) {
-        this.fetch.put('/transfer', {game_id: this.id, object_id: object.id, new_user_id, zone})
+      transfer(object, zone) {
+        this.fetch.put('/transfer', {game_id: this.id, object_id: object.id, zone})
       },
       transform(object_id, card_face_id) {
         this.fetch.put('/transform', {game_id: this.id, object_id, card_face_id})

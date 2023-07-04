@@ -833,7 +833,8 @@ const routes = {
     put: [
       async (req, res, next) => {
         const {user: {id: user_id}} = req.session
-        const {game_id, object_id, new_user_id, zone} = req.body
+        const {game_id, object_id, zone} = req.body
+        const new_user_id = (await dal.getGameUsers(game_id).catch((err) => next(err))).find((user) => user.user_id !== user_id).user_id
         const data = await dal.transfer(game_id, object_id, user_id, new_user_id, zone).catch((err) => next(err))
         req.cyclopia.event = event(game_id, 'transfer', data, user_id)
         next()
