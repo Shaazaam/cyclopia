@@ -539,6 +539,38 @@ export const getInvitations = async (user_id) => {
   return rows
 }
 
+export const getObject = async (game_id, object_id, user_id) => {
+  const {rows} = await query(`
+    SELECT
+      objects.id,
+      objects.card_id,
+      objects.game_id,
+      objects.user_id,
+      objects.zone,
+      objects.position,
+      objects.power,
+      objects.toughness,
+      objects.is_tapped,
+      JSON_BUILD_OBJECT('oracle_id', cards.oracle_id, 'image_uris', cards.image_uris) AS card,
+      '[]' AS counters,
+      cf.card_faces,
+      TO_JSON(card_faces.*) AS active_face
+    FROM objects
+    JOIN cards ON objects.card_id = cards.id
+    LEFT JOIN card_faces ON objects.card_face_id = card_faces.id
+    LEFT JOIN (
+      SELECT
+        card_faces.card_id,
+        JSON_AGG(card_faces.*) AS card_faces
+      FROM card_faces
+      GROUP BY card_faces.card_id
+    ) cf ON objects.card_id = cf.card_id
+    WHERE objects.id = $2
+      AND objects.game_id = $1
+      AND objects.user_id = $3
+  `, [game_id, object_id, user_id], 1)
+  return rows
+}
 export const getGame = async (id) => {
   const {rows: users} = await query(`
     SELECT

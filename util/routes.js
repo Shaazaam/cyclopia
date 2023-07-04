@@ -105,6 +105,19 @@ const log = async (req, res, next) => {
   req.cyclopia.game_id = entity_id
   next()
 }
+const sendObject = async (req, res, next) => {
+  const {data: [data], event: {user_id: uid}, game_id} = req.cyclopia
+  const users = (await dal.getGameUsers(game_id)).map(({user_id}) => user_id).concat(
+    (await dal.getGameSpectators(game_id)).map(({user_id}) => user_id)
+  ).filter((user) => user !== uid)
+  req.cyclopia = copy(req.cyclopia, {
+    data: [],
+    event_entity_id: game_id,
+    users: users.concat(uid),
+  })
+  wss.send(users, {kind: 'object', data})
+  next()
+}
 const sendGame = async (req, res, next) => {
   const {game_id} = req.cyclopia
   const game = await dal.getGame(game_id)
@@ -637,6 +650,25 @@ const routes = {
           next()
         })
       },
+    ],
+  },
+  'reveal': {
+    middleware: [authenticate, authorize, gameOngoing],
+    params: ['game_id', 'object_id'],
+    get: [
+      async (req, res, next) => {
+        const {user: {id: user_id}} = req.session
+        const {game_id, object_id} = req.params
+        const data = await dal.getObject(game_id, object_id, user_id).catch((err) => next(err))
+        req.cyclopia = copy(req.cyclopia, {
+          data,
+          event: event(game_id, 'reveal', data, user_id),
+        })
+        next()
+      },
+      log,
+      sendObject,
+      sendEvents,
     ],
   },
   'rulings': {

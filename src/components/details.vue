@@ -39,10 +39,16 @@
             <button
               v-if="functions.isNotEmpty(object.rulings)"
               type="button"
-              class="btn btn-info"
+              class="btn btn-info mb-2"
               data-bs-toggle="modal"
               data-bs-target="#cardRules"
             >Rules</button>
+            <button
+              v-if="inHand"
+              type="button"
+              class="btn btn-warning"
+              @click="reveal"
+            >Reveal</button>
           </div>
         </div>
         <div class="col-6">
@@ -123,6 +129,7 @@
     },
     emits: [
       'counter',
+      'reveal',
       'power',
       'toughness',
     ],
@@ -172,6 +179,9 @@
       this.cardRulesModal = new bootstrap.Modal(this.$refs.cardRulesModal)
     },
     methods: {
+      reveal() {
+        this.$emit('reveal', this.object.id)
+      },
       sumPTCounters(value) {
         return this.functions.toNumber(value)
           + this.object.counters.reduce((agg, {name, amount}) => name === '+1/+1' ? agg + amount : agg, 0)

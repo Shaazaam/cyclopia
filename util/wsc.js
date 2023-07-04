@@ -116,6 +116,7 @@ const onMessage = (event) => {
     'game': () => store.set('game', copy(store.get('game'), {[data.id]: data})),
     'games': () => store.set('games', data),
     'invitations': () => store.set('invitations', data),
+    'object': () => store.set('object', copy(store.get('object'), {[data.game_id]: data})),
   }))()[kind]
   func()
 }

@@ -41,6 +41,7 @@
         :object="stickyObject"
         @counter="counterOnCard"
         @power="power"
+        @reveal="reveal"
         @toughness="toughness"
       />
       <div v-else class="row" :class="{'invisible': isGameOver}">
@@ -474,6 +475,9 @@
       game() {
         return this.store.game[this.id]
       },
+      revealedObject() {
+        return this.store.object[this.id]
+      },
       users() {
         return this.game ? this.game.users.map((user) => this.functions.deepExtend({
           counters: this.userCounters.reduce((agg, {name}) => this.functions.copy(agg, {[name]: 0}), {})
@@ -594,6 +598,10 @@
           this.stickyObject = this.objects.find((object) => object.id === this.stickyObject.id)
         }
       },
+      revealedObject(x) {
+        this.modalObject = x
+        this.cardModal.show()
+      },
     },
     methods: {
       closeModal(modal) {
@@ -664,6 +672,9 @@
       },
       power(object_id, value) {
         this.fetch.put('/power', {game_id: this.id, object_id, value})
+      },
+      reveal(object_id) {
+        this.fetch.get('/reveal', [this.id, object_id], undefined, false)
       },
       scry() {
         this.fetch.get('/scry', [this.id, this.scryAmount], ({data}) => {
