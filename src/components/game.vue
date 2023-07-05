@@ -44,7 +44,7 @@
         @reveal="reveal"
         @toughness="toughness"
       />
-      <div v-else class="row" :class="{'invisible': isGameOver}">
+      <div v-else class="row">
         <div v-if="!user.is_ready" class="col justify-content-center hstack gap-2">
           <button
             v-if="!user.is_ready && functions.isNotEmpty(user.hand)"
@@ -66,12 +66,28 @@
           >Mulligan</button>
         </div>
         <div v-else class="col">
-          <div class="row">
-            <div class="col">
-              <ul class="list-inline">
-                <li class="list-inline-item">Hand: {{opponent.hand_total}}</li>
-                <li v-for="zone in stackZones" class="list-inline-item">{{functions.toUpperCaseWords(zone)}}: {{opponent[`${zone}_total`]}}</li>
-              </ul>
+          <div class="row mb-2">
+            <div v-for="zone in stackZones" class="col-3">
+              <div
+                class="border rounded p-1"
+                :class="[{
+                  'bg-opacity-25': dragover === zone,
+                  'bg-opacity-10': dragover !== zone,
+                }, zone === 'library' ? 'border-primary bg-primary' : 'border-danger bg-danger']"
+              >
+                <p class="text-center small mb-1">{{functions.toUpperCaseWords(zone)}}: {{opponent[`${zone}_total`]}}</p>
+                <div class="d-flex justify-content-center">
+                  <Card
+                    v-if="zone !== 'library' && functions.isNotEmpty(opponent[zone])"
+                    class="pointer"
+                    :object="[factory.object()].concat(opponent[zone]).pop()"
+                    data-bs-toggle="modal"
+                    data-bs-target="#zoneSearch"
+                    @click="setZoneModalObjects('opponent', zone)"
+                  />
+                  <Card v-else :object="factory.object()" />
+                </div>
+              </div>
             </div>
           </div>
           <div :class="{'invisible': isGameOver}">
@@ -141,6 +157,13 @@
             </div>
             <div class="row mb-2">
               <div class="col justify-content-center hstack gap-2">
+                <button
+                  type="button"
+                  class="btn btn-danger"
+                  :class="{'invisible': isGameOver}"
+                  @click="endGame"
+                  :disabled="isGameOver"
+                >Concede</button>
                 <Input
                   v-model="token"
                   name="token"
@@ -163,17 +186,6 @@
                     </button>
                   </template>
                 </Input>
-                <button
-                  type="button"
-                  class="btn btn-danger"
-                  :class="{'invisible': isGameOver}"
-                  @click="endGame"
-                  :disabled="isGameOver"
-                >Concede</button>
-              </div>
-            </div>
-            <div class="row">
-              <div class="col justify-content-center hstack gap-2">
                 <button
                   type="button"
                   class="btn btn-danger"
@@ -232,7 +244,7 @@
       @dragleave.self="dragover = false"
     >
       <div
-        class="border border-info rounded bg-info collapse show p-1"
+        class="border border-info rounded bg-info p-1"
         :class="{
           'bg-opacity-25': dragover === 'hand',
           'bg-opacity-10': dragover !== 'hand',
@@ -244,6 +256,9 @@
             v-for="object in user.hand"
             class="pointer"
             :object="object"
+            data-bs-toggle="modal"
+            data-bs-target="#zoneSearch"
+            @click="setZoneModalObjects('user', 'library')"
             @details="details"
             @expand="expand"
             @transform="transform"
@@ -260,7 +275,7 @@
       @dragleave.self="dragover = false"
     >
       <div
-        class="border rounded collapse show p-1"
+        class="border rounded p-1"
         :class="[{
           'bg-opacity-25': dragover === zone,
           'bg-opacity-10': dragover !== zone,
@@ -269,11 +284,14 @@
         <p class="text-center small mb-1">{{functions.toUpperCaseWords(zone)}}: {{user[`${zone}_total`]}}</p>
         <div class="d-flex justify-content-center">
           <Card
+            v-if="functions.isNotEmpty(user[zone])"
             class="pointer"
             :object="zone === 'library' ? factory.object() : [factory.object()].concat(user[zone]).pop()"
             data-bs-toggle="modal"
-            :data-bs-target="`#${zone}Search`"
+            data-bs-target="#zoneSearch"
+            @click="setZoneModalObjects('user', zone)"
           />
+          <Card v-else :object="factory.object()" />
         </div>
       </div>
     </div>
@@ -297,37 +315,33 @@
     </div>
   </div>
 
-  <div
-    v-for="zone in stackZones"
-    :id="`${zone}Search`"
-    :data-ref="`${zone}Modal`"
-    ref="modals"
-    class="modal fade"
-    tabindex="-1"
-  >
+  <div id="zoneSearch" ref="zoneModal" class="modal fade" tabindex="-1">
     <div class="modal-dialog modal-fullscreen modal-dialog-centered">
       <div class="modal-content bg-transparent">
-        <div class="modal-header bg-dark" @click="closeModal(`${zone}Modal`)">
+        <div class="modal-header bg-dark" @click="closeModal('zoneModal')">
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
           <div class="row justify-content-center">
             <Card
-              v-for="object in user[zone]"
+              v-for="object in zoneObjects"
+              :actions="(() => {
+                if (authUser.id === object.user_id) {
+                  return object.zone === 'exile'
+                    ? factory.actions({
+                        counters: cardCounters,
+                        drag: false,
+                        expand: false,
+                        move: functions.removeByValue(zones, object.zone),
+                      })
+                    : factory.actions({
+                        drag: false,
+                        expand: false,
+                        move: functions.removeByValue(zones, object.zone),
+                      })
+                }
+              })()"
               :object="object"
-              :actions="zone === 'exile'
-                ? factory.actions({
-                    counters: cardCounters,
-                    drag: false,
-                    expand: false,
-                    move: functions.removeByValue(zones, zone),
-                  })
-                : factory.actions({
-                    drag: false,
-                    expand: false,
-                    move: functions.removeByValue(zones, zone),
-                  })
-              "
               class="col-3 mb-2"
               height="unset"
               @counter="counterOnCard"
@@ -376,12 +390,12 @@
           <div class="row justify-content-center">
             <Card
               v-for="object in tokenObjects"
-              :object="object"
               :actions="factory.actions({
                 drag: false,
                 expand: false,
                 create: true,
               })"
+              :object="object"
               class="col-3 mb-2"
               height="unset"
               @create="tokenCreate"
@@ -435,11 +449,10 @@
     data: () => ({
       dragover: false,
       cardModal: null,
-      graveyardModal: null,
-      libraryModal: null,
       scryModal: null,
       gameOverModal: null,
       tokenModal: null,
+      zoneModal: null,
       detailObject: {},
       stickyObject: {},
       modalObject: {},
@@ -449,6 +462,7 @@
       scryObjects: [],
       token: null,
       tokenObjects: [],
+      zoneObjects: [],
       counters: [],
       zones: [],
       stackZones: [
@@ -564,7 +578,7 @@
       this.modalObject = this.factory.object()
     },
     mounted() {
-      this.$refs.modals.forEach((modal) => this[modal.dataset.ref] = new bootstrap.Modal(modal))
+      this.zoneModal = new bootstrap.Modal(this.$refs.zoneModal)
       this.cardModal = new bootstrap.Modal(this.$refs.cardModal)
       this.scryModal = new bootstrap.Modal(this.$refs.scryModal)
       this.tokenModal = new bootstrap.Modal(this.$refs.tokenModal)
@@ -606,6 +620,12 @@
     methods: {
       closeModal(modal) {
         this[modal].hide()
+      },
+      setZoneModalObjects(kind, zone) {
+        this.zoneObjects = this[kind][zone]
+      },
+      openModal(modal) {
+        this[modal].show()
       },
       determineAmount(amount) {
         return amount > this.user.library_total
