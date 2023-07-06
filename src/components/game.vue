@@ -257,9 +257,6 @@
             v-for="object in user.hand"
             class="pointer"
             :object="object"
-            data-bs-toggle="modal"
-            data-bs-target="#zoneSearch"
-            @click="setZoneModalObjects('user', 'library')"
             @details="details"
             @expand="expand"
           />
