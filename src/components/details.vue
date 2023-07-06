@@ -35,11 +35,11 @@
               disabled
             />
           </div>
-          <div class="d-grid">
+          <div class="d-grid gap-2">
             <button
               v-if="functions.isNotEmpty(object.rulings)"
               type="button"
-              class="btn btn-info mb-2"
+              class="btn btn-info"
               data-bs-toggle="modal"
               data-bs-target="#cardRules"
             >Rules</button>
