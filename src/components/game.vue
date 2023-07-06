@@ -43,6 +43,7 @@
         @power="power"
         @reveal="reveal"
         @toughness="toughness"
+        @transform="transform"
       />
       <div v-else class="row">
         <div v-if="!user.is_ready" class="col justify-content-center hstack gap-2">
@@ -261,7 +262,6 @@
             @click="setZoneModalObjects('user', 'library')"
             @details="details"
             @expand="expand"
-            @transform="transform"
           />
         </div>
       </div>
@@ -346,7 +346,7 @@
               height="unset"
               @counter="counterOnCard"
               @move="move"
-              @transform="transform"
+              @transfer="transfer"
             />
           </div>
         </div>
@@ -668,10 +668,10 @@
         this.dragover = false
         const object = JSON.parse(event.dataTransfer.getData('application/json'))
         if (this.functions.isNotNull(opponent_id)) {
-          this.transfer(object, zone)
+          this.transfer(object.id, zone)
         }
         if (object.zone !== zone && this.functions.isNull(opponent_id)) {
-          this.move(object, zone)
+          this.move(object.id, zone)
         }
       },
       expand(object) {
@@ -684,8 +684,8 @@
       mill() {
         this.fetch.put('/mill', {game_id: this.id, amount: this.millAmount})
       },
-      move(object, zone, location = 'top') {
-        this.fetch.put('/move', {game_id: this.id, object_id: object.id, zone, location})
+      move(object_id, zone, location = 'top') {
+        this.fetch.put('/move', {game_id: this.id, object_id: object_id, zone, location})
       },
       mulligan() {
         this.fetch.put('/mulligan', {game_id: this.id})
@@ -743,8 +743,8 @@
       toughness(object_id, value) {
         this.fetch.put('/toughness', {game_id: this.id, object_id, value})
       },
-      transfer(object, zone) {
-        this.fetch.put('/transfer', {game_id: this.id, object_id: object.id, zone})
+      transfer(object_id, zone) {
+        this.fetch.put('/transfer', {game_id: this.id, object_id, zone})
       },
       transform(object_id, card_face_id) {
         this.fetch.put('/transform', {game_id: this.id, object_id, card_face_id})

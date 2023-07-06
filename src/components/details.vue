@@ -49,6 +49,12 @@
               class="btn btn-warning"
               @click="reveal"
             >Reveal</button>
+            <button
+              v-if="isMine && functions.isNotNull(object.active_face) && !isGameOver"
+              type="button"
+              class="btn btn-info"
+              @click="transform"
+            >Transform</button>
           </div>
         </div>
         <div class="col-6">
@@ -132,6 +138,7 @@
       'reveal',
       'power',
       'toughness',
+      'transform',
     ],
     data: () => ({
       selectedCounter: null,
@@ -186,6 +193,9 @@
         return this.functions.toNumber(value)
           + this.object.counters.reduce((agg, {name, amount}) => name === '+1/+1' ? agg + amount : agg, 0)
           - this.object.counters.reduce((agg, {name, amount}) => name === '-1/-1' ? agg + amount : agg, 0)
+      },
+      transform() {
+        this.$emit('transform', this.object.id, this.object.card_faces.find((face) => face.id !== this.object.active_face.id).id)
       },
     },
   }

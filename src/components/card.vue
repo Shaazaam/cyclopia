@@ -29,16 +29,11 @@
             <li v-for="zone in _actions.move" class="py-1">
               <button type="button" class="btn btn-primary" @click="move(zone)">{{functions.toUpperCaseWords(zone)}}</button>
             </li>
+            <li class="py-1">
+              <button type="button" class="btn btn-warning" @click="transfer">To Opponent</button>
+            </li>
           </ul>
         </div>
-        <button
-          v-if="_actions.transform && functions.isNotNull(object.active_face) && !isGameOver"
-          type="button"
-          class="btn btn-info"
-          @click.stop="transform"
-        >
-          <i class="bi bi-arrow-clockwise"></i>
-        </button>
         <div v-if="_actions.create" class="input-group">
           <button
             type="button"
@@ -124,7 +119,7 @@
       'expand',
       'move',
       'tap',
-      'transform',
+      'transfer',
     ],
     data: () => ({
       _actions: null,
@@ -192,8 +187,8 @@
       tap(state) {
         this.$emit('tap', this.object.id, state)
       },
-      transform() {
-        this.$emit('transform', this.object.id, this.object.card_faces.find((face) => face.id !== this.object.active_face.id).id)
+      transfer() {
+        this.$emit('transfer', this.object.id, 'field')
       },
     },
   }
