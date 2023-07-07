@@ -602,7 +602,10 @@ export const getGame = async (id) => {
       objects.card_id,
       objects.user_id,
       objects.zone,
-      objects.position,
+      CASE
+        WHEN objects.zone = 'library' THEN NULL
+        ELSE objects.position
+      END AS position,
       objects.power,
       objects.toughness,
       objects.is_tapped,
@@ -627,37 +630,7 @@ export const getGame = async (id) => {
       FROM counter_object
       GROUP BY counter_object.object_id
     ) co ON objects.id = co.object_id
-    WHERE objects.zone IN ('exile', 'field')
-      AND objects.game_id = $1
-    UNION ALL
-    SELECT
-      objects.id,
-      objects.card_id,
-      objects.user_id,
-      objects.zone,
-      CASE
-        WHEN objects.zone = 'library' THEN NULL
-        ELSE objects.position
-      END AS position,
-      objects.power,
-      objects.toughness,
-      objects.is_tapped,
-      JSON_BUILD_OBJECT('oracle_id', cards.oracle_id, 'image_uris', cards.image_uris) AS card,
-      '[]' AS counters,
-      cf.card_faces,
-      TO_JSON(card_faces.*) AS active_face
-    FROM objects
-    JOIN cards ON objects.card_id = cards.id
-    LEFT JOIN card_faces ON objects.card_face_id = card_faces.id
-    LEFT JOIN (
-      SELECT
-        card_faces.card_id,
-        JSON_AGG(card_faces.*) AS card_faces
-      FROM card_faces
-      GROUP BY card_faces.card_id
-    ) cf ON objects.card_id = cf.card_id
-    WHERE objects.zone IN ('hand', 'library', 'graveyard', 'remove')
-      AND objects.game_id = $1
+    WHERE objects.game_id = $1
   `, [id])
   const {rows: counts} = await query(`
     SELECT
@@ -919,6 +892,7 @@ export const move = async (game_id, object_id, user_id, zone, location) => {
       AND objects.user_id = $3
     RETURNING *
   `, [game_id, object_id, user_id, zone, location], 1)
+  await query(`DELETE FROM counter_object WHERE counter_object.object_id = $1`, [object_id])
   return rows
 }
 export const transfer = async (game_id, object_id, old_user_id, new_user_id, zone) => {

@@ -6,7 +6,7 @@
     <div class="col-7">
       <div class="row">
         <div class="col-6">
-          <div class="input-group mb-2">
+          <div v-if="shouldShowPT" class="input-group mb-2">
             <input
               v-if="isMine && !isGameOver && !readonly && !inHand"
               v-model="power"
@@ -180,6 +180,9 @@
       },
       isMine() {
         return this.object.user_id === this.authUser.id
+      },
+      shouldShowPT() {
+        return this.object.card.type_line.includes('Creature') || this.object.card.type_line.includes('Land')
       },
     },
     mounted() {
