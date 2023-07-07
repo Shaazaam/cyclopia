@@ -606,7 +606,10 @@
           this.drawAmount = 1
         }
         if (this.functions.isNotNull(this.stickyObject.id)) {
-          this.stickyObject = this.objects.find((object) => object.id === this.stickyObject.id)
+          this.stickyObject = this.functions.copy(
+            this.objects.find((object) => object.id === this.stickyObject.id),
+            {is_tapped: false}
+          )
         }
       },
       revealedObject(x) {
