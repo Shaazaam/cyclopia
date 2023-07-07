@@ -600,6 +600,16 @@
         if (this.user.is_active_turn || this.opponent.is_active_turn) {
           this.drawAmount = 1
         }
+        if (this.functions.isNotEmpty(this.zoneObjects)) {
+          const [{user_id, zone}] = this.zoneObjects
+          this.zoneObjects = this.objects.filter((object) => object.user_id === user_id && object.zone === zone)
+        }
+        if (this.functions.isNotNull(this.modalObject.id)) {
+          this.modalObject = this.functions.copy(
+            this.objects.find((object) => object.id === this.modalObject.id),
+            {is_tapped: false}
+          )
+        }
         if (this.functions.isNotNull(this.stickyObject.id)) {
           this.stickyObject = this.functions.copy(
             this.objects.find((object) => object.id === this.stickyObject.id),
@@ -615,6 +625,8 @@
     methods: {
       closeModal(modal) {
         this[modal].hide()
+        this.zoneObjects = []
+        this.modalObject = this.factory.object()
       },
       setZoneModalObjects(kind, zone) {
         this.zoneObjects = this[kind][zone]
