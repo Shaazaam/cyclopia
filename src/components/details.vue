@@ -44,7 +44,7 @@
               data-bs-target="#cardRules"
             >Rules</button>
             <button
-              v-if="inHand"
+              v-if="inHand && !isGameOver"
               type="button"
               class="btn btn-warning"
               @click="reveal"
