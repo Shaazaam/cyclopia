@@ -322,22 +322,17 @@
           <div class="row justify-content-center">
             <Card
               v-for="object in zoneObjects"
-              :actions="(() => {
-                if (authUser.id === object.user_id) {
-                  return object.zone === 'exile'
-                    ? factory.actions({
-                        counters: cardCounters,
-                        drag: false,
-                        expand: false,
-                        move: functions.removeByValue(zones, object.zone),
-                      })
-                    : factory.actions({
-                        drag: false,
-                        expand: false,
-                        move: functions.removeByValue(zones, object.zone),
-                      })
-                }
-              })()"
+              :key="object.id"
+              :actions="factory.actions(
+                functions.copy(
+                  {
+                    drag: false,
+                    expand: false,
+                  },
+                  authUser.id === object.user_id ? {move: functions.removeByValue(zones, object.zone)} : {},
+                  authUser.id === object.user_id && object.zone === 'exile' ? {counters: cardCounters} : {},
+                )
+              )"
               :object="object"
               class="col-3 mb-2"
               height="unset"
