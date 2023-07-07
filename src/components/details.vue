@@ -69,7 +69,7 @@
               />
             </div>
           </template>
-          <div v-if="isMine && !isGameOver" class="d-grid dropdown">
+          <div v-if="isMine && !isGameOver && !inHand" class="d-grid dropdown">
             <button type="button" class="btn btn-info dropdown-toggle" data-bs-toggle="dropdown">Counters</button>
             <ul class="dropdown-menu bg-transparent">
               <li class="py-1">
