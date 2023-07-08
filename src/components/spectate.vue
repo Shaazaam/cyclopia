@@ -7,8 +7,9 @@
   />
 
   <div class="row">
-    <div class="col-9">
+    <div class="col-8">
       <Field
+        class="border border-success rounded bg-success bg-opacity-10 p-1 reverse-columns"
         :actions="factory.actions({drag: false})"
         :objects="user0.field"
         reversed
@@ -16,23 +17,33 @@
         @expand="expand"
       />
     </div>
-    <div class="col-3">
-      <Details v-if="functions.isNotNull(detailObject.id)" :object="detailObject" readonly />
+    <div class="col-4" v-click-outside="() => stickyObject = factory.object({rulings: []})">
+      <Details
+        v-if="functions.isNotNull(detailObject.id)"
+        :object="detailObject"
+        readonly
+      />
+      <Details
+        v-else-if="functions.isNotNull(stickyObject.id)"
+        :object="stickyObject"
+        readonly
+      />
     </div>
   </div>
 
   <hr />
 
   <div class="row">
-    <div class="col-9">
+    <div class="col-8">
       <Field
+        class="border border-success rounded bg-success bg-opacity-10 p-1"
         :actions="factory.actions({drag: false})"
         :objects="user1.field"
         @details="details"
         @expand="expand"
       />
     </div>
-    <div class="col-3" style="max-height:31.5vh; overflow: auto;">
+    <div class="col-4" style="max-height:31.5vh; overflow: auto;">
       <Events :events="events" />
     </div>
   </div>
@@ -44,8 +55,9 @@
           <div class="row justify-content-center">
             <Card
               :object="modalObject"
-              :actions="factory.actions({expand: false})"
+              :actions="factory.actions({drag: false, expand: false})"
               class="col"
+              height="unset"
               data-bs-dismiss="modal"
             />
           </div>
@@ -81,6 +93,7 @@
     data: () => ({
       cardModal: null,
       detailObject: {},
+      stickyObject: {},
       modalObject: {},
       counters: [],
       zones: [],
@@ -127,6 +140,9 @@
       },
       counts() {
         return this.game ? this.game.counts : []
+      },
+      rulings() {
+        return this.game ? this.game.rulings: []
       },
       user0() {
         return this.functions.deepExtend(
@@ -193,7 +209,8 @@
       this.fetch.get('/zones', {}, ({data}) => this.zones = data.map(({name}) => name))
       this.fetch.post('/spectators', {id: this.id})
       this.fetch.get('/events', [this.id])
-      this.detailObject = this.factory.object()
+      this.detailObject = this.factory.object({rulings: []})
+      this.stickyObject = this.factory.object({rulings: []})
       this.modalObject = this.factory.object()
     },
     mounted() {
@@ -203,8 +220,14 @@
       closeModal(modal) {
         this[modal].hide()
       },
-      details(object) {
+      details(object, sticky) {
+        object = this.functions.copy(object, {
+          rulings: this.rulings.filter(({oracle_id}) => oracle_id === object.card.oracle_id)
+        })
         this.detailObject = object
+        if (sticky) {
+          this.stickyObject = object
+        }
       },
       expand(object) {
         this.modalObject = this.functions.copy(object, {is_tapped: false})

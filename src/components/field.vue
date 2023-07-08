@@ -1,18 +1,5 @@
 <template>
-  <div
-    class="border rounded p-1"
-    :class="{
-      'border-warning': reversed,
-      'bg-warning': reversed,
-      'reverse-columns': reversed,
-      'border-success': !reversed,
-      'bg-success': !reversed,
-      'bg-opacity-25': !reversed && dragover,
-      'bg-opacity-10': !dragover,
-    }"
-    @dragenter="dragover = true"
-    @dragleave="dragover = false"
-  >
+  <div>
     <div class="row" :class="{'mb-2': !reversed}" :style="height">
       <div class="col-9">
         <div class="d-flex flex-wrap hstack">
@@ -24,7 +11,7 @@
               :object="object"
               :actions="actions"
               :style="applyStyle(id, i, cards.length)"
-              class="me-2"
+              class="me-2 pointer"
               @details="details"
               @expand="expand"
               @tap="tap"
@@ -45,7 +32,7 @@
               v-for="(object, i) in cards"
               :object="object"
               :style="applyStyle(id, i, cards.length)"
-              class="me-2"
+              class="me-2 pointer"
               @details="details"
               @expand="expand"
               @mouseenter="hoverGroups[id] = i"
@@ -67,7 +54,7 @@
               :object="object"
               :actions="actions"
               :style="applyStyle(id, i, cards.length)"
-              class="me-2"
+              class="me-2 pointer"
               @details="details"
               @expand="expand"
               @tap="tap"
@@ -90,7 +77,7 @@
               :object="object"
               :actions="actions"
               :style="applyStyle(id, i, cards.length)"
-              class="me-2"
+              class="me-2 pointer"
               @details="details"
               @expand="expand"
               @tap="tap"

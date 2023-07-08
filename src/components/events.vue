@@ -33,9 +33,11 @@
           'power': (event) => `Changed the Power of ${event.card_name} to ${event.data.power}`,
           'scry': (event) => `Scried for ${event.data.amount}`,
           'shuffle': (event) => `Shuffled Their Deck`,
+          'reveal': (event) => `Revealed ${event.card_name}`,
           'tap': (event) => `${event.data.is_tapped ? 'Tapped' : 'Untapped'} ${event.card_name}`,
           'token': (event) => `Created a ${event.card_name} Token`,
           'toughness': (event) => `Changed the Toughness of ${event.card_name} to ${event.data.toughness}`,
+          'transfer': (event) => `Tranferred ${event.card_name} to ${event.new_controller}`,
           'transform': () => `Transformed a Card`,
           'untap': () => `Untapped Their Cards`,
         }))()[event.name]

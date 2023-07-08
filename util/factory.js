@@ -16,7 +16,6 @@ export const actions = (x) => copy({
   expand: true,
   move: [],
   tap: false,
-  transform: true,
   create: false,
 }, x)
 
@@ -86,6 +85,7 @@ export const game = (x) => copy({
   spectators: [],
   objects: [],
   counts: [],
+  rulings: [],
 }, x)
 
 export const game_user = (x) => copy({

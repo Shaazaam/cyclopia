@@ -207,6 +207,11 @@ export const percentage = (number) => Intl.NumberFormat('en-US', {
   signDisplay: 'always',
 }).format(number)
 export const numberFormat = (number) => new Intl.NumberFormat().format(number)
+export const localeDate = (datetime) => new Date(datetime).toLocaleDateString('en-US', {
+  day: 'numeric',
+  month: 'numeric',
+  year: '2-digit',
+})
 export const localeDateTime = (datetime) => new Date(datetime).toLocaleString('en-US', {
   hourCycle: 'h24',
   hour: '2-digit',

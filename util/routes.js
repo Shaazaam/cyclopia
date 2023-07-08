@@ -73,17 +73,20 @@ const authorize = async (req, res, next) => {
   }
   next()
 }
-const isAdmin = async (req, res, next) => {
-  const {user: {is_admin}} = req.session
-  if (!is_admin) {
-    return res422(req, res)
+const gameOngoing = async (req, res, next) => {
+  const {game_id} = req.method === 'GET' ? req.params : req.body
+  if (isNotNull(await dal.getGameWinner(game_id))) {
+    return res401(req, res)
   }
   next()
 }
-
-const event = (entity_id, name, data, user_id) => ({entity_id, name, data, user_id})
-const invitation = (user_id, invitations) => ({user_id, invitations})
-
+const isAdmin = async (req, res, next) => {
+  const {user: {is_admin}} = req.session
+  if (!is_admin) {
+    return res401(req, res)
+  }
+  next()
+}
 const validate = async ([input, rules], req, res, next) => {
   const results = await val.validate(input, rules)
   if (!val.isValid(results)) {
@@ -92,10 +95,27 @@ const validate = async ([input, rules], req, res, next) => {
   }
   next()
 }
+
+const event = (entity_id, name, data, user_id) => ({entity_id, name, data, user_id})
+const invitation = (user_id, invitations) => ({user_id, invitations})
+
 const log = async (req, res, next) => {
   const {entity_id, name, data, user_id} = req.cyclopia.event
   const events = await dal.insertEvents(entity_id, name, data, user_id)
   req.cyclopia.game_id = entity_id
+  next()
+}
+const sendObject = async (req, res, next) => {
+  const {data: [data], event: {user_id: uid}, game_id} = req.cyclopia
+  const users = (await dal.getGameUsers(game_id)).map(({user_id}) => user_id).concat(
+    (await dal.getGameSpectators(game_id)).map(({user_id}) => user_id)
+  ).filter((user) => user !== uid)
+  req.cyclopia = copy(req.cyclopia, {
+    data: [],
+    event_entity_id: game_id,
+    users: users.concat(uid),
+  })
+  wss.send(users, {kind: 'object', data})
   next()
 }
 const sendGame = async (req, res, next) => {
@@ -103,7 +123,15 @@ const sendGame = async (req, res, next) => {
   const game = await dal.getGame(game_id)
   const users = game.users.map(({user_id}) => user_id).concat(game.spectators.map(({user_id}) => user_id))
   req.cyclopia = copy(req.cyclopia, {event_entity_id: game_id, users})
-  wss.send(users, {kind: 'game', data: game})
+  users.forEach((user) => wss.send(
+    [user],
+    {
+      kind: 'game',
+      data: copy(game, {
+        objects: game.objects.filter(({user_id, zone}) => user_id === user || (zone !== 'hand' && user_id !== user))
+      })
+    }
+  ))
   next()
 }
 const sendEvents = async (req, res, next) => {
@@ -162,7 +190,7 @@ const routes = {
     ],
   },
   'counter': {
-    middleware: [authenticate, authorize],
+    middleware: [authenticate, authorize, gameOngoing],
     put: [
       async (req, res, next) => {
         const {user: {id: user_id}} = req.session
@@ -211,7 +239,7 @@ const routes = {
     ],*/
   },
   'draw': {
-    middleware: [authenticate, authorize],
+    middleware: [authenticate, authorize, gameOngoing],
     put: [
       async (req, res, next) => {
         const {amount: draw_amount} = req.body
@@ -236,7 +264,7 @@ const routes = {
     ],
   },
   'end-game': {
-    middleware: [authenticate, authorize],
+    middleware: [authenticate, authorize, gameOngoing],
     put: [
       async (req, res, next) => {
         const {user: {id: user_id}} = req.session
@@ -251,7 +279,7 @@ const routes = {
     ],
   },
   'end-turn': {
-    middleware: [authenticate, authorize],
+    middleware: [authenticate, authorize, gameOngoing],
     put: [
       async (req, res, next) => {
         const {user: {id: user_id}} = req.session
@@ -338,6 +366,7 @@ const routes = {
     ],
   },
   'game-users': {
+    middleware: [authenticate],
     params: ['id'],
     get: [
       async (req, res, next) => {
@@ -462,7 +491,7 @@ const routes = {
     ],
   },
   'life': {
-    middleware: [authenticate, authorize],
+    middleware: [authenticate, authorize, gameOngoing],
     put: [
       async (req, res, next) => {
         const {user: {id: user_id}} = req.session
@@ -509,7 +538,7 @@ const routes = {
     ],
   },
   'mill': {
-    middleware: [authenticate, authorize],
+    middleware: [authenticate, authorize, gameOngoing],
     put: [
       async (req, res, next) => {
         const {amount: mill_amount} = req.body
@@ -534,7 +563,7 @@ const routes = {
     ],
   },
   'move': {
-    middleware: [authenticate, authorize],
+    middleware: [authenticate, authorize, gameOngoing],
     put: [
       async (req, res, next) => {
         const {user: {id: user_id}} = req.session
@@ -549,7 +578,7 @@ const routes = {
     ],
   },
   'mulligan': {
-    middleware: [authenticate, authorize],
+    middleware: [authenticate, authorize, gameOngoing],
     put: [
       async (req, res, next) => {
         const {user: {id: user_id}} = req.session
@@ -579,7 +608,7 @@ const routes = {
     ],
   },
   'power': {
-    middleware: [authenticate, authorize],
+    middleware: [authenticate, authorize, gameOngoing],
     put: [
       async (req, res, next) => {
         const {user: {id: user_id}} = req.session
@@ -623,6 +652,25 @@ const routes = {
       },
     ],
   },
+  'reveal': {
+    middleware: [authenticate, authorize, gameOngoing],
+    params: ['game_id', 'object_id'],
+    get: [
+      async (req, res, next) => {
+        const {user: {id: user_id}} = req.session
+        const {game_id, object_id} = req.params
+        const data = await dal.getObject(game_id, object_id, user_id).catch((err) => next(err))
+        req.cyclopia = copy(req.cyclopia, {
+          data,
+          event: event(game_id, 'reveal', data, user_id),
+        })
+        next()
+      },
+      log,
+      sendObject,
+      sendEvents,
+    ],
+  },
   'rulings': {
     middleware: [authenticate],
     post: [
@@ -643,7 +691,7 @@ const routes = {
     ],
   },
   'scry': {
-    middleware: [authenticate, authorize],
+    middleware: [authenticate, authorize, gameOngoing],
     params: ['game_id', 'amount'],
     get: [
       async (req, res, next) => {
@@ -668,7 +716,7 @@ const routes = {
     ],
   },
   'shuffle': {
-    middleware: [authenticate, authorize],
+    middleware: [authenticate, authorize, gameOngoing],
     put: [
       async (req, res, next) => {
         const {user: {id: user_id}} = req.session
@@ -703,7 +751,7 @@ const routes = {
     ],
   },
   'start': {
-    middleware: [authenticate, authorize],
+    middleware: [authenticate, authorize, gameOngoing],
     put: [
       async (req, res, next) => {
         const {user: {id: user_id}} = req.session
@@ -716,7 +764,7 @@ const routes = {
     ],
   },
   'tap': {
-    middleware: [authenticate, authorize],
+    middleware: [authenticate, authorize, gameOngoing],
     put: [
       async (req, res, next) => {
         const {user: {id: user_id}} = req.session
@@ -752,6 +800,7 @@ const routes = {
     ],
     put: [
       authorize,
+      gameOngoing,
       async (req, res, next) => {
         const {user: {id: user_id}} = req.session
         const {game_id, card_id, amount} = req.body
@@ -765,7 +814,7 @@ const routes = {
     ],
   },
   'toughness': {
-    middleware: [authenticate, authorize],
+    middleware: [authenticate, authorize, gameOngoing],
     put: [
       async (req, res, next) => {
         const {user: {id: user_id}} = req.session
@@ -779,8 +828,24 @@ const routes = {
       sendEvents,
     ],
   },
+  'transfer': {
+    middleware: [authenticate, authorize, gameOngoing],
+    put: [
+      async (req, res, next) => {
+        const {user: {id: user_id}} = req.session
+        const {game_id, object_id, zone} = req.body
+        const new_user_id = (await dal.getGameUsers(game_id).catch((err) => next(err))).find((user) => user.user_id !== user_id).user_id
+        const data = await dal.transfer(game_id, object_id, user_id, new_user_id, zone).catch((err) => next(err))
+        req.cyclopia.event = event(game_id, 'transfer', data, user_id)
+        next()
+      },
+      log,
+      sendGame,
+      sendEvents,
+    ],
+  },
   'transform': {
-    middleware: [authenticate, authorize],
+    middleware: [authenticate, authorize, gameOngoing],
     put: [
       async (req, res, next) => {
         const {user: {id: user_id}} = req.session
@@ -795,7 +860,7 @@ const routes = {
     ],
   },
   'untap': {
-    middleware: [authenticate, authorize],
+    middleware: [authenticate, authorize, gameOngoing],
     put: [
       async (req, res, next) => {
         const {user: {id: user_id}} = req.session

@@ -539,6 +539,38 @@ export const getInvitations = async (user_id) => {
   return rows
 }
 
+export const getObject = async (game_id, object_id, user_id) => {
+  const {rows} = await query(`
+    SELECT
+      objects.id,
+      objects.card_id,
+      objects.game_id,
+      objects.user_id,
+      objects.zone,
+      objects.position,
+      objects.power,
+      objects.toughness,
+      objects.is_tapped,
+      JSON_BUILD_OBJECT('oracle_id', cards.oracle_id, 'image_uris', cards.image_uris) AS card,
+      '[]' AS counters,
+      cf.card_faces,
+      TO_JSON(card_faces.*) AS active_face
+    FROM objects
+    JOIN cards ON objects.card_id = cards.id
+    LEFT JOIN card_faces ON objects.card_face_id = card_faces.id
+    LEFT JOIN (
+      SELECT
+        card_faces.card_id,
+        JSON_AGG(card_faces.*) AS card_faces
+      FROM card_faces
+      GROUP BY card_faces.card_id
+    ) cf ON objects.card_id = cf.card_id
+    WHERE objects.id = $2
+      AND objects.game_id = $1
+      AND objects.user_id = $3
+  `, [game_id, object_id, user_id], 1)
+  return rows
+}
 export const getGame = async (id) => {
   const {rows: users} = await query(`
     SELECT
@@ -570,7 +602,10 @@ export const getGame = async (id) => {
       objects.card_id,
       objects.user_id,
       objects.zone,
-      objects.position,
+      CASE
+        WHEN objects.zone = 'library' THEN NULL
+        ELSE objects.position
+      END AS position,
       objects.power,
       objects.toughness,
       objects.is_tapped,
@@ -595,37 +630,7 @@ export const getGame = async (id) => {
       FROM counter_object
       GROUP BY counter_object.object_id
     ) co ON objects.id = co.object_id
-    WHERE objects.zone IN ('exile', 'field', 'graveyard', 'remove')
-      AND objects.game_id = $1
-    UNION ALL
-    SELECT
-      objects.id,
-      objects.card_id,
-      objects.user_id,
-      objects.zone,
-      CASE
-        WHEN objects.zone = 'library' THEN NULL
-        ELSE objects.position
-      END AS position,
-      objects.power,
-      objects.toughness,
-      objects.is_tapped,
-      JSON_BUILD_OBJECT('image_uris', cards.image_uris) AS card,
-      '[]' AS counters,
-      cf.card_faces,
-      TO_JSON(card_faces.*) AS active_face
-    FROM objects
-    JOIN cards ON objects.card_id = cards.id
-    LEFT JOIN card_faces ON objects.card_face_id = card_faces.id
-    LEFT JOIN (
-      SELECT
-        card_faces.card_id,
-        JSON_AGG(card_faces.*) AS card_faces
-      FROM card_faces
-      GROUP BY card_faces.card_id
-    ) cf ON objects.card_id = cf.card_id
-    WHERE objects.zone IN ('hand', 'library')
-      AND objects.game_id = $1
+    WHERE objects.game_id = $1
   `, [id])
   const {rows: counts} = await query(`
     SELECT
@@ -639,7 +644,19 @@ export const getGame = async (id) => {
     WHERE objects.game_id = $1
     GROUP BY objects.user_id
   `, [id])
-  return factory.game({id, users, spectators, objects, counts})
+  const {rows: rulings} = await query(`
+    SELECT rulings.*
+    FROM rulings
+    JOIN (
+      SELECT cards.oracle_id
+      FROM objects
+      JOIN cards ON cards.id = objects.card_id
+      WHERE objects.zone IN ('field', 'hand')
+        AND objects.game_id = $1
+      GROUP BY cards.oracle_id
+    ) cards ON cards.oracle_id = rulings.oracle_id
+  `, [id])
+  return factory.game({id, users, spectators, objects, counts, rulings})
 }
 export const getGameUsers = async (game_id) => {
   const {rows} = await query(`
@@ -659,6 +676,14 @@ export const getGameSpectators = async (game_id) => {
     WHERE game_spectator.game_id = $1
   `, [game_id])
   return rows
+}
+export const getGameWinner = async (game_id) => {
+  const {rows: [{winner}]} = await query(`
+    SELECT games.winner
+    FROM games
+    WHERE games.id = $1
+  `, [game_id], 1)
+  return winner
 }
 export const insertSpectator = async (game_id, user_id) => {
   await query(`INSERT INTO game_spectator (game_id, user_id) VALUES ($1, $2)`, [game_id, user_id], 1)
@@ -693,13 +718,17 @@ export const getEvents = async (entity_id) => {
       END AS card_name,
       CASE
         WHEN events.name = 'end-game' THEN winner.handle
-      END AS winner
+      END AS winner,
+      CASE
+        WHEN events.name = 'transfer' THEN card_owner.handle
+      END AS new_controller
     FROM events
     JOIN users creator ON events.created_by = creator.id
     LEFT JOIN cards direct ON (events.data->>'card_id')::uuid = direct.id
     LEFT JOIN objects ON (events.data->>'object_id')::uuid = objects.id
     LEFT JOIN cards indirect ON objects.card_id = indirect.id
     LEFT JOIN users winner ON (events.data->>'winner')::uuid = winner.id
+    LEFT JOIN users card_owner ON (events.data->>'user_id')::uuid = card_owner.id
     WHERE events.entity_id = $1
     ORDER BY events.created_on DESC
   `, [entity_id])
@@ -833,7 +862,7 @@ export const move = async (game_id, object_id, user_id, zone, location) => {
       SELECT cards.type_line
       FROM cards
       JOIN objects ON cards.id = objects.card_id
-      WHERE objects.id = $1
+      WHERE objects.id = $2
     ), zone AS (
       SELECT
         CASE
@@ -848,7 +877,7 @@ export const move = async (game_id, object_id, user_id, zone, location) => {
           WHEN 'top' THEN COALESCE(MAX(objects.position) + 1, 1)
         END AS position
       FROM objects, zone
-      WHERE game_id = $2
+      WHERE game_id = $1
         AND user_id = $3
         AND objects.zone = zone.zone
     )
@@ -858,11 +887,35 @@ export const move = async (game_id, object_id, user_id, zone, location) => {
       position = count.position,
       is_tapped = FALSE
     FROM count, zone
-    WHERE objects.id = $1
-      AND objects.game_id = $2
+    WHERE objects.id = $2
+      AND objects.game_id = $1
       AND objects.user_id = $3
     RETURNING *
-  `, [object_id, game_id, user_id, zone, location], 1)
+  `, [game_id, object_id, user_id, zone, location], 1)
+  await query(`DELETE FROM counter_object WHERE counter_object.object_id = $1`, [object_id])
+  return rows
+}
+export const transfer = async (game_id, object_id, old_user_id, new_user_id, zone) => {
+  const {rows} = await query(`
+    WITH count AS (
+      SELECT COALESCE(MAX(objects.position) + 1, 1) AS position
+      FROM objects
+      WHERE game_id = $1
+        AND user_id = $4
+        AND objects.zone = $5
+    )
+    UPDATE objects
+    SET
+      user_id = $4,
+      zone = $5,
+      position = count.position,
+      is_tapped = FALSE
+    FROM count
+    WHERE objects.id = $2
+      AND objects.game_id = $1
+      AND objects.user_id = $3
+    RETURNING *
+  `, [game_id, object_id, old_user_id, new_user_id, zone], 1)
   return rows
 }
 export const mulligan = async (game_id, user_id) => {

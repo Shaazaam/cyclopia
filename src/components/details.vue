@@ -1,12 +1,14 @@
 <template>
-  <div class="card-group">
-    <Card :object="object" height="31.5vh" />
-    <div class="card text-light bg-transparent">
-      <div class="card-body">
-        <div class="d-flex justify-content-between mb-2">
-          <div class="input-group">
+  <div class="row details">
+    <div class="col-5">
+      <Card :object="object" height="31.5vh" />
+    </div>
+    <div class="col-7">
+      <div class="row">
+        <div class="col-6">
+          <div v-if="shouldShowPT" class="input-group mb-2">
             <input
-              v-if="isMine && !isGameOver && !readonly"
+              v-if="isMine && !isGameOver && !readonly && !inHand"
               v-model="power"
               type="number"
               class="form-control"
@@ -20,7 +22,7 @@
             />
             <span class="input-group-text bg-dark text-light">/</span>
             <input
-              v-if="isMine && !isGameOver && !readonly"
+              v-if="isMine && !isGameOver && !readonly && !inHand"
               v-model="toughness"
               type="number"
               class="form-control"
@@ -33,10 +35,31 @@
               disabled
             />
           </div>
+          <div class="d-grid gap-2">
+            <button
+              v-if="functions.isNotEmpty(object.rulings)"
+              type="button"
+              class="btn btn-info"
+              data-bs-toggle="modal"
+              data-bs-target="#cardRules"
+            >Rules</button>
+            <button
+              v-if="inHand && !isGameOver"
+              type="button"
+              class="btn btn-warning"
+              @click="reveal"
+            >Reveal</button>
+            <button
+              v-if="isMine && functions.isNotNull(object.active_face) && !isGameOver"
+              type="button"
+              class="btn btn-info"
+              @click="transform"
+            >Transform</button>
+          </div>
         </div>
-        <template v-for="{name, amount} in object.counters">
-          <div v-if="amount > 0" class="d-flex justify-content-between mb-2">
-            <div class="input-group">
+        <div class="col-6">
+          <template v-for="{name, amount} in object.counters">
+            <div v-if="amount > 0" class="input-group mb-2">
               <span class="input-group-text bg-dark text-light">{{functions.toUpperCaseWords(name)}}</span>
               <input
                 type="text"
@@ -45,10 +68,8 @@
                 disabled
               />
             </div>
-          </div>
-        </template>
-        <div v-if="isMine && !isGameOver" class="d-flex justify-content-between">
-          <div class="dropdown-center" style="width: 100%;">
+          </template>
+          <div v-if="isMine && !isGameOver && !inHand" class="d-grid dropdown">
             <button type="button" class="btn btn-info dropdown-toggle" data-bs-toggle="dropdown">Counters</button>
             <ul class="dropdown-menu bg-transparent">
               <li class="py-1">
@@ -67,6 +88,18 @@
               </li>
             </ul>
           </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="cardRules" ref="cardRulesModal" class="modal fade" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content bg-dark">
+        <div class="modal-body">
+          <p v-for="ruling in object.rulings">
+            <span class="text-warning">{{functions.localeDate(ruling.published_at)}}</span>: {{ruling.comment}}
+          </p>
         </div>
       </div>
     </div>
@@ -102,11 +135,14 @@
     },
     emits: [
       'counter',
+      'reveal',
       'power',
       'toughness',
+      'transform',
     ],
     data: () => ({
       selectedCounter: null,
+      cardRulesModal: null,
     }),
     computed: {
       power: {
@@ -114,7 +150,9 @@
           return this.functions.isNotNull(this.object.power) ? this.sumPTCounters(this.object.power) : null
         },
         set(x) {
-          this.$emit('power', this.object.id, x)
+          if (this.functions.isNotEmpty(x)) {
+            this.$emit('power', this.object.id, x)
+          }
         },
       },
       toughness: {
@@ -122,7 +160,9 @@
           return this.functions.isNotNull(this.object.toughness) ? this.sumPTCounters(this.object.toughness) : null
         },
         set(x) {
-          this.$emit('toughness', this.object.id, x)
+          if (this.functions.isNotEmpty(x)) {
+            this.$emit('toughness', this.object.id, x)
+          }
         },
       },
       selectedCounterAmount: {
@@ -130,7 +170,9 @@
           return this.functions.isNotNull(this.selectedCounter) ? this.object.counters.find(({name}) => name === this.selectedCounter).amount : 0
         },
         set(x) {
-          this.$emit('counter', this.object.id, this.selectedCounter, x)
+          if (this.functions.isNotEmpty(x)) {
+            this.$emit('counter', this.object.id, this.selectedCounter, x)
+          }
         },
       },
       inHand() {
@@ -139,12 +181,24 @@
       isMine() {
         return this.object.user_id === this.authUser.id
       },
+      shouldShowPT() {
+        return this.object.card.type_line.includes('Creature') || this.object.card.type_line.includes('Land')
+      },
+    },
+    mounted() {
+      this.cardRulesModal = new bootstrap.Modal(this.$refs.cardRulesModal)
     },
     methods: {
+      reveal() {
+        this.$emit('reveal', this.object.id)
+      },
       sumPTCounters(value) {
         return this.functions.toNumber(value)
           + this.object.counters.reduce((agg, {name, amount}) => name === '+1/+1' ? agg + amount : agg, 0)
           - this.object.counters.reduce((agg, {name, amount}) => name === '-1/-1' ? agg + amount : agg, 0)
+      },
+      transform() {
+        this.$emit('transform', this.object.id, this.object.card_faces.find((face) => face.id !== this.object.active_face.id).id)
       },
     },
   }

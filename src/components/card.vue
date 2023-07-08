@@ -1,6 +1,6 @@
 <template>
   <div
-    class="card text-light bg-transparent pointer"
+    class="card text-light bg-transparent"
     :draggable="_actions.drag && functions.isNotNull(object.id) && !isGameOver"
     @mouseenter="details(true)"
     @mouseleave="details(false)"
@@ -18,8 +18,8 @@
     <div
       class="card-img-overlay"
     >
-      <div class="d-flex justify-content-between mb-2">
-        <div v-if="functions.isNotEmpty(_actions.move) && !isGameOver" class="dropdown-center">
+      <div class="d-flex justify-content-center gap-2">
+        <div v-if="functions.isNotEmpty(_actions.move) && !isGameOver" class="dropdown-center align-self-start">
           <button
             type="button"
             class="btn btn-primary dropdown-toggle"
@@ -29,16 +29,11 @@
             <li v-for="zone in _actions.move" class="py-1">
               <button type="button" class="btn btn-primary" @click="move(zone)">{{functions.toUpperCaseWords(zone)}}</button>
             </li>
+            <li class="py-1">
+              <button type="button" class="btn btn-warning" @click="transfer">To Opponent</button>
+            </li>
           </ul>
         </div>
-        <button
-          v-if="_actions.transform && functions.isNotNull(object.active_face) && !isGameOver"
-          type="button"
-          class="btn btn-info"
-          @click.stop="transform"
-        >
-          <i class="bi bi-arrow-clockwise"></i>
-        </button>
         <div v-if="_actions.create" class="input-group">
           <button
             type="button"
@@ -52,11 +47,9 @@
             min="1"
           />
         </div>
-      </div>
-      <template v-if="functions.isNotEmpty(_actions.counters)">
-        <template v-for="{name, amount} in object.counters">
-          <div v-if="amount > 0" class="d-flex justify-content-between mb-2">
-            <div class="input-group">
+        <div v-if="functions.isNotEmpty(_actions.counters) && !isGameOver">
+          <div v-for="{name, amount} in object.counters">
+            <div v-if="amount > 0" class="input-group mb-2">
               <span class="input-group-text bg-dark text-light">{{functions.toUpperCaseWords(name)}}</span>
               <input
                 type="text"
@@ -66,28 +59,26 @@
               />
             </div>
           </div>
-        </template>
-      </template>
-      <div v-if="!isGameOver" class="d-flex justify-content-between" @click.stop>
-        <div v-if="functions.isNotEmpty(_actions.counters)" class="dropdown-center" style="width: 100%;">
-          <button type="button" class="btn btn-info dropdown-toggle" data-bs-toggle="dropdown">Counters</button>
-          <ul class="dropdown-menu bg-transparent">
-            <li class="py-1">
-              <div class="input-group">
-                <select v-model="selectedCounter" class="form-control">
-                  <option value="" disabled></option>
-                  <option v-for="{name} in _actions.counters" :value="name">{{functions.toUpperCaseWords(name)}}</option>
-                </select>
-                <input
-                  type="number"
-                  class="form-control"
-                  :value="selectedCounterAmount"
-                  min="0"
-                  @change="(e) => counter(e.target.value)"
-                />
-              </div>
-            </li>
-          </ul>
+          <div class="dropdown">
+            <button type="button" class="btn btn-info dropdown-toggle" data-bs-toggle="dropdown">Counters</button>
+            <ul class="dropdown-menu bg-transparent">
+              <li class="py-1">
+                <div class="input-group">
+                  <select v-model="selectedCounter" class="form-control">
+                    <option value="" disabled></option>
+                    <option v-for="{name} in _actions.counters" :value="name">{{functions.toUpperCaseWords(name)}}</option>
+                  </select>
+                  <input
+                    type="number"
+                    class="form-control"
+                    :value="selectedCounterAmount"
+                    min="0"
+                    @change="(e) => counter(e.target.value)"
+                  />
+                </div>
+              </li>
+            </ul>
+          </div>
         </div>
       </div>
       <slot></slot>
@@ -124,7 +115,7 @@
       'expand',
       'move',
       'tap',
-      'transform',
+      'transfer',
     ],
     data: () => ({
       _actions: null,
@@ -192,8 +183,8 @@
       tap(state) {
         this.$emit('tap', this.object.id, state)
       },
-      transform() {
-        this.$emit('transform', this.object.id, this.object.card_faces.find((face) => face.id !== this.object.active_face.id).id)
+      transfer() {
+        this.$emit('transfer', this.object.id, 'field')
       },
     },
   }
