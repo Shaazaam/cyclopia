@@ -1,9 +1,11 @@
 import {WebSocketServer} from 'ws'
 
-export const wss = new WebSocketServer({noServer: true})
+export const socket = new WebSocketServer({noServer: true})
+
+export const users = () => [...socket.clients].map((ws) => ws.user.id)
 
 export const send = (users, data) => {
-  wss.clients.forEach((ws) => {
+  socket.clients.forEach((ws) => {
     if (users.includes(ws.user.id)) {
       ws.send(JSON.stringify(data))
     }
@@ -11,7 +13,7 @@ export const send = (users, data) => {
 }
 
 export const close = (user) => {
-  wss.clients.forEach((ws) => {
+  socket.clients.forEach((ws) => {
     if (user.id === ws.user.id) {
       ws.close(1000, 'logout')
     }
@@ -20,9 +22,8 @@ export const close = (user) => {
 
 const error = (err) => console.error(err)
 
-wss.on('connection', (ws, req) => {
-  const {user} = req.session
-  ws.user = user
+socket.on('connection', (ws, req) => {
+  ws.user = req.session.user
   ws.on('error', error)
   ws.on('message', (data) => {
     data = JSON.parse(data.toString())

@@ -6,10 +6,11 @@
   "exports": "./server.js",
   "type": "module",
   "scripts": {
-    "build": "webpack",
+    "start": "node ./server.js",
+    "dev-build": "webpack --config webpack.dev.js",
+    "gcp-build": "webpack --config webpack.prod.js",
     "win-dbuild": "docker compose start npm & docker compose restart node",
     "dbuild": "docker compose start npm && docker compose restart node",
-    "start": "node ./server.js",
     "up": "docker compose up"
   },
   "author": "Slaggy Joe",
@@ -23,7 +24,7 @@
     "connect-pg-simple": "^8.0.0",
     "cookie-parser": "^1.4.6",
     "css-loader": "^6.7.3",
-    "dotenv": "^16.0.3",
+    "dotenv-webpack": "^8.0.1",
     "express": "^4.17.3",
     "express-session": "^1.17.3",
     "node-fetch": "^3.2.3",

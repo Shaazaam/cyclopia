@@ -6,11 +6,12 @@ import {createServer} from 'http'
 
 import config from './util/config.js'
 import mount from './util/routes.js'
-import {wss} from './util/wss.js'
+import {socket as wss} from './util/wss.js'
 
 const app = express()
 const sessionManager = dbSession(session)
 const sessionParser = session({
+  cookie: {maxAge: 365 * 24 * 60 * 60 * 1000},
   resave: false,
   saveUninitialized: false,
   secret: config.app.SESSION_KEY,
@@ -21,12 +22,15 @@ const sessionParser = session({
 
 app.use([
   bodyParser.json(),
-  express.static('./dist'),
-  express.static('./public'),
   sessionParser,
 ])
 
 mount(app)
+
+app.use([
+  express.static('./dist'),
+  express.static('./public'),
+])
 
 const server = createServer(app)
 

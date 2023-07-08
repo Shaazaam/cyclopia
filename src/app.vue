@@ -37,17 +37,6 @@
     </div>
   </div>
   <div class="container-fluid" :class="{'invisible': isLoading}" v-cloak>
-    <!-- <div v-if="isLoading" class="d-flex justify-content-center hstack gap-3">
-      <div class="spinner-lg spinner-grow text-danger" role="status">
-        <span class="visually-hidden">Loading...</span>
-      </div>
-      <div v-if="icon1" class="spinner-lg spinner-grow text-danger" role="status">
-        <span class="visually-hidden">Loading...</span>
-      </div>
-      <div v-if="icon2" class="spinner-lg spinner-grow text-danger" role="status">
-        <span class="visually-hidden">Loading...</span>
-      </div>
-    </div> -->
     <router-view />
   </div>
 </template>
@@ -55,23 +44,19 @@
 <script>
   export default {
     data: () => ({
-      icon1: false,
-      icon2: false,
+      routes: null,
     }),
+    created() {
+      this.routes = this.$router.getRoutes().filter(({meta}) => meta.main())
+    },
     computed: {
       alert() {
         return this.store.get('message')
       },
-      routes() {
-        return this.$router.getRoutes().filter(({meta}) => meta.requiresAuth === this.isLoggedIn && meta.main)
-      },
     },
     watch: {
-      isLoading(x) {
-        if (x) {
-          window.setTimeout(() => this.icon1 = true, 200)
-          window.setTimeout(() => this.icon2 = true, 400)
-        }
+      isLoggedIn() {
+        this.routes = this.$router.getRoutes().filter(({meta}) => meta.main())
       },
     },
     mounted() {
@@ -101,11 +86,10 @@
     border-radius: unset;
   }
   .card img {
-    border-radius: 11px;
+    border-radius: 7px;
   }
-  .contain-height {
-    object-fit: contain;
-    height: 25vh;
+  .details .card img {
+    border-radius: 11px;
   }
   .card .dropdown-center {
     display: inline-grid;
@@ -125,14 +109,6 @@
   }
   .tab-content .card img {
     border-radius: 22px;
-  }
-  .col-15 {
-    flex: 0 0 auto;
-    width: 12.499%;
-  }
-  .col-105 {
-    flex: 0 0 auto;
-    width: 87.499%;
   }
   .dropdown-menu {
     --bs-dropdown-padding-x: unset;

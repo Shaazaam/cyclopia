@@ -1,5 +1,5 @@
 <template>
-  <div :class="{'mb-3': hasMargin}">
+  <div :class="{'mb-2': hasMargin}">
     <div v-if="hasLabel" class="hstack gap-3">
       <label class="form-label" :class="{'is-invalid': hasErrors}" :for="id">
         <slot name="label">{{functions.snakeCasedToUpperCasedWords(name)}}</slot>
@@ -16,6 +16,7 @@
         class="form-control"
         :class="{'is-invalid': hasErrors}"
         :placeholder="placeholder"
+        :disabled="disabled"
         :autocomplete="autocomplete"
         @input="$emit('update:modelValue', $event.target.value)"
         @keyup.enter="$emit('keyupEnter')"
@@ -32,6 +33,7 @@
         class="form-control"
         :class="{'is-invalid': hasErrors}"
         :placeholder="placeholder"
+        :disabled="disabled"
         :autocomplete="autocomplete"
         :min="min"
         :max="max"
@@ -69,6 +71,10 @@
       },
       placeholder: {
         type: String,
+      },
+      disabled: {
+        type: Boolean,
+        default: false,
       },
       autocomplete: {
         type: String,

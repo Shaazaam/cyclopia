@@ -1,9 +1,13 @@
+import bcrypt from 'bcrypt'
+
 import * as dal from './dal.js'
 import {
   copy,
   isEmail,
+  isNotArray,
   isNotNull,
   isNotEmpty,
+  isNotUndefined,
   isNumber,
   isObjectEmpty,
   isString,
@@ -24,6 +28,7 @@ const MIN = 'min'
 const NOT_EXISTS = 'exn'
 const NUMERIC = 'num'
 const NUMERIC_WHOLE = 'wnum'
+const PASSWORD = 'pw'
 const REGEX = 'reg'
 const REQUIRED = 'req'
 
@@ -41,9 +46,10 @@ const messages = ({
   min: (field, [param]) => messages.gte(field, [param]),
   mo: (field, params) => `${field} must be one of the following values: ${params.join(', ')}`,
   num: (field) => `${field} must be a number`,
-  wnum: (field) => `${field} must be a whole number`,
+  pw: (field) => `${field} is invalid`,
   reg: (field, [expression]) => `${field} must match an expression?`,
   req: (field) => `${field} is required`,
+  wnum: (field) => `${field} must be a whole number`,
 })
 
 const formatField = (field) => ({
@@ -55,8 +61,8 @@ const formatField = (field) => ({
 const test = ({
   bt: async (value, [table, column, user_id]) => true,
   em: async (value) => isEmail(value),
-  et: async (value, [param]) => (isNumber(value) && value === param) || (isString(value) && value.lenth === param),
-  ex: async (values, [table, columns]) => (await dal.exists(table, columns, values)),
+  et: async (value, [param]) => (isNumber(value) && value === param) || (isString(value) && value === param),
+  ex: async (values, [table, columns]) => (await dal.exists(table, isNotArray(columns) ? [columns] : columns, values)),
   exn: async (values, [table, columns]) => ! (await test.ex(values, [table, columns])),
   gt: async (value, [param]) => isNumber(value) && value > param,
   gte: async (value, [param]) => isNumber(value) && value >= param,
@@ -66,12 +72,13 @@ const test = ({
   min: async (value, [param]) => (isNumber(value) && test.gte(value, [param])) || (isString(value) && test.gte(value.length, [param])),
   mo: async (value, params) => params.includes(value),
   num: async (value) => isNumber(value),
-  wnum: async (value) => isNumber(value) && value % 1 !== 0,
+  pw: async ({password, hash}) => isNotUndefined(hash) && (await bcrypt.compare(password, hash)),
   reg: async (value, [expression]) => isNotNull(value.match(expression)),
   req: async (value) => isNotNull(value) && isNotEmpty(value),
+  wnum: async (value) => isNumber(value) && value % 1 !== 0,
 })
 
-const setRules = (kind, params = [], callback, message) => ({kind, params, callback, message})
+const setRules = (kind, params = [], callback = null, message = null) => ({kind, params, callback, message})
 
 export const validate = async (input, fieldRules) =>
   await Object.entries(fieldRules).reduce(async (agg, [field, rules]) => {
@@ -86,19 +93,20 @@ export const validate = async (input, fieldRules) =>
   }, {})
 export const isValid = (results) => isObjectEmpty(results)
 
-export const belongsTo = (user, callback = null, message = null) => setRules(BELONGS_TO, [user], callback, message)
-export const email = (callback = null, message = null) => setRules(EMAIL, callback, message)
-export const equalTo = (value, callback = null, message = null) => setRules(EQUAL_TO, [value], callback, message)
-export const exists = (table, columns, callback = null, message = null) => setRules(EXISTS, [table, columns], callback, message)
-export const greaterThan = (value, callback = null, message = null) => setRules(GREATER_THAN, [value], callback, message)
-export const greaterThanEqualTo = (value, callback = null, message = null) => setRules(GREATER_THAN_EQUAL_TO, [value], callback, message)
-export const lessThan = (value, callback = null, message = null) => setRules(LESS_THAN, [value], callback, message)
-export const lessThanEqualTo = (value, callback = null, message = null) => setRules(LESS_THAN_EQUAL_TO, [value], callback, message)
-export const max = (value, callback = null, message = null) => setRules(MAX, [value], callback, message)
-export const memberOf = (array, callback = null, message = null) => setRules(MEMBER_OF, array, callback, message)
-export const min = (value, callback = null, message = null) => setRules(MIN, [value], callback, message)
-export const notExists = (table, columns, callback = null, message = null) => setRules(NOT_EXISTS, [table, columns], callback, message)
-export const numeric = (callback = null, message = null) => setRules(NUMERIC, callback, message)
-export const numericWhole = (callback = null, message = null) => setRules(NUMERIC_WHOLE, callback, message)
-export const regex = (expression, callback = null, message = null) => setRules(REGEX, [expression], callback, message)
-export const required = (callback = null, message = null) => setRules(REQUIRED, callback, message)
+export const belongsTo = (user, callback, message) => setRules(BELONGS_TO, [user], callback, message)
+export const email = (callback, message) => setRules(EMAIL, callback, message)
+export const equalTo = (value, callback, message) => setRules(EQUAL_TO, [value], callback, message)
+export const exists = (table, columns, callback, message) => setRules(EXISTS, [table, columns], callback, message)
+export const greaterThan = (value, callback, message) => setRules(GREATER_THAN, [value], callback, message)
+export const greaterThanEqualTo = (value, callback, message) => setRules(GREATER_THAN_EQUAL_TO, [value], callback, message)
+export const lessThan = (value, callback, message) => setRules(LESS_THAN, [value], callback, message)
+export const lessThanEqualTo = (value, callback, message) => setRules(LESS_THAN_EQUAL_TO, [value], callback, message)
+export const max = (value, callback, message) => setRules(MAX, [value], callback, message)
+export const memberOf = (array, callback, message) => setRules(MEMBER_OF, array, callback, message)
+export const min = (value, callback, message) => setRules(MIN, [value], callback, message)
+export const notExists = (table, columns, callback, message) => setRules(NOT_EXISTS, [table, columns], callback, message)
+export const numeric = (callback, message) => setRules(NUMERIC, callback, message)
+export const numericWhole = (callback, message) => setRules(NUMERIC_WHOLE, callback, message)
+export const password = (callback, message) => setRules(PASSWORD, callback, message)
+export const regex = (expression, callback, message) => setRules(REGEX, [expression], callback, message)
+export const required = (callback, message) => setRules(REQUIRED, callback, message)

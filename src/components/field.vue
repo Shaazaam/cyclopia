@@ -1,19 +1,8 @@
 <template>
-  <div
-    class="border border-success rounded bg-success  px-5"
-    :class="{
-      'reverse-columns': reversed,
-      'bg-opacity-25': dragover,
-      'bg-opacity-10': !dragover,
-    }"
-    @drop="drop"
-    @dragover.prevent
-    @dragenter="dragover = true"
-    @dragleave="dragover = false"
-  >
-    <div class="row">
-      <div class="col-8">
-        <div class="d-flex flex-wrap hstack" :style="height">
+  <div>
+    <div class="row" :class="{'mb-2': !reversed}" :style="height">
+      <div class="col-9">
+        <div class="d-flex flex-wrap hstack">
           <template
             v-for="[id, cards] in Object.entries(creatures)"
           >
@@ -22,14 +11,10 @@
               :object="object"
               :actions="actions"
               :style="applyStyle(id, i, cards.length)"
-              class="me-3"
-              contain-height
-              @counter="counter"
+              class="me-2 pointer"
+              @details="details"
               @expand="expand"
-              @move="move"
-              @power="power"
               @tap="tap"
-              @toughness="toughness"
               @transform="transform"
               @mouseenter="hoverGroups[id] = i"
               @mouseleave="delete hoverGroups[id]"
@@ -38,8 +23,8 @@
         </div>
       </div>
 
-      <div class="col-4">
-        <div class="d-flex flex-wrap hstack" :style="height">
+      <div class="col-3">
+        <div class="d-flex flex-wrap hstack">
           <template
             v-for="[id, cards] in Object.entries(instantsAndSorceries)"
           >
@@ -47,10 +32,9 @@
               v-for="(object, i) in cards"
               :object="object"
               :style="applyStyle(id, i, cards.length)"
-              class="me-3"
-              contain-height
+              class="me-2 pointer"
+              @details="details"
               @expand="expand"
-              @move="move"
               @mouseenter="hoverGroups[id] = i"
               @mouseleave="delete hoverGroups[id]"
             />
@@ -59,9 +43,9 @@
       </div>
     </div>
 
-    <div class="row">
-      <div class="col-8">
-        <div class="d-flex flex-wrap hstack" :style="height">
+    <div class="row" :class="{'mb-2': reversed}" :style="height">
+      <div class="col-9">
+        <div class="d-flex flex-wrap hstack">
           <template
             v-for="[id, cards] in Object.entries(lands)"
           >
@@ -70,11 +54,9 @@
               :object="object"
               :actions="actions"
               :style="applyStyle(id, i, cards.length)"
-              class="me-3"
-              contain-height
-              @counter="counter"
+              class="me-2 pointer"
+              @details="details"
               @expand="expand"
-              @move="move"
               @tap="tap"
               @transform="transform"
               @mouseenter="hoverGroups[id] = i"
@@ -83,8 +65,8 @@
           </template>
         </div>
       </div>
-      <div class="col-4">
-        <div class="d-flex flex-wrap hstack" :style="height">
+      <div class="col-3">
+        <div class="d-flex flex-wrap hstack">
           <div
             v-for="[id, cards] in Object.entries(artifactsAndEnchantments)"
             class="card-group"
@@ -95,11 +77,9 @@
               :object="object"
               :actions="actions"
               :style="applyStyle(id, i, cards.length)"
-              class="me-3"
-              contain-height
-              @counter="counter"
+              class="me-2 pointer"
+              @details="details"
               @expand="expand"
-              @move="move"
               @tap="tap"
               @transform="transform"
               @mouseenter="hoverGroups[id] = i"
@@ -140,6 +120,7 @@
     },
     emits: [
       'counter',
+      'details',
       'expand',
       'move',
       'power',
@@ -155,7 +136,7 @@
         'margin-right': 'unset',
       },
       height: {
-        'min-height': '25vh',
+        'min-height': '15vh',
       },
     }),
     computed: {
@@ -186,16 +167,17 @@
       counter(id, name, amount) {
         this.$emit('counter', id, name, amount)
       },
-      drop(event) {
-        if (!this.isGameOver) {
-          this.move(event.dataTransfer.getData('text/plain'), 'field')
-        }
+      details(object, state) {
+        this.$emit('details', object, state)
       },
       expand(object) {
         this.$emit('expand', object)
       },
       move(object_id, zone) {
-        this.$emit('move', object_id, zone)
+        this.dragover = false
+        if (zone !== 'field') {
+          this.$emit('move', object_id, zone)
+        }
       },
       power(object_id, value) {
         this.$emit('power', object_id, value)

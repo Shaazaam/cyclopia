@@ -1,7 +1,7 @@
 <template>
   <div class="row">
-    <div class="col">
-      <h2 class="text-center">Your Decks</h2>
+    <div class="col text-center">
+      <h2>Your Decks</h2>
       <p>Build a deck here: <a href="https://deckstats.net/" target="_blank">Deckstats</a></p>
     </div>
   </div>
@@ -21,7 +21,7 @@
   <div class="tab-content">
     <div
       v-for="(deck, index) in decks"
-      class="fade mt-3"
+      class="fade mt-2"
       :class="{
         'row': index === selected,
         'show': index === selected,
@@ -32,7 +32,8 @@
         v-for="object in cards.filter((card) => card.deck_id === deck.id)"
         :object="object"
         :actions="factory.actions({expand: false})"
-        class="col-3 mb-3"
+        height="unset"
+        class="col-3 mb-2"
       >
         <div class="card-body">
           <h5 class="text-center">Count: {{object.count}}</h5>

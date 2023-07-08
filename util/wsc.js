@@ -1,4 +1,4 @@
-//import config from './config.js'
+import config from './config.js'
 import {wsc} from './factory.js'
 import {copy, isNull, isNotNull} from './functions.js'
 import store from './store.js'
@@ -42,8 +42,7 @@ const connect = (message) => {
   }
 
   socket = new WebSocket(
-    'ws://localhost:8080',
-    //'wss://676c-174-54-100-114.ngrok-free.app',
+    config.app.WSS_URL,
     [
       'cyclopia-web',
       store.get('user').id
@@ -113,9 +112,11 @@ const onMessage = (event) => {
       update('Invalid authorization token. Try refreshing the page.', event)
     },
     '__pong__': () => clearTimeout(timeout.event),
-    'game': () => store.set('games', store.get('games').concat(data)),
-    'challenge': () => store.set('challenges', data),
     'event': () => store.set('events', data),
+    'game': () => store.set('game', copy(store.get('game'), {[data.id]: data})),
+    'games': () => store.set('games', data),
+    'invitations': () => store.set('invitations', data),
+    'object': () => store.set('object', copy(store.get('object'), {[data.game_id]: data})),
   }))()[kind]
   func()
 }

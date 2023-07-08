@@ -1,7 +1,3 @@
-<template>
-  <p>Now leaving Cyclopia. Goodbye.</p>
-</template>
-
 <script>
   export default {
     mounted() {
